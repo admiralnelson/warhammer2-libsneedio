@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsneedio", "src\libsneedio.vcxproj", "{18D94275-AC41-41EB-8CEA-96ED6050002D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsneedio", "libsneedio\libsneedio.vcxproj", "{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua", "lua\lua.vcxproj", "{741AAC00-B3F3-487C-8AF3-75469CA22929}"
 EndProject
@@ -15,16 +15,18 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Debug|x64.ActiveCfg = Debug|Win32
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Debug|x86.ActiveCfg = Debug|x64
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Debug|x86.Build.0 = Debug|x64
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Release|x64.ActiveCfg = Release|Win32
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Release|x86.ActiveCfg = Release|Win32
-		{18D94275-AC41-41EB-8CEA-96ED6050002D}.Release|x86.Build.0 = Release|Win32
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Debug|x64.ActiveCfg = Debug|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Debug|x64.Build.0 = Debug|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Debug|x86.ActiveCfg = Debug|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Debug|x86.Build.0 = Debug|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Release|x64.ActiveCfg = Release|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Release|x64.Build.0 = Release|x64
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Release|x86.ActiveCfg = Release|Win32
+		{2E65B481-DB04-4EBB-91C8-FCC92E2C89C1}.Release|x86.Build.0 = Release|Win32
 		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x64.ActiveCfg = Debug|x64
 		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x64.Build.0 = Debug|x64
-		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x86.ActiveCfg = Debug|x64
-		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x86.Build.0 = Debug|x64
+		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x86.ActiveCfg = Debug|Win32
+		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Debug|x86.Build.0 = Debug|Win32
 		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Release|x64.ActiveCfg = Release|x64
 		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Release|x64.Build.0 = Release|x64
 		{741AAC00-B3F3-487C-8AF3-75469CA22929}.Release|x86.ActiveCfg = Release|Win32
