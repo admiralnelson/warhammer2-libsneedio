@@ -79,7 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\lua;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\audeo\include;$(SolutionDir)\external\sdl\include;$(SolutionDir)\external\sdl-mixer\include;$(SolutionDir)\external\lua;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -126,6 +126,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,10 +154,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="audio_library.h" />
+    <ClInclude Include="music_library.h" />
     <ClInclude Include="sneedio.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="audio_library.cpp" />
+    <ClCompile Include="music_library.cpp" />
     <ClCompile Include="sneedio.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -166,6 +171,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\audeo\audeo.vcxproj">
+      <Project>{7a87b67c-3a28-3936-a1c3-08b463eccb99}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\external\sdl-mixer\VisualC\SDL_mixer.vcxproj">
+      <Project>{f7e944b3-0815-40cd-b3e4-90b2a15b0e33}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\external\sdl\VisualC\SDL\SDL.vcxproj">
+      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\lua\lua.vcxproj">
       <Project>{741aac00-b3f3-487c-8af3-75469ca22929}</Project>
     </ProjectReference>

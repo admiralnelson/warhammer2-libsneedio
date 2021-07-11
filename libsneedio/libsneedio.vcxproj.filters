@@ -21,12 +21,24 @@
     <ClInclude Include="sneedio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="audio_library.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="music_library.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sneedio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="audio_library.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="music_library.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
