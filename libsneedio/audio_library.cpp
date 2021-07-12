@@ -89,6 +89,7 @@ void SneedioFX::SetSoundEffectVolume(float Strength)
 
 SneedioFX::SneedioFX()
 {
+	
 }
 
 void SneedioFX::ClearSound()

@@ -27,6 +27,27 @@ extern "C" {
 
 // TODO: add generic code
 
+static bool bIsSneedioReady = false;
+
+bool InitSneedio()
+{
+	if (bIsSneedioReady) return true;
+	audeo::InitInfo info;
+	// Reserve some extra channels instead of the default (16). This amount can
+	// later be raised by calling audeo::allocate_effect_channels(count).
+	info.effect_channels = 32;
+	if (!audeo::init(info)) 
+	{
+		std::cout << "Failed to initialize audeo.\n";
+		return false;
+	}
+	else
+	{
+		bIsSneedioReady = true;
+		return true;
+	}
+}
+
 extern "C" {
 
 #ifndef NDEBUG
@@ -105,6 +126,35 @@ int L_somefunction(lua_State* L)
 	return 0;	// number of return values on the Lua stack
 };
 
+int L_PlayMusic(lua_State* L)
+{
+	const char* FileNameParam = luaL_checkstring(L, 1);
+	std::string FileName = FileNameParam;
+	int repeats = -1;
+	if (lua_gettop(L) > 1)
+	{
+		repeats = luaL_checkinteger(L, 2);
+	}
+	if (FileNameParam)
+	{
+		bool bIsSuccess = SneedioMusic::Get().PlayMusic(FileName, repeats);
+		if (!bIsSuccess)
+		{
+			std::string ErrorMsg = "failed to play music with filename: " + FileName;
+			lua_getglobal(L, "print");
+			lua_pushstring(L, ErrorMsg.data());
+			lua_call(L, 1, 0);
+		}
+		return bIsSuccess;
+	}
+	else
+	{
+		lua_getglobal(L, "print");
+		lua_pushstring(L, "1st parameter must be a string");
+		lua_call(L, 1, 0);
+		return 0;
+	}
+}
 
 /*
 ** ===============================================================
@@ -117,7 +167,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 
 	// TODO: add functions from 'exposed Lua API' section above
 	{"somefunction",L_somefunction},
-
+	{"PlayMusic",L_PlayMusic},
 
 	{NULL,NULL}  // last entry; list terminator
 };
@@ -134,7 +184,19 @@ static int L_openLib(lua_State* L) {
 	lua_pushstring(L, "Now initializing module 'required' as:");
 	lua_pushvalue(L, 1); // pos 1 on the stack contains the module name
 	lua_call(L, 2, 0);
-
+	
+	lua_getglobal(L, "print");
+	InitSneedio();
+	if (bIsSneedioReady)
+	{
+		lua_pushstring(L, "Libsneedio is ready");
+	}
+	else
+	{
+		lua_pushstring(L, "Libsneedio failed to init. No external sound/music for (you).");
+	}
+	lua_pushvalue(L, 1); // pos 1 on the stack contains the module name
+	lua_call(L, 2, 0);
 
 
 

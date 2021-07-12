@@ -8,7 +8,7 @@ class SneedioMusic
 public:
 	static SneedioMusic& Get();
 
-	bool PlayMusic(const std::string& FileName);
+	bool PlayMusic(const std::string& FileName, int Repeats = -1);
 
 	void PauseMusic(bool bIsPaused = true);
 

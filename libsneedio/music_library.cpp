@@ -7,12 +7,19 @@ SneedioMusic& SneedioMusic::Get()
     return instance;
 }
 
-bool SneedioMusic::PlayMusic(const std::string& FileName)
-{
+bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats)
+{	
 	try
 	{
 		SoundSource = audeo::load_source(FileName, audeo::AudioType::Music);
-		audeo::play_sound(SoundSource, 40, 500);
+		if (Repeats >= 0)
+		{
+			audeo::play_sound(SoundSource, Repeats, 500);
+		}
+		else
+		{
+			audeo::play_sound(SoundSource, audeo::loop_forever, 500);
+		}
 	}
 	catch (const audeo::exception& exception)
 	{
