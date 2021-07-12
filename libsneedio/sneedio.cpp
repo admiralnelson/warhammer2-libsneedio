@@ -1,6 +1,8 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
 #include "sneedio.h"
+#include "music_library.h"
+#include "audio_library.h"
 extern "C" {
     #include "lua.h"
     #include "lauxlib.h"
