@@ -126,6 +126,45 @@ int L_somefunction(lua_State* L)
 	return 0;	// number of return values on the Lua stack
 };
 
+int L_LoadAudioForUnit(lua_State* L)
+{
+	const char* FileNameParam = luaL_checkstring(L, 1);
+	std::string FileName = FileNameParam;
+	const char* UnitClassName = luaL_checkstring(L, 2);
+	if (FileNameParam)
+	{
+		bool bIsSuccess = SneedioFX::Get().LoadAudio(FileName, UnitClassName);
+		if (!bIsSuccess)
+		{
+			std::string ErrorMsg = "failed to play audio  with filename: " + FileName;
+			lua_getglobal(L, "print");
+			lua_pushstring(L, ErrorMsg.data());
+			lua_call(L, 1, 0);
+		}
+		return bIsSuccess;
+	}
+	return 0;
+}
+
+int L_PlayAudioForUnit(lua_State* L)
+{
+	const char* UnitParam = luaL_checkstring(L, 1);
+	std::string UnitClassName = UnitParam;
+	if (UnitParam)
+	{
+		bool bIsSuccess = SneedioFX::Get().PlaySound(UnitClassName);
+		if (!bIsSuccess)
+		{
+			std::string ErrorMsg = "failed to play audio  with UnitClassName: " + UnitClassName;
+			lua_getglobal(L, "print");
+			lua_pushstring(L, ErrorMsg.data());
+			lua_call(L, 1, 0);
+		}
+		return bIsSuccess;
+	}
+	return 0;
+}
+
 int L_PlayMusic(lua_State* L)
 {
 	const char* FileNameParam = luaL_checkstring(L, 1);
@@ -147,13 +186,7 @@ int L_PlayMusic(lua_State* L)
 		}
 		return bIsSuccess;
 	}
-	else
-	{
-		lua_getglobal(L, "print");
-		lua_pushstring(L, "1st parameter must be a string");
-		lua_call(L, 1, 0);
-		return 0;
-	}
+	return 0;
 }
 
 /*
@@ -168,6 +201,8 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	// TODO: add functions from 'exposed Lua API' section above
 	{"somefunction",L_somefunction},
 	{"PlayMusic",L_PlayMusic},
+	{"LoadAudioForUnit",L_LoadAudioForUnit},
+	{"PlayAudioForUnit",L_PlayAudioForUnit},
 
 	{NULL,NULL}  // last entry; list terminator
 };
