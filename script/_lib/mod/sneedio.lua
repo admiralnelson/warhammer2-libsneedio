@@ -1,17 +1,21 @@
+if(_G.sneedio) then return; end
+
+local inspect = require("inspect");
+local var_dump = require("var_dump");
 local print = print;
 local MOCK_UP = true;
-local path = "/script/bin/";
-local outputPath = "";
+local PATH = "/script/bin/";
+local OUTPUTPATH = "";
 if(MOCK_UP) then
-	path = "G:/dev/libsneedio/script/bin/";
-	outputPath = "";
+	PATH = "G:/dev/libsneedio/script/bin/";
+	OUTPUTPATH = "";
 end
 if(not MOCK_UP) then
-	print = out;
+	-- print = out;
 end
 
-local base64 = require("base64");
-local libSneedio = nil;
+print = out;
+
 local DLL_FILENAMES = { 
 	"libsneedio", 
 	"SDL2_mixer", 
@@ -26,31 +30,134 @@ local DLL_FILENAMES = {
 	"libFLAC-8"
 };
 
-local tryLoadLibSneedio = pcall(
-function()
-	libSneedio = require(DLL_FILENAME[1]);
-end);
+local base64 = require("base64");
 
+local sneedio = {};
+local libSneedio = pcall(require, DLL_FILENAMES[1]);
 
-if (not tryLoadLibSneedio) then	
+if (libSneedio == nil) then
+	local err = nil;
 	local UnpackThemDlls = function()
 		for _, filename in ipairs(DLL_FILENAMES) do
-			local path = path..filename;
-			
-			-- not on game
+			local path = PATH..filename;
 			if(MOCK_UP) then path = path..".lua" end;
-			
-			
 			print("unpacking file:", path);
 			local data = assert(loadfile(path))();
-			local file = assert(io.open(outputPath..filename..".dll", "wb"));
+			data = base64.decode(data);
+			local file = assert(io.open(OUTPUTPATH..filename..".dll", "wb"));
 			file:write(data);
 			file:close();
 		end
-		
-		libSneedio = require(DLL_FILENAMES[1]);
+		if(MOCK_UP) then
+			libSneedio, err = pcall(require, DLL_FILENAMES[1]);
+			if(not libSneedio) then
+				print("failed to load libSneedio, cleaning up..");
+				print(err);
+				for _, filename in ipairs(DLL_FILENAMES) do
+					local name = filename..".dll";
+					os.remove(name);
+					print("clean up ", name);
+				end
+			end
+		else
+			libSneedio, err = pcall(require, DLL_FILENAMES[1]);
+			if(not libSneedio) then print(err) end;
+		end
 	end
 	UnpackThemDlls();
 end
-	
-	
+
+local VectorToString = function(SneedVector)
+	return "x: "..SneedVector.x.." y: "..SneedVector.y.." z "..SneedVector.z;
+end
+
+local CAVectorToSneedVector = function(CAVector)
+	return { 
+		x = CAVector.get_x(),
+		y = CAVector.get_y(),
+		z = CAVector.get_z()
+	};
+end
+
+sneedio.Debug = function()
+	print("list of registered voices");
+	var_dump(sneedio._ListOfRegisteredVoices);
+	if BM then
+		print("list of registered voices on battle");
+		var_dump(sneedio._ListOfRegisteredVoicesOnBattle);
+	end
+end
+
+sneedio.RegisterVoice = function(unittype, fileNames)
+	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
+end
+
+sneedio.GetListOfVoicesFromUnit = function(unitType)
+	return sneedio._ListOfRegisteredVoices[unitType];
+end
+
+sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
+	cameraPos = CAVectorToSneedVector(cameraPos);
+	cameraTarget = CAVectorToSneedVector(cameraTarget);
+	libSneedio.UpdateListenerPosition(cameraPos, cameraTarget);
+end
+
+sneedio.RegisterSound2D = function(name, fileName)
+	-- libSneedio.Load2DAudio(name, fileName);
+end
+
+sneedio.PlaySound2D = function(name)
+	-- libSneedio.Play2DAudio(name);
+end
+
+
+---------------------------------PRIVATE methods----------------------------------
+
+sneedio._UnitTypeToInstanced = function (unitType, unitName)
+	return unitType .. "_instance_" .. tostring(unitName);
+end
+
+sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos)
+	local ListOfAudio = sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced];
+	local PickRandom = math.random( 1, #ListOfAudio);
+	cameraPos = CAVectorToSneedVector(cameraPos);
+	playAtPos = CAVectorToSneedVector(playAtPos);
+	print("playing voice: ", ListOfAudio[PickRandom], " at camera pos: ", VectorToString(cameraPos), " from: ", VectorToString(playAtPos));
+	libSneedio.PlayVoiceBattle(unitTypeInstanced, PickRandom, playAtPos);
+	libSneedio.UpdateListenerPosition(cameraPos);
+end
+
+sneedio._InitBattle = function(units)
+	for _, unit in ipairs(units) do 
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type());
+		if(UnitVoices) then
+			sneedio._RegisterVoiceOnBattle(unit:type(), unit:name(), UnitVoices);
+		end
+	end
+end
+
+sneedio._RegisterVoiceOnBattle = function (unitType, instance)
+	local unitTypeInstanced = sneedio._UnitTypeToInstanced(unitType, instance);
+	local listOfAudioFiles = sneedio.GetListOfVoicesFromUnit(unitType);
+	sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced] = listOfAudioFiles;
+	for __, filename in ipairs(listOfAudioFiles) do
+		libSneedio.LoadVoiceBattle(unitType, filename);
+	end
+end
+
+sneedio._CleanUpAfterBattle = function()
+	libSneedio.ClearBattle();
+	sneedio._ListOfRegisteredVoicesOnBattle = {
+		["null"] = {},
+	};
+end
+
+sneedio._ListOfRegisteredVoicesOnBattle = {
+	["null"] = {},
+};
+
+sneedio._ListOfRegisteredVoices = {
+	["null"] = {},
+};
+
+_G.sneedio = sneedio;
