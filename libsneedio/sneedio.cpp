@@ -126,31 +126,31 @@ int L_somefunction(lua_State* L)
 	return 0;	// number of return values on the Lua stack
 };
 
-int L_UpdateListenerPosition(lua_State* L)
+int L_UpdateListenerPosition(lua_State* L) //6 params.
 {
 	lua_pushvalue(L, 1);
 	lua_pushnil(L); //push 1st param
-	
-	std::map<std::string, float> keyValueTablePosition; 
-	
+
+	std::map<std::string, float> keyValueTablePosition;
+
 	while (lua_next(L, -2))
 	{
 		lua_pushvalue(L, -2);
 		const char* key = lua_tostring(L, -1);
-		float value = lua_tonumber(L, -2);
+		float value = std::stof(lua_tostring(L, -2));
 		keyValueTablePosition[key] = value;
 		lua_pop(L, 2);
 	}
 	lua_pop(L, 1);
 	lua_pushnil(L); //push 2sn param
 
-	std::map<std::string, float> keyValueTableTarget; 
+	std::map<std::string, float> keyValueTableTarget;
 
 	while (lua_next(L, -2))
 	{
 		lua_pushvalue(L, -2);
 		const char* key = lua_tostring(L, -1);
-		float value = lua_tonumber(L, -2);
+		float value = std::stof(lua_tostring(L, -2));
 		keyValueTableTarget[key] = value;
 		lua_pop(L, 2);
 	}
@@ -165,7 +165,7 @@ int L_UpdateListenerPosition(lua_State* L)
 	float xTar = keyValueTableTarget["x"];
 	float yTar = keyValueTableTarget["y"];
 	float zTar = keyValueTableTarget["z"];
-	SneedioFX::Get().UpdateListenerPosition({ xPos,yPos,zPos }, {xTar, yTar, zTar});
+	SneedioFX::Get().UpdateListenerPosition({ xPos,yPos,zPos }, { xTar, yTar, zTar });
 
 	return 0;
 }
@@ -213,7 +213,7 @@ int L_PlayVoiceBattle(lua_State* L)
 {
 	const char* UnitParam = luaL_checkstring(L, 1);
 	std::string UnitClassName = UnitParam;
-	int AudioIndex = luaL_checkinteger(L, 2) - 1;
+	int AudioIndex = std::stoi(luaL_checkstring(L, 2)) - 1;
 	if (AudioIndex < 0) AudioIndex = 0;
 	bool bCheckIf3rdArgumentIsTable = lua_type(L, 3) == LUA_TTABLE;
 	if (!bCheckIf3rdArgumentIsTable)
@@ -234,20 +234,32 @@ int L_PlayVoiceBattle(lua_State* L)
 	{
 		lua_pushvalue(L, -2);
 		const char* key = lua_tostring(L, -1);
-		float value = lua_tonumber(L, -2);
+		float value = std::stof(lua_tostring(L, -2));
 		keyValueTablePos[key] = value;
 		lua_pop(L, 2);
 	}
 
 	lua_pop(L, 1);
 	
+	float Distance = 255, Volume = 1;
+	if (lua_type(L, 4) == LUA_TSTRING)
+	{
+		std::string s = luaL_checkstring(L, 4);
+		Distance = std::atof(s.data());		
+	}
+	if (lua_type(L, 5) == LUA_TSTRING)
+	{
+		std::string s = luaL_checkstring(L, 5);
+		Volume = std::atof(s.data());
+	}
 	if (UnitParam)
 	{
 		audeo::vec3f pos;
 		pos.x = keyValueTablePos["x"];
 		pos.y = keyValueTablePos["y"];
 		pos.z = keyValueTablePos["z"];
-		bool bIsSuccess = SneedioFX::Get().PlayVoiceBattle(UnitClassName, AudioIndex, pos);
+	
+		bool bIsSuccess = SneedioFX::Get().PlayVoiceBattle(UnitClassName, AudioIndex, pos, Distance, Volume);
 		if (!bIsSuccess)
 		{
 			std::string ErrorMsg = "failed to play audio  with UnitClassName: " +
@@ -276,7 +288,7 @@ int L_PlayVoiceBattle(lua_State* L)
 		lua_pushstring(L, Msg.data());
 		lua_call(L, 1, 4);
 
-		lua_pushboolean(L, false);
+		lua_pushboolean(L, 2);
 		return 1;
 	}
 
@@ -289,7 +301,7 @@ int L_PlayMusic(lua_State* L)
 	int repeats = -1;
 	if (lua_gettop(L) > 1)
 	{
-		repeats = luaL_checkinteger(L, 2);
+		repeats = std::stoi(lua_tostring(L, -2));
 	}
 	if (FileNameParam)
 	{
