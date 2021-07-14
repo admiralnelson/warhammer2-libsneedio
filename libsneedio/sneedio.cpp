@@ -386,6 +386,7 @@ static int L_closeLib(lua_State* L) {
 	lua_call(L, 1, 0);
 
 
+	audeo::quit();
 
 
 	return 0;
@@ -435,7 +436,7 @@ static void L_openFailed(lua_State* L) {
 LTLIB_EXPORTAPI	int LTLIB_OPENFUNC(lua_State* L) {
 
 	// Setup a userdata with metatable to create a close method
-	L_setupClose(L);
+	 L_setupClose(L);
 
 	if (L_openLib(L) == 0)  // call initialization code
 		L_openFailed(L);    // Init failed, so cleanup, will not return

@@ -96,6 +96,8 @@ else
 	UnpackThemDlls();
 end
 
+----
+
 local VectorToString = function(SneedVector)
 	return "x: "..SneedVector.x.." y: "..SneedVector.y.." z "..SneedVector.z;
 end
@@ -109,25 +111,57 @@ local CAVectorToSneedVector = function(CAVector)
 	};
 end
 
+local ArrayContains = function(Array, Object)
+	for _, item in ipairs(Array) do
+		if(item == Object) return true;
+	end
+	return false;
+end
+
+sneedio.PauseAll = function(bPause)
+	bPause = bPause or true;
+	if(bPause)
+		-- libsneedio.PauseSoundFX();
+		-- libsneedio.PauseMusic();
+	else
+		-- libsneedio.UnpauseSoundFX();
+		-- libsneedio.UnpauseMusic();
+	end
+end
+
+
+
 sneedio.Debug = function()
 	print("list of registered voices");
-	var_dump(sneedio._ListOfRegisteredVoices);
+	var_dump(sneedio._ListOfRegisteredVoicesOnActivate);
 	if BM then
 		print("list of registered voices on battle");
 		var_dump(sneedio._ListOfRegisteredVoicesOnBattle);
 	end
 end
 
-sneedio.RegisterVoice = function(unittype, fileNames)
-	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
+sneedio.RegisterVoiceOnActivate = function(unitType, fileNames)
+	sneedio._ListOfRegisteredVoicesOnActivate[unitType] = fileNames;
 end
 
-sneedio.RegisterAmbientVoice = function(unitType, fileNames)
-	
+sneedio.RegisterVoiceOnAttack = function(unitType, fileNames)
+	sneedio._ListOfRegisteredVoicesOnAttack[unitType] = fileNames;
+end
+
+sneedio.RegisterAmbientVoice = function(unitType, fileNames, mode)
+	if(not ArrayContains({"idle", "attack", "wavering", "winning", "always"}, mode)) then 
+		print("invalid mode "..mode.." allowed: {'idle', 'attack', 'wavering', 'winning', 'always'}");
+		return;
+	end
+	sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType][mode] = fileNames;
+end
+
+sneedio.RegisterVoiceOnReject = function(unitType, fileNames)
+	sneedio._ListOfRegisteredVoicesOnReject[unitType] = fileNames;
 end
 
 sneedio.GetListOfVoicesFromUnit = function(unitType)
-	return sneedio._ListOfRegisteredVoices[unitType];
+	return sneedio._ListOfRegisteredVoicesOnActivate[unitType];
 end
 
 sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
@@ -187,7 +221,7 @@ end
 
 sneedio._InitBattle = function(units)
 	for _, unit in ipairs(units) do 
-		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type());
+		local UnitVoices = sneedio._ListOfRegisteredVoicesOnActivate[unit:type()];
 		local InstancedName = sneedio._UnitTypeToInstanced(unit);
 		sneedio._MapUnitToSelected[InstancedName] = false;
 		if(UnitVoices ~= nil) then
@@ -222,28 +256,40 @@ end
 
 ---------------------------------------Private variables----------------------------------------------------------
 
-
-sneedio._ListOfRegisteredVoicesOnBattle = {
-	["null"] = {},
-};
-
 sneedio._ListOfRegisteredVoicesForAmbientOnBattle = {
 	["null"] = {
 		["idle"] = {},
 		["attack"] = {},
 		["wavering"] = {},
 		["winning"] = {},
-		["taunt"] = {}
+		["always"] = {}
 	}
 }
 
-sneedio._ListOfRegisteredVoices = {
+sneedio._ListOfRegisteredVoicesOnAttack = {
+	["null"] = {},
+};
+
+sneedio._ListOfRegisteredVoicesOnReject = {
+	["null"] = {},
+};
+
+
+sneedio._ListOfRegisteredVoicesOnActivate = {
+	["null"] = {},
+};
+
+----------------------------------------- not persistent -------------------------------
+
+sneedio._ListOfRegisteredVoicesOnBattle = {
 	["null"] = {},
 };
 
 sneedio._MapUnitToSelected = {
 	["null"] = false,
 };
+
+----------------------------------------- not persistent -------------------------------
 
 print("all ok");
 
@@ -260,12 +306,12 @@ end
 
 -- let's register our audio first
 
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
+sneedio.RegisterVoiceOnActivate("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
 	"woman_yell_1.ogg", 
 	"woman_yell_2.ogg"
 });
 
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
+sneedio.RegisterVoiceOnActivate("wh2_dlc14_brt_cha_henri_le_massif_0", {
 	"man_grunt_1.ogg", 
 	"man_grunt_2.ogg",
 	"man_grunt_5.ogg",
@@ -276,8 +322,10 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
 sneedio.Debug();
 
 function UpdateCamera()
-	local camera = BM:camera();
-	sneedio.UpdateCameraPosition(camera:position(), camera:target());
+	if(BM) then
+		local camera = BM:camera();
+		sneedio.UpdateCameraPosition(camera:position(), camera:target());
+	end
 end
 
 BM:register_repeating_timer("UpdateCamera", 100);
@@ -288,7 +336,6 @@ var_dump(sneedio);
 var_dump(libSneedio);
 
 local SneedioBattleMain = function()
-
 
     local ForEachUnitsPlayer =  function (FunctionToProcess)
         local PlayerAlliance = BM:get_player_alliance();
@@ -305,6 +352,8 @@ local SneedioBattleMain = function()
             end;
         end;
     end;
+
+	--- setup voices here ---
 
 	local ListOfUnits = {};
     ForEachUnitsPlayer(function(CurrentUnit, CurrentArmy)
@@ -339,6 +388,21 @@ local SneedioBattleMain = function()
             end);
     end);
 	
+	--- setup ui event here ---
+	core:add_listener(
+		"admiralnelson_escape_mute_music_and_sound_effects",
+		"ShortcutTriggered", function(context)
+			return context.string == "escape_menu"
+		end, function()
+			bm:callback(function()
+				print("escape_menu called");
+				-- sneedio.PauseAll();
+			end, 
+			0.5);
+		end, 
+		true);
+		
+		
 	out("battle has sneeded!");
 end
 
