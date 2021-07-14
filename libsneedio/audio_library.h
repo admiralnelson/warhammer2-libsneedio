@@ -8,15 +8,15 @@ class SneedioFX
 public:
 	static SneedioFX& Get();
 
-	bool LoadAudio(const std::string& Filename, const std::string& UnitClassName);
+	bool LoadVoiceBattle(const std::string& Filename, const std::string& UnitClassName);
 
-	bool PlaySound(const std::string& UnitClassName, float MaxDistance = 100);
+	bool PlayVoiceBattle(const std::string& UnitClassName, int AudioIndex = 0 ,  audeo::vec3f Position = {0,0,0}, float MaxDistance = 100000000 );
 
-	bool SetSoundPosition(const std::string& UnitClassName, audeo::vec3f Position);
+	bool SetSoundPositionBattle(const std::string& UnitClassName, audeo::vec3f Position);
 
-	void UpdateListenerPosition(audeo::vec3f Position);
+	void UpdateListenerPosition(audeo::vec3f Position, audeo::vec3f Target);
 
-	void ClearAll();
+	void ClearBattle();
 
 	void ClearSound();
 
@@ -24,10 +24,11 @@ public:
 
 	void SetSoundEffectVolume(float Strength);
 private:
-	std::map<std::string, audeo::Sound> ListOfSounds;
-	std::map<std::string, audeo::SoundSource> ListOfSoundSource;
+	std::map<std::string, audeo::Sound> ListOfSoundsBattle;
+	std::map<std::string, std::vector<audeo::SoundSource>> ListOfSoundSourceBattle;
 
 	SneedioFX();
+	audeo::vec3f CameraPosition;
 
 public:
 	SneedioFX(SneedioFX const&) = delete;

@@ -7,12 +7,12 @@ SneedioFX& SneedioFX::Get()
 	return instance;
 }
 
-bool SneedioFX::LoadAudio(const std::string& Filename, const std::string& UnitClassName)
+bool SneedioFX::LoadVoiceBattle(const std::string& Filename, const std::string& UnitClassName)
 {
 	try 
 	{
 		audeo::SoundSource source = audeo::load_source(Filename, audeo::AudioType::Effect);
-		ListOfSoundSource[UnitClassName] = source;
+		ListOfSoundSourceBattle[UnitClassName].push_back(source);
 	}	
 	catch (const audeo::exception& exception) 
 	{
@@ -22,13 +22,19 @@ bool SneedioFX::LoadAudio(const std::string& Filename, const std::string& UnitCl
 	return true;
 }
 
-bool SneedioFX::PlaySound(const std::string& UnitClassName, float MaxDistance)
+bool SneedioFX::PlayVoiceBattle(const std::string& UnitClassName, int AudioIndex, audeo::vec3f Position, float MaxDistance)
 {
-	if (ListOfSoundSource.find(UnitClassName) != ListOfSoundSource.end())
+	if (ListOfSoundSourceBattle.find(UnitClassName) != ListOfSoundSourceBattle.end())
 	{
-		audeo::Sound sound = audeo::play_sound(ListOfSoundSource[UnitClassName]);
+		if (AudioIndex < 0 || AudioIndex > ListOfSoundSourceBattle[UnitClassName].size())
+		{
+			std::cout << "cannot play audio. invalid AudioIndex";
+			return false;
+		}
+		audeo::Sound sound = audeo::play_sound(ListOfSoundSourceBattle[UnitClassName][AudioIndex]);
 		audeo::set_distance_range_max(sound, MaxDistance);
-		ListOfSounds[UnitClassName] = sound;
+		audeo::set_position(sound, Position);
+		ListOfSoundsBattle[UnitClassName] = sound;
 		return true;
 	}
 	else
@@ -38,11 +44,11 @@ bool SneedioFX::PlaySound(const std::string& UnitClassName, float MaxDistance)
 	}
 }
 
-bool SneedioFX::SetSoundPosition(const std::string& UnitClassName, audeo::vec3f Position)
+bool SneedioFX::SetSoundPositionBattle(const std::string& UnitClassName, audeo::vec3f Position)
 {
-	if (ListOfSounds.find(UnitClassName) != ListOfSounds.end())
+	if (ListOfSoundsBattle.find(UnitClassName) != ListOfSoundsBattle.end())
 	{
-		audeo::set_position(ListOfSounds[UnitClassName], Position);
+		audeo::set_position(ListOfSoundsBattle[UnitClassName], Position);
 		return true;
 	}
 	else
@@ -52,20 +58,21 @@ bool SneedioFX::SetSoundPosition(const std::string& UnitClassName, audeo::vec3f 
 	}
 }
 
-void SneedioFX::UpdateListenerPosition(audeo::vec3f Position)
+void SneedioFX::UpdateListenerPosition(audeo::vec3f Position, audeo::vec3f Target)
 {
 	audeo::set_listener_position(Position);
+	audeo::set_listener_forward(Target);
 }
 
-void SneedioFX::ClearAll()
+void SneedioFX::ClearBattle()
 {
-	ListOfSounds.clear();
-	ListOfSoundSource.clear();
+	ListOfSoundsBattle.clear();
+	ListOfSoundSourceBattle.clear();
 }
 
 void SneedioFX::Pause(bool bIsPaused)
 {
-	for (auto& sound : ListOfSounds)
+	for (auto& sound : ListOfSoundsBattle)
 	{
 		if (bIsPaused)
 		{
@@ -81,7 +88,7 @@ void SneedioFX::Pause(bool bIsPaused)
 
 void SneedioFX::SetSoundEffectVolume(float Strength)
 {
-	for (auto& sound : ListOfSounds)
+	for (auto& sound : ListOfSoundsBattle)
 	{
 		audeo::set_volume(sound.second, Strength);
 	}
@@ -94,5 +101,5 @@ SneedioFX::SneedioFX()
 
 void SneedioFX::ClearSound()
 {
-	ListOfSounds.clear();
+	ListOfSoundsBattle.clear();
 }

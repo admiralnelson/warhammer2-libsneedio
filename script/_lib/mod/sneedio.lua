@@ -1,20 +1,8 @@
-if(_G.sneedio) then return; end
-
-local inspect = require("inspect");
-local var_dump = require("var_dump");
-local print = print;
-local MOCK_UP = true;
+local MOCK_UP = false;
 local PATH = "/script/bin/";
 local OUTPUTPATH = "";
-if(MOCK_UP) then
-	PATH = "G:/dev/libsneedio/script/bin/";
-	OUTPUTPATH = "";
-end
-if(not MOCK_UP) then
-	-- print = out;
-end
 
-print = out;
+local base64 = require("lua/base64");
 
 local DLL_FILENAMES = { 
 	"libsneedio", 
@@ -30,12 +18,20 @@ local DLL_FILENAMES = {
 	"libFLAC-8"
 };
 
-local base64 = require("base64");
+
+local print = out;
+
+print("line 30 ok");
 
 local sneedio = {};
+
 local libSneedio = pcall(require, DLL_FILENAMES[1]);
 
-if (libSneedio == nil) then
+if(libSneedio) then
+
+	print("lib loaded ok");
+
+else
 	local err = nil;
 	local UnpackThemDlls = function()
 		for _, filename in ipairs(DLL_FILENAMES) do
@@ -110,7 +106,6 @@ sneedio.PlaySound2D = function(name)
 	-- libSneedio.Play2DAudio(name);
 end
 
-
 ---------------------------------PRIVATE methods----------------------------------
 
 sneedio._UnitTypeToInstanced = function (unitType, unitName)
@@ -136,14 +131,14 @@ sneedio._InitBattle = function(units)
 	end
 end
 
-sneedio._RegisterVoiceOnBattle = function (unitType, instance)
+sneedio._RegisterVoiceOnBattle = function (unitType, instance, Voices)
 	local unitTypeInstanced = sneedio._UnitTypeToInstanced(unitType, instance);
-	local listOfAudioFiles = sneedio.GetListOfVoicesFromUnit(unitType);
-	sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced] = listOfAudioFiles;
-	for __, filename in ipairs(listOfAudioFiles) do
+	sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced] = Voices;
+	for __, filename in ipairs(Voices) do
 		libSneedio.LoadVoiceBattle(unitType, filename);
 	end
 end
+
 
 sneedio._CleanUpAfterBattle = function()
 	libSneedio.ClearBattle();
@@ -160,4 +155,8 @@ sneedio._ListOfRegisteredVoices = {
 	["null"] = {},
 };
 
+print("all ok");
+
 _G.sneedio = sneedio;
+
+--return sneedio;

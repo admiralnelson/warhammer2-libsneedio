@@ -126,43 +126,160 @@ int L_somefunction(lua_State* L)
 	return 0;	// number of return values on the Lua stack
 };
 
-int L_LoadAudioForUnit(lua_State* L)
+int L_UpdateListenerPosition(lua_State* L)
+{
+	lua_pushvalue(L, 1);
+	lua_pushnil(L); //push 1st param
+	
+	std::map<std::string, float> keyValueTablePosition; 
+	
+	while (lua_next(L, -2))
+	{
+		lua_pushvalue(L, -2);
+		const char* key = lua_tostring(L, -1);
+		float value = lua_tonumber(L, -2);
+		keyValueTablePosition[key] = value;
+		lua_pop(L, 2);
+	}
+	lua_pop(L, 1);
+	lua_pushnil(L); //push 2sn param
+
+	std::map<std::string, float> keyValueTableTarget; 
+
+	while (lua_next(L, -2))
+	{
+		lua_pushvalue(L, -2);
+		const char* key = lua_tostring(L, -1);
+		float value = lua_tonumber(L, -2);
+		keyValueTableTarget[key] = value;
+		lua_pop(L, 2);
+	}
+	lua_pop(L, 1);
+
+	std::cout << "pos " << " x " << keyValueTablePosition["x"] << " y " << keyValueTablePosition["y"] << " z " << keyValueTablePosition["z"] << "\n";
+	std::cout << "tar " << " x " << keyValueTableTarget["x"] << " y " << keyValueTableTarget["y"] << " z " << keyValueTableTarget["z"] << "\n";
+	float xPos = keyValueTablePosition["x"];
+	float yPos = keyValueTablePosition["y"];
+	float zPos = keyValueTablePosition["z"];
+
+	float xTar = keyValueTableTarget["x"];
+	float yTar = keyValueTableTarget["y"];
+	float zTar = keyValueTableTarget["z"];
+	SneedioFX::Get().UpdateListenerPosition({ xPos,yPos,zPos }, {xTar, yTar, zTar});
+
+	return 0;
+}
+
+int L_LoadVoiceBattle(lua_State* L)
 {
 	const char* FileNameParam = luaL_checkstring(L, 1);
 	std::string FileName = FileNameParam;
-	const char* UnitClassName = luaL_checkstring(L, 2);
+	std::string UnitClassName = luaL_checkstring(L, 2);
 	if (FileNameParam)
 	{
-		bool bIsSuccess = SneedioFX::Get().LoadAudio(FileName, UnitClassName);
+		bool bIsSuccess = SneedioFX::Get().LoadVoiceBattle(FileName, UnitClassName);
 		if (!bIsSuccess)
 		{
 			std::string ErrorMsg = "failed to play audio  with filename: " + FileName;
 			lua_getglobal(L, "print");
 			lua_pushstring(L, ErrorMsg.data());
 			lua_call(L, 1, 0);
+
+			lua_pushboolean(L, false);
+			return 1;
 		}
-		return bIsSuccess;
 	}
-	return 0;
+	else
+	{
+		std::string ErrorMsg = "filename not supplied";
+		lua_getglobal(L, "print");
+		lua_pushstring(L, ErrorMsg.data());
+		lua_call(L, 1, 0);
+
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	std::string Msg = "loading audio... UnitClassName: " + UnitClassName + " filename: " + FileName;
+	lua_getglobal(L, "print");
+	lua_pushstring(L, Msg.data());
+	lua_call(L, 1, 0);
+
+	lua_pushboolean(L, true);
+	return 1;
 }
 
-int L_PlayAudioForUnit(lua_State* L)
+int L_PlayVoiceBattle(lua_State* L)
 {
 	const char* UnitParam = luaL_checkstring(L, 1);
 	std::string UnitClassName = UnitParam;
+	int AudioIndex = luaL_checkinteger(L, 2) - 1;
+	if (AudioIndex < 0) AudioIndex = 0;
+	bool bCheckIf3rdArgumentIsTable = lua_type(L, 3) == LUA_TTABLE;
+	if (!bCheckIf3rdArgumentIsTable)
+	{
+		std::string ErrorMsg = "3rd argument must be table with x, y, z field";
+		lua_getglobal(L, "print");
+		lua_pushstring(L, ErrorMsg.data());
+		lua_call(L, 1, 0);
+
+		lua_pushinteger(L, 1);
+		return 1;
+	}
+	lua_pushvalue(L, 3);
+	lua_pushnil(L); //3rd argument
+
+	std::map<std::string, float> keyValueTablePos;
+	while (lua_next(L, -2))
+	{
+		lua_pushvalue(L, -2);
+		const char* key = lua_tostring(L, -1);
+		float value = lua_tonumber(L, -2);
+		keyValueTablePos[key] = value;
+		lua_pop(L, 2);
+	}
+
+	lua_pop(L, 1);
+	
 	if (UnitParam)
 	{
-		bool bIsSuccess = SneedioFX::Get().PlaySound(UnitClassName);
+		audeo::vec3f pos;
+		pos.x = keyValueTablePos["x"];
+		pos.y = keyValueTablePos["y"];
+		pos.z = keyValueTablePos["z"];
+		bool bIsSuccess = SneedioFX::Get().PlayVoiceBattle(UnitClassName, AudioIndex, pos);
 		if (!bIsSuccess)
 		{
-			std::string ErrorMsg = "failed to play audio  with UnitClassName: " + UnitClassName;
+			std::string ErrorMsg = "failed to play audio  with UnitClassName: " +
+				UnitClassName + " AudioIndex (0th, cus C++)  " + std::to_string(AudioIndex);
 			lua_getglobal(L, "print");
 			lua_pushstring(L, ErrorMsg.data());
 			lua_call(L, 1, 0);
+
+			lua_pushinteger(L, 2);
+			return 1;
 		}
-		return bIsSuccess;
+
+
+		std::string Msg = "playing audio... UnitClassName: " + UnitClassName;
+		lua_getglobal(L, "print");
+		lua_pushstring(L, Msg.data());
+		lua_call(L, 1, 0);
+
+		lua_pushinteger(L, 0);
+		return 1;
 	}
-	return 0;
+	else
+	{
+		std::string Msg = "unit name not supplied!";
+		lua_getglobal(L, "print");
+		lua_pushstring(L, Msg.data());
+		lua_call(L, 1, 4);
+
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
 }
 
 int L_PlayMusic(lua_State* L)
@@ -184,9 +301,14 @@ int L_PlayMusic(lua_State* L)
 			lua_pushstring(L, ErrorMsg.data());
 			lua_call(L, 1, 0);
 		}
-		return bIsSuccess;
+		lua_pushboolean(L, false);
+
+		return 1;
 	}
-	return 0;
+
+	lua_pushboolean(L, true);
+
+	return 1;
 }
 
 /*
@@ -201,9 +323,9 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	// TODO: add functions from 'exposed Lua API' section above
 	{"somefunction",L_somefunction},
 	{"PlayMusic",L_PlayMusic},
-	{"LoadAudioForUnit",L_LoadAudioForUnit},
-	{"PlayAudioForUnit",L_PlayAudioForUnit},
-
+	{"LoadVoiceBattle",L_LoadVoiceBattle},
+	{"PlayVoiceBattle",L_PlayVoiceBattle},
+	{"UpdateListenerPosition",L_UpdateListenerPosition},
 	{NULL,NULL}  // last entry; list terminator
 };
 
