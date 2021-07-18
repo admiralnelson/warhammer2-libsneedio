@@ -121,7 +121,7 @@ sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Cal
 	end
 	sneedio._ListOfCallbacksForBattleEvent[UniqueName][EventName] = Callback;
 	print("registered");
-	var_dump(sneedio._ListOfCallbacksForBattleEvent);
+	-- var_dump(sneedio._ListOfCallbacksForBattleEvent);
 end
 
 sneedio.Debug = function()
@@ -148,12 +148,11 @@ sneedio.RegisterAmbientVoice = function(unitType, fileNames, mode)
 	sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType][mode] = fileNames;
 end
 
-sneedio.RegisterVoiceOnReject = function(unitType, fileNames)
-	sneedio._ListOfRegisteredVoicesOnReject[unitType] = fileNames;
-end
-
-sneedio.GetListOfVoicesFromUnit = function(unitType)
-	return sneedio._ListOfRegisteredVoices[unitType];
+sneedio.GetListOfVoicesFromUnit = function(unitType, voiceType)
+	if(sneedio._ListOfRegisteredVoices[unitType]) then
+		return sneedio._ListOfRegisteredVoices[unitType][voiceType];
+	end
+	return ;
 end
 
 sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
@@ -177,7 +176,7 @@ sneedio.IsUnitSelected = function(unit)
 		print("not a unit");
 		return false;
 	end;
-	local unitTypeInstanced = sneedio._UnitTypeToInstanced(unit);
+	local unitTypeInstanced = sneedio._UnitTypeToInstancedSelect(unit);
 	return sneedio._MapUnitToSelected[unitTypeInstanced];
 end
 
@@ -238,9 +237,23 @@ end
 
 ---------------------------------PRIVATE methods----------------------------------
 
-sneedio._UnitTypeToInstanced = function (unit)
-	return unit:type().."_instance_"..tostring(unit:name());
+sneedio._UnitTypeToInstancedSelect = function (unit)
+	return unit:type().."_instance_select_"..tostring(unit:name());
 end
+
+sneedio._UnitTypeToInstancedAffirmative = function (unit)
+	return unit:type().."_instance_affirmative_"..tostring(unit:name());
+end
+
+sneedio._UnitTypeToInstancedAbort = function (unit)
+	return unit:type().."_instance_abort_"..tostring(unit:name());
+end
+
+sneedio._UnitTypeToInstancedHostile = function (unit)
+	return unit:type().."_instance_hostile_"..tostring(unit:name());
+end
+
+
 
 sneedio._UnitTypeToInstancedAmbient = function (unit)
 	return unit:type().."_instanceAmbient_"..tostring(unit:name());
@@ -252,13 +265,17 @@ sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos)
 	print("about to play audio");
 	print("unit is "..unitTypeInstanced);
 	local ListOfAudio = sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced];
-	--var_dump(ListOfAudio);
-	local PickRandom = math.random( 1, #ListOfAudio);
-	print("playing voice: ".. ListOfAudio[PickRandom]);
-	local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos));
-	var_dump(result);
-	if(result == 0) then
-		print("audio played");
+	if(ListOfAudio)then
+		--var_dump(ListOfAudio);
+		local PickRandom = math.random( 1, #ListOfAudio);
+		print("playing voice: ".. ListOfAudio[PickRandom]);
+		local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos));
+		var_dump(result);
+		if(result == 0) then
+			print("audio played");
+		end
+	else
+		print("no audio regisered for "..unitTypeInstanced);
 	end
 	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(cameraPos));
 	-- print(" at camera pos: ".. v_to_s(cameraPos).. " from: ".. v_to_s(playAtPos));
@@ -266,19 +283,38 @@ end
 
 sneedio._ProcessSelectedUnitRightClickBattle = function()
 	if(libSneedio.WasRightClickHeld()) then
+		--print("line 278");
 		for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
+			--print("line 280");
 			local actualUnit = sneedio._MapUnitInstanceNameToActualUnits[unitInstanceName];
 			if(selected and is_unit(actualUnit)) then	
+				--print("line 283");
 				local bIsUnitReacting  = actualUnit:is_moving() or 
 										 actualUnit:is_in_melee() or 
 										 actualUnit:is_moving_fast();
 				local camPos = BM:camera():position();
 				local unitPos = actualUnit:position();
+				local unitInstanceNameAffirmative = sneedio._UnitTypeToInstancedAffirmative(actualUnit);
 				if(bIsUnitReacting) then
-					print("playing unit audio on rightclick evt "..unitInstanceName);
-					sneedio._PlayVoiceBattle(unitInstanceName, camPos, unitPos);
+					print("playing unit audio on rightclick evt "..unitInstanceName.." affirmative "..unitInstanceNameAffirmative);
+					sneedio._PlayVoiceBattle(unitInstanceNameAffirmative, camPos, unitPos);
 				end
 			end
+		end
+	end
+end
+
+sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle = function()
+	for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
+		--print("line 280");
+		local actualUnit = sneedio._MapUnitInstanceNameToActualUnits[unitInstanceName];
+		if(selected and is_unit(actualUnit)) then	
+			local camPos = BM:camera():position();
+			local unitPos = actualUnit:position();
+			local unitInstanceNameAbort = sneedio._UnitTypeToInstancedAbort(actualUnit);
+
+			print("playing unit audio on backspace/abort evt "..unitInstanceName.." abort "..unitInstanceNameAbort);
+			sneedio._PlayVoiceBattle(unitInstanceNameAbort, camPos, unitPos);
 		end
 	end
 end
@@ -296,27 +332,60 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 end
 
 sneedio._InitBattle = function(units)
+
+	-- for select voice
 	for _, unit in ipairs(units) do 
-		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type());
-		local InstancedName = sneedio._UnitTypeToInstanced(unit);
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Select");
+		local InstancedName = sneedio._UnitTypeToInstancedSelect(unit);
 		sneedio._MapUnitToSelected[InstancedName] = false;
 		if(UnitVoices ~= nil) then
-			sneedio._RegisterVoiceOnBattle(unit, UnitVoices);
+			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Select");
 		else
-			print("Warning unit:"..unit:type().." doesn not have associated voices");
+			print("Voice on Select, Warning unit:"..unit:type().." doesn not have associated voices");
 		end
-		
+	end
+	
+	-- for affirmative voice
+	for _, unit in ipairs(units) do 
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Affirmative");
+		local InstancedName = sneedio._UnitTypeToInstancedAffirmative(unit);
+		if(UnitVoices ~= nil) then
+			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Affirmative");
+		else
+			print("Voice on Affirmative, Warning unit:"..unit:type().." doesnt have associated voices");
+		end
+	end
+	
+	-- for abort voice
+	for _, unit in ipairs(units) do 
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Abort");
+		local InstancedName = sneedio._UnitTypeToInstancedAbort(unit);
+		if(UnitVoices ~= nil) then
+			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Abort");
+		else
+			print("Voice on Abort, Warning unit:"..unit:type().." doesnt have associated voices");
+		end
 	end
 end
 
-sneedio._RegisterVoiceOnBattle = function (unit, Voices)
-	local unitTypeInstanced = sneedio._UnitTypeToInstanced(unit);
+sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
+	local unitTypeInstanced = "";
+	if(VoiceType == "Select")then
+		unitTypeInstanced = sneedio._UnitTypeToInstancedSelect(unit);
+	elseif(VoiceType == "Affirmative") then
+		unitTypeInstanced = sneedio._UnitTypeToInstancedAffirmative(unit);
+	elseif(VoiceType == "Abort") then
+		unitTypeInstanced = sneedio._UnitTypeToInstancedAbort(unit);
+	else
+		print("warning, unknown type "..VoiceType.." aborting this function");
+		return;
+	end
 	if(Voices) then
 		sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced] = Voices;
 		for __, filename in ipairs(Voices) do
 			print("attempt to load: "..filename);
 			if(libSneedio.LoadVoiceBattle(filename, unitTypeInstanced)) then
-				print(unitTypeInstanced..": audio loaded "..filename);
+				print(unitTypeInstanced..": audio loaded "..filename.." for voice type "..VoiceType);
 			end
 		end
 	end
@@ -369,7 +438,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			"sneedio_battletick_0",
 			"ShortcutTriggered",
 			function(context)
-				var_dump(context.string);
+				-- var_dump(context.string);
 				return true;
 			end,
 			function()
@@ -383,7 +452,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			"sneedio_battletick_1",
 			"ComponentLClickUp",
 			function(context)
-				var_dump(context.string);
+				-- var_dump(context.string);
 				return true;
 			end,
 			function()
@@ -406,11 +475,39 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 		true);	
 		
+		core:add_listener(
+			"sneedio_battleonabortcmd_1",
+			"ShortcutTriggered",
+			function(context)
+				return context.string == "current_selection_order_cancel"
+			end,
+			function()
+				BM:callback(function()
+					sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle();
+				end, 0.1);
+			end,
+		true);
 		
+		core:add_listener(
+			"sneedio_battleonabortcmd_2",
+			"ComponentLClickUp",
+			function(context)				
+				return context.string == "button_halt";
+			end,
+			function()
+				BM:callback(function()
+					sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle();
+				end, 0.1);
+			end,
+		true);
 		
 		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "Paused", function()
 			print("pause the music");
 			print("pause all sound effects");
+		end);
+		
+		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "SlowMo", function()
+			print("mute all sound effects");
 		end);
 		
 		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "Normal", function()
@@ -458,7 +555,11 @@ sneedio._MapUnitInstanceNameToActualUnits = {
 };
 
 sneedio._ListOfRegisteredVoices = {
-	["null"] = {},
+	["null"] = {
+		["Select"] = {},
+		["Affirmative"] = {},
+		["Hostile"] = {}
+	},
 };
 
 
@@ -472,16 +573,27 @@ _G.sneedio = sneedio;
 -- let's register our audio first
 
 sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
-	"woman_yell_1.ogg", 
-	"woman_yell_2.ogg"
+	["Select"] = {
+		"woman_yell_1.ogg", 		
+	},
+	["Affirmative"] = {
+		"woman_yell_2.ogg"
+	}
 });
 
 sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
-	"man_grunt_1.ogg", 
-	"man_grunt_2.ogg",
-	"man_grunt_5.ogg",
-	"man_grunt_13.ogg",
-	"man_grunt_3.ogg",
+	["Select"] = {
+		"man_grunt_1.ogg", 
+		"man_grunt_2.ogg",
+		"man_grunt_5.ogg",
+		"man_grunt_13.ogg",
+		"man_grunt_3.ogg",
+	},
+	["Affirmative"] = {
+		"man_grunt_1.ogg", 
+		"man_grunt_5.ogg",
+		"man_grunt_3.ogg",
+	},
 });
 
 sneedio.Debug();
@@ -524,7 +636,7 @@ local SneedioBattleMain = function()
 	local ListOfUnits = {};
     ForEachUnitsPlayer(function(CurrentUnit, CurrentArmy)
 		table.insert(ListOfUnits, CurrentUnit);
-		local instancedName = sneedio._UnitTypeToInstanced(CurrentUnit);
+		local instancedName = sneedio._UnitTypeToInstancedSelect(CurrentUnit);
 		sneedio._MapUnitInstanceNameToActualUnits[instancedName] = CurrentUnit;
     end);
 
@@ -537,7 +649,7 @@ local SneedioBattleMain = function()
     -- register the callback when unit is selected
     ForEachUnitsPlayer(function(CurrentUnit, CurrentArmy)
         BM:register_unit_selection_callback(CurrentUnit, function(unit)
-				local InstancedName = sneedio._UnitTypeToInstanced(unit);
+				local InstancedName = sneedio._UnitTypeToInstancedSelect(unit);
 				if(not sneedio.IsUnitSelected(unit))then				
 					local camera = BM:camera();
 					print("Selected unit: ");
