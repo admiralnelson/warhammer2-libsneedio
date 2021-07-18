@@ -101,10 +101,6 @@ if core:is_battle() then
     BM = get_bm();
 end
 
-local VectorToString = function(SneedVector)
-	return "x: "..SneedVector.x.." y: "..SneedVector.y.." z "..SneedVector.z;
-end
-
 local CAVectorToSneedVector = function(CAVector)
 	--yeah I have to convert them to string, my DLL can't accept number for some reason.
 	return { 
@@ -112,6 +108,60 @@ local CAVectorToSneedVector = function(CAVector)
 		y = tostring(CAVector:get_y()),
 		z = tostring(CAVector:get_z())
 	};
+end
+
+sneedio.LoadCustomAudio = function(identifier, fileName)
+	if(sneedio.IsIdentifierValid(identifier))then
+		print("audio already loaded for "..identifier);
+		return;
+	end
+	print("attempt to load: "..fileName);
+	if(libSneedio.LoadVoiceBattle(fileName, identifier)) then
+		print(identifier..": audio loaded "..fileName);
+		sneedio._ListOfCustomAudio[identifier] = fileName;
+	else
+		print("warning, failed to load Custom audio .."..identifier.." filename path: "..fileName.." maybe file doesn't exist or wrong path");
+	end
+end
+
+sneedio.IsIdentifierValid = function(identifier)
+	return sneedio._ListOfCustomAudio[identifier] ~= nil;
+end
+
+sneedio.PlayCustomAudio = function(identifier, atPosition, maxDistance, volume, listener)
+	local defaultPosition = v(0,0,0);
+	if(BM)then
+		defaultPosition = BM:camera():position();
+	end
+	listener = listener or defaultPosition;
+	maxDistance = maxDistance or 400;
+	volume = volume or 1;
+	atPosition = atPosition or defaultPosition;
+	if(not is_vector(atPosition))then
+		print("atPosition param is not a vector");
+		return;
+	end
+	if(not is_vector(listener)) then
+		print("listener param is not a vector");
+		return;
+	end
+	if(type(maxDistance) ~= "number")then
+		print("maxDistance param is not a number");
+		return;
+	end
+	if(type(volume) ~= "number")then
+		print("volume param is not a number");
+		return;
+	end
+	if(not sneedio.IsIdentifierValid(identifier)) then
+		print("identifier is not valid");
+		return;
+	end
+	local res = libSneedio.PlayVoiceBattle(identifier, tostring(1), CAVectorToSneedVector(atPosition), tostring(maxDistance), tostring(volume));
+	if(res == 0)then
+		print("audio played "..identifier);
+	end
+	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(listener));
 end
 
 sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Callback)
@@ -132,6 +182,7 @@ sneedio.Debug = function()
 		var_dump(sneedio._ListOfRegisteredVoicesOnBattle);
 	end
 end
+
 
 sneedio.RegisterVoice = function(unittype, fileNames)
 	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
@@ -246,23 +297,28 @@ sneedio._UnitTypeToInstancedHostile = function (unit)
 	return unit:type().."_instance_hostile_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
-
-
 sneedio._UnitTypeToInstancedAmbient = function (unit, AmbientType)
 	return unit:type().."_instance_ambient_type_"..AmbientType.."_"..tostring(unit:name());
 end
 
 ---------------Battle Events--------------------
 
-sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos)
+sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIsAmbient)
+	bIsAmbient = bIsAmbient or false;
 	print("about to play audio");
 	print("unit is "..unitTypeInstanced);
 	local ListOfAudio = sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced];
 	if(ListOfAudio)then
 		--var_dump(ListOfAudio);
 		local PickRandom = math.random( 1, #ListOfAudio);
+		local MaxDistance = 325;
+		local Volume = 1;
+		if(bIsAmbient) then
+			MaxDistance = 150;
+			Volume = 0.85;
+		end
 		print("playing voice: ".. ListOfAudio[PickRandom]);
-		local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos));
+		local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos), tostring(MaxDistance), tostring(Volume));
 		var_dump(result);
 		if(result == 0) then
 			print("audio played");
@@ -356,7 +412,7 @@ sneedio._ProcessAmbienceQueues = function()
 			local top = queues[1];
 			local camPos = BM:camera():position();
 			print("pop ambiencequeue "..top.InstancedName.." current tick "..tostring(sneedio.GetBattleTicks()));
-			sneedio._PlayVoiceBattle(top.InstancedName, camPos, top.Unit:position());
+			sneedio._PlayVoiceBattle(top.InstancedName, camPos, top.Unit:position(), true);
 			table.remove(queues, 1);
 		end
 	end
@@ -644,6 +700,8 @@ sneedio._ListOfRegisteredVoices = {
 		},		
 	},
 };
+
+sneedio._ListOfCustomAudio = {};
 
 sneedio._BattleCurrentTicks = 0;
 
