@@ -23,6 +23,10 @@ public:
 	void Pause(bool bIsPaused = true);
 
 	void SetSoundEffectVolume(float Strength);
+
+	float GetSoundEffectVolume();
+
+	void Mute(bool bMute = true);
 private:
 	std::map<std::string, audeo::Sound> UnitToSoundBattle;
 	std::map<std::string, std::vector<audeo::SoundSource>> UnitToSoundSourceBattle;
@@ -31,6 +35,7 @@ private:
 	SneedioFX();
 	audeo::vec3f CameraPosition;
 	float SoundVolumeMultiplier = 1.0f;
+	bool bMute;
 public:
 	SneedioFX(SneedioFX const&) = delete;
 	void operator=(SneedioFX const&) = delete;

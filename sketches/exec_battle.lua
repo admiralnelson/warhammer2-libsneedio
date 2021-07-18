@@ -117,6 +117,19 @@ local CAVectorToSneedVector = function(CAVector)
 	};
 end
 
+sneedio.Pause = function (bPause)
+	libSneedio.Pause(tostring(bPause));
+end
+
+sneedio.MuteSoundFX = function (bPause)
+	libSneedio.MuteSoundFX(tostring(bPause));
+end
+
+sneedio.MuteMusic = function (bPause)
+	libSneedio.MuteMusic(tostring(bPause));
+end
+
+
 sneedio.LoadCustomAudio = function(identifier, fileName)
 	if(sneedio.IsIdentifierValid(identifier))then
 		print("audio already loaded for "..identifier);
@@ -322,8 +335,8 @@ sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIs
 	if(ListOfAudio)then
 		--var_dump(ListOfAudio);
 		local PickRandom = math.random( 1, #ListOfAudio);
-		local MaxDistance = 250;
-		local Volume = 0.8;
+		local MaxDistance = 390;
+		local Volume = 0.7;
 		if(bIsAmbient) then
 			MaxDistance = 200;
 			Volume = 0.5;
@@ -672,7 +685,6 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 					"button_ability7",
 					"button_ability8"
 				};
-				print("lololol"..context.string);
 				return InArray(buttons, context.string);
 			end,
 			function()

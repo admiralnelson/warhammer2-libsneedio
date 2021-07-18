@@ -7,18 +7,18 @@ SneedioMusic& SneedioMusic::Get()
     return instance;
 }
 
-bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats)
+bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats, float FadesInMs)
 {	
 	try
 	{
 		SoundSource = audeo::load_source(FileName, audeo::AudioType::Music);
 		if (Repeats >= 0)
 		{
-			audeo::play_sound(SoundSource, Repeats, 500);
+			audeo::play_sound(SoundSource, Repeats, FadesInMs);
 		}
 		else
 		{
-			audeo::play_sound(SoundSource, audeo::loop_forever, 500);
+			audeo::play_sound(SoundSource, audeo::loop_forever, FadesInMs);
 		}
 	}
 	catch (const audeo::exception& exception)
@@ -29,7 +29,7 @@ bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats)
 	return true;
 }
 
-void SneedioMusic::PauseMusic(bool bIsPaused)
+void SneedioMusic::Pause(bool bIsPaused)
 {
 	if (bIsPaused)
 	{
@@ -43,9 +43,21 @@ void SneedioMusic::PauseMusic(bool bIsPaused)
 
 void SneedioMusic::SetVolume(float Strength)
 {
-	audeo::set_volume(CurrentMusic, Strength);
+	float mute = (bMute) ? 0 : 1;
+	audeo::set_volume(CurrentMusic, Strength * mute);
+	MusicVolume = Strength;
 }
 
-SneedioMusic::SneedioMusic()
+float SneedioMusic::GetVolume()
+{
+	return MusicVolume;
+}
+
+void SneedioMusic::Mute(bool mute)
+{
+	bMute = mute;
+}
+
+SneedioMusic::SneedioMusic() : bMute(false)
 {
 }

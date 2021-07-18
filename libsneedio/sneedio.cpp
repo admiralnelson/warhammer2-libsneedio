@@ -337,6 +337,34 @@ int L_PlayMusic(lua_State* L)
 	return 1;
 }
 
+int L_Pause(lua_State* L)
+{
+	// i have to do this. bool, int, float, reals just somehow can't be pushed into this lib
+	// will have to figured out why is that.
+	std::string Paused = luaL_checkstring(L, 1);
+	SneedioFX::Get().Pause(Paused == "true");
+	SneedioMusic::Get().Pause(Paused == "true");
+	
+	return 0;
+}
+
+int L_MuteSoundFX(lua_State* L)
+{
+	std::string Paused = luaL_checkstring(L, 1);
+	SneedioFX::Get().Mute(Paused == "true");
+
+
+	return 0;
+}
+
+int L_MuteMusic(lua_State* L)
+{
+	std::string Muted = luaL_checkstring(L, 1);
+	SneedioMusic::Get().Mute(Muted == "true");
+
+	return 0;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -353,6 +381,9 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"PlayVoiceBattle",L_PlayVoiceBattle},
 	{"UpdateListenerPosition",L_UpdateListenerPosition},
 	{"WasRightClickHeld",L_WasRightClickHeld},
+	{"Pause", L_Pause},
+	{"MuteSoundFX", L_MuteSoundFX},
+	{"MuteMusic", L_MuteMusic},
 	{NULL,NULL}  // last entry; list terminator
 };
 
