@@ -101,6 +101,13 @@ if core:is_battle() then
     BM = get_bm();
 end
 
+local InArray = function (array, item)
+	for _, v in ipairs(array) do
+		if(v == item) then return true; end
+	end
+	return false;
+end
+
 local CAVectorToSneedVector = function(CAVector)
 	--yeah I have to convert them to string, my DLL can't accept number for some reason.
 	return { 
@@ -289,6 +296,10 @@ sneedio._UnitTypeToInstancedAffirmative = function (unit)
 	return unit:type().."_instance_affirmative_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
+sneedio._UnitTypeToInstancedAbilities = function (unit)
+	return unit:type().."_instance_abilities_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
+end
+
 sneedio._UnitTypeToInstancedAbort = function (unit)
 	return unit:type().."_instance_abort_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
@@ -311,11 +322,11 @@ sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIs
 	if(ListOfAudio)then
 		--var_dump(ListOfAudio);
 		local PickRandom = math.random( 1, #ListOfAudio);
-		local MaxDistance = 325;
-		local Volume = 1;
+		local MaxDistance = 250;
+		local Volume = 0.8;
 		if(bIsAmbient) then
-			MaxDistance = 150;
-			Volume = 0.85;
+			MaxDistance = 200;
+			Volume = 0.5;
 		end
 		print("playing voice: ".. ListOfAudio[PickRandom]);
 		local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos), tostring(MaxDistance), tostring(Volume));
@@ -353,6 +364,27 @@ sneedio._ProcessSelectedUnitRightClickBattle = function()
 	end
 end
 
+
+-- can only work with single unit :(
+sneedio._ProcessSelectedUnitOnAbilitiesBattle = function()
+	local selectedUnit = {};
+	for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
+		if(selected)then 
+			table.insert(selectedUnit, unitInstanceName); 
+		end
+		if(#selectedUnit>1 and #selectedUnit ~= 0)then
+			return;
+		end
+	end
+	
+	local theUnit = sneedio._MapUnitInstanceNameToActualUnits[selectedUnit[1]];
+	local unitInstanceNameAbilities = sneedio._UnitTypeToInstancedAbilities(theUnit);
+	local camPos = BM:camera():position();
+	print("playing unit audio on Abilities UI buttons "..selectedUnit[1].." Abilities "..unitInstanceNameAbilities);
+
+	sneedio._PlayVoiceBattle(unitInstanceNameAbilities, camPos, theUnit:position());
+end
+
 sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle = function()
 	for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
 		--print("line 298");
@@ -374,9 +406,9 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 	
 		for unitInstanceName, TheActualUnit in pairs(sneedio._MapUnitInstanceNameToActualUnits) do
 			local Distance = cameraPos:distance(TheActualUnit:position());
-			local RollToQueueAmbience = math.random(1,62) == 1;
-			local randomDelay = 3*10;
-			if(Distance < 20 and RollToQueueAmbience) then
+			local RollToQueueAmbience = math.random(1,65) == 1;
+			local randomDelay = 9*10; --todo, improve this algo!
+			if(Distance < 40 and RollToQueueAmbience) then
 				--print("line 318 -- process ambient sound");
 				if(TheActualUnit:is_idle()) then
 					print("line 326 -- process ambient sound");
@@ -426,7 +458,7 @@ sneedio._QueueAmbienceVoiceToPlay = function(unitInstanceName, delayInSecs, theU
 		Unit = theUnit
 	};
 	-- table.insert(sneedio._AmbienceQueues, Queue);
-	if(not sneedio._AmbienceQueues[unitInstanceName]) then
+	if(sneedio._AmbienceQueues[unitInstanceName] == nil) then
 		sneedio._AmbienceQueues[unitInstanceName] = {};
 		print("queued new ambience voice "..unitInstanceName.." delayInSecs "..tostring(delayInSecs).." will play at ticks "..tostring(Queue.PlayAfterTicks).." current ticks "..tostring(Timestamp));
 		table.insert(sneedio._AmbienceQueues[unitInstanceName], Queue);
@@ -477,6 +509,16 @@ sneedio._InitBattle = function(units)
 		end
 	end
 	
+	-- for abilities voice
+	for _, unit in ipairs(units) do 
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Abilities");
+		if(UnitVoices ~= nil) then
+			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Abilities");
+		else
+			print("Voice on Abilities, Warning unit:"..unit:type().." doesnt have associated voices");
+		end
+	end
+
 	-- for ambiences voices
 	for _, unit in ipairs(units) do 
 		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Ambiences");
@@ -502,6 +544,8 @@ sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
 		unitTypeInstanced = sneedio._UnitTypeToInstancedAffirmative(unit);
 	elseif(VoiceType == "Abort") then
 		unitTypeInstanced = sneedio._UnitTypeToInstancedAbort(unit);
+	elseif(VoiceType == "Abilities") then
+		unitTypeInstanced = sneedio._UnitTypeToInstancedAbilities(unit);
 	elseif(VoiceType == "Idle" or 
 		   VoiceType == "Attack" or 
 		   VoiceType == "Wavering" or 
@@ -585,13 +629,13 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 					sneedio._BattleOnTick();
 				end, 0.1);
 			end,
-		  true);
+		true);
 		  
 		core:add_listener(
 			"sneedio_battletick_1",
 			"ComponentLClickUp",
 			function(context)
-				-- var_dump(context.string);
+				var_dump(context.string);
 				return true;
 			end,
 			function()
@@ -612,7 +656,31 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 					sneedio._BattleOnTick();
 				end, 0.1);
 			end,
-		true);	
+		true);
+
+		core:add_listener(
+			"sneedio_battletick_3_afirmative",
+			"ComponentLClickUp",
+			function(context)
+				local buttons = {
+					"button_ability1", 
+					"button_ability2",
+					"button_ability3",
+					"button_ability4",
+					"button_ability5",
+					"button_ability6",
+					"button_ability7",
+					"button_ability8"
+				};
+				print("lololol"..context.string);
+				return InArray(buttons, context.string);
+			end,
+			function()
+				BM:callback(function()
+					sneedio._ProcessSelectedUnitOnAbilitiesBattle();
+				end, 0.1);
+			end,
+		true);
 		
 		core:add_listener(
 			"sneedio_battleonabortcmd_1",
@@ -690,6 +758,7 @@ sneedio._ListOfRegisteredVoices = {
 		["Select"] = {},
 		["Affirmative"] = {},
 		["Hostile"] = {},
+		["Abilities"] = {},
 		["Ambiences"] = {
 			["CampaignMap"] = {},
 			["Idle"] = {},
@@ -812,7 +881,7 @@ local SneedioBattleMain = function()
 		sneedio._MapUnitInstanceNameToActualUnits[instancedName] = CurrentUnit;
     end);
 
-	out("ListOfUnits have sneeded!");
+	print("ListOfUnits have sneeded!");
 	
 	var_dump(ListOfUnits);
 	sneedio._InitBattle(ListOfUnits)
@@ -840,7 +909,7 @@ local SneedioBattleMain = function()
             end);
     end);
 	
-	out("battle has sneeded!");
+	print("battle has sneeded!");
 end
 
 if BM ~= nil then SneedioBattleMain(); end

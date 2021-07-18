@@ -35,7 +35,7 @@ bool InitSneedio()
 	audeo::InitInfo info;
 	// Reserve some extra channels instead of the default (16). This amount can
 	// later be raised by calling audeo::allocate_effect_channels(count).
-	info.effect_channels = 32;
+	info.effect_channels = 32*2;
 	if (!audeo::init(info)) 
 	{
 		std::cout << "Failed to initialize audeo.\n";
