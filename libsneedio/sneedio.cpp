@@ -126,6 +126,20 @@ int L_somefunction(lua_State* L)
 	return 0;	// number of return values on the Lua stack
 };
 
+int L_WasRightClickHeld(lua_State* L)
+{
+	if (GetKeyState(VK_RBUTTON) & 0x8000)
+	{
+		lua_pushboolean(L, true);
+		return 1;
+	}
+	else
+	{
+		lua_pushboolean(L, false);
+		return 1;
+	}
+}
+
 int L_UpdateListenerPosition(lua_State* L) //6 params.
 {
 	lua_pushvalue(L, 1);
@@ -338,6 +352,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"LoadVoiceBattle",L_LoadVoiceBattle},
 	{"PlayVoiceBattle",L_PlayVoiceBattle},
 	{"UpdateListenerPosition",L_UpdateListenerPosition},
+	{"WasRightClickHeld",L_WasRightClickHeld},
 	{NULL,NULL}  // last entry; list terminator
 };
 

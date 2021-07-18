@@ -96,7 +96,10 @@ else
 	UnpackThemDlls();
 end
 
-----
+local BM;
+if core:is_battle() then
+    BM = get_bm();
+end
 
 local VectorToString = function(SneedVector)
 	return "x: "..SneedVector.x.." y: "..SneedVector.y.." z "..SneedVector.z;
@@ -111,47 +114,36 @@ local CAVectorToSneedVector = function(CAVector)
 	};
 end
 
-local ArrayContains = function(Array, Object)
-	for _, item in ipairs(Array) do
-		if(item == Object) return true;
+sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Callback)
+	print("registered event "..UniqueName.." for event "..EventName);
+	if (not sneedio._ListOfCallbacksForBattleEvent[UniqueName]) then
+		sneedio._ListOfCallbacksForBattleEvent[UniqueName] = {};
 	end
-	return false;
+	sneedio._ListOfCallbacksForBattleEvent[UniqueName][EventName] = Callback;
+	print("registered");
+	var_dump(sneedio._ListOfCallbacksForBattleEvent);
 end
-
-sneedio.PauseAll = function(bPause)
-	bPause = bPause or true;
-	if(bPause)
-		-- libsneedio.PauseSoundFX();
-		-- libsneedio.PauseMusic();
-	else
-		-- libsneedio.UnpauseSoundFX();
-		-- libsneedio.UnpauseMusic();
-	end
-end
-
-
 
 sneedio.Debug = function()
 	print("list of registered voices");
-	var_dump(sneedio._ListOfRegisteredVoicesOnActivate);
-	if BM then
+	var_dump(sneedio._ListOfRegisteredVoices);
+	if (BM) then
 		print("list of registered voices on battle");
 		var_dump(sneedio._ListOfRegisteredVoicesOnBattle);
 	end
 end
 
-sneedio.RegisterVoiceOnActivate = function(unitType, fileNames)
-	sneedio._ListOfRegisteredVoicesOnActivate[unitType] = fileNames;
-end
-
-sneedio.RegisterVoiceOnAttack = function(unitType, fileNames)
-	sneedio._ListOfRegisteredVoicesOnAttack[unitType] = fileNames;
+sneedio.RegisterVoice = function(unittype, fileNames)
+	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
 end
 
 sneedio.RegisterAmbientVoice = function(unitType, fileNames, mode)
-	if(not ArrayContains({"idle", "attack", "wavering", "winning", "always"}, mode)) then 
-		print("invalid mode "..mode.." allowed: {'idle', 'attack', 'wavering', 'winning', 'always'}");
+	if(not ArrayContains({"idle", "attack", "wavering", "winning", "rampage"}, mode)) then 
+		print("invalid mode "..mode.." allowed: {'idle', 'attack', 'wavering', 'winning', 'rampage'}");
 		return;
+	end
+	if(not sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType]) then 
+		sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType] = {};
 	end
 	sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType][mode] = fileNames;
 end
@@ -161,7 +153,7 @@ sneedio.RegisterVoiceOnReject = function(unitType, fileNames)
 end
 
 sneedio.GetListOfVoicesFromUnit = function(unitType)
-	return sneedio._ListOfRegisteredVoicesOnActivate[unitType];
+	return sneedio._ListOfRegisteredVoices[unitType];
 end
 
 sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
@@ -189,25 +181,78 @@ sneedio.IsUnitSelected = function(unit)
 	return sneedio._MapUnitToSelected[unitTypeInstanced];
 end
 
+sneedio.IfBattlePaused = function()
+	if (BM) then
+		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
+		if(parent)then
+			local button = find_uicomponent(parent, "pause");
+			-- var_dump(uic_pause:CurrentState());
+			return button:CurrentState() == "selected";
+		end
+	end
+end
+
+sneedio.IfBattleInSlowMo = function()
+	if (BM) then
+		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
+		if(parent)then
+			local button = find_uicomponent(parent, "slow_mo");
+			-- var_dump(uic_pause:CurrentState());
+			return button:CurrentState() == "selected";
+		end
+	end
+end
+
+sneedio.IfBattleInNormalPlay = function()
+	if (BM) then
+		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
+		if(parent)then
+			local button = find_uicomponent(parent, "play");
+			-- var_dump(uic_pause:CurrentState());
+			return button:CurrentState() == "selected";
+		end
+	end
+end
+
+sneedio.IfBattleInFastForward = function()
+	if (BM) then
+		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
+		if(parent) then
+			local buttonFWD = find_uicomponent(parent, "fwd");
+			local buttonFFWD = find_uicomponent(parent, "ffwd");
+			return buttonFWD:CurrentState() == "selected" or buttonFFWD:CurrentState() == "selected";
+		end
+	end
+end
+
+sneedio.GetBattleSpeedMode = function()
+	if(BM) then
+		if(sneedio.IfBattlePaused()) then return "Paused"; end	
+		if(sneedio.IfBattleInSlowMo()) then return "SlowMo"; end
+		if(sneedio.IfBattleInNormalPlay()) then return "Normal"; end
+		if(sneedio.IfBattleInFastForward()) then return "FastForward"; end
+		return "None";
+	end
+	return "None";
+end
+
 ---------------------------------PRIVATE methods----------------------------------
 
 sneedio._UnitTypeToInstanced = function (unit)
 	return unit:type().."_instance_"..tostring(unit:name());
 end
 
-sneedio._UnitTypeToAttack = function (unit)
-	return unit:type().."_instanceAttack_"..tostring(unit:name());
-end
-
 sneedio._UnitTypeToInstancedAmbient = function (unit)
 	return unit:type().."_instanceAmbient_"..tostring(unit:name());
 end
+
+---------------Battle Events--------------------
 
 sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos)
 	print("about to play audio");
 	print("unit is "..unitTypeInstanced);
 	local ListOfAudio = sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced];
-	var_dump(ListOfAudio);
+	--var_dump(ListOfAudio);
 	local PickRandom = math.random( 1, #ListOfAudio);
 	print("playing voice: ".. ListOfAudio[PickRandom]);
 	local result = libSneedio.PlayVoiceBattle(unitTypeInstanced, tostring(PickRandom), CAVectorToSneedVector(playAtPos));
@@ -216,12 +261,43 @@ sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos)
 		print("audio played");
 	end
 	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(cameraPos));
-	print(" at camera pos: ".. v_to_s(cameraPos).. " from: ".. v_to_s(playAtPos));
+	-- print(" at camera pos: ".. v_to_s(cameraPos).. " from: ".. v_to_s(playAtPos));
+end
+
+sneedio._ProcessSelectedUnitRightClickBattle = function()
+	if(libSneedio.WasRightClickHeld()) then
+		for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
+			local actualUnit = sneedio._MapUnitInstanceNameToActualUnits[unitInstanceName];
+			if(selected and is_unit(actualUnit)) then	
+				local bIsUnitReacting  = actualUnit:is_moving() or 
+										 actualUnit:is_in_melee() or 
+										 actualUnit:is_moving_fast();
+				local camPos = BM:camera():position();
+				local unitPos = actualUnit:position();
+				if(bIsUnitReacting) then
+					print("playing unit audio on rightclick evt "..unitInstanceName);
+					sneedio._PlayVoiceBattle(unitInstanceName, camPos, unitPos);
+				end
+			end
+		end
+	end
+end
+
+sneedio._ProcessAmbientUnitSoundBattle = function()	
+	-- local bIsMoving = actualUnit:is_moving();
+	-- local bIsIdle = actualUnit:is_idle();
+	-- local bIsWavering = actualUnit:is_wavering() or 
+						-- actualUnit:is_routing() or 
+						-- actualUnit:is_shattered();
+	-- local bIsWinning = (actualUnit:is_in_melee() or actualUnit:is_rampaging()) and 
+						-- actualUnit:unary_hitpoints() > 0.5;
+	-- local bIsRampaging = actualUnit:is_rampaging();
+
 end
 
 sneedio._InitBattle = function(units)
 	for _, unit in ipairs(units) do 
-		local UnitVoices = sneedio._ListOfRegisteredVoicesOnActivate[unit:type()];
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type());
 		local InstancedName = sneedio._UnitTypeToInstanced(unit);
 		sneedio._MapUnitToSelected[InstancedName] = false;
 		if(UnitVoices ~= nil) then
@@ -246,7 +322,6 @@ sneedio._RegisterVoiceOnBattle = function (unit, Voices)
 	end
 end
 
-
 sneedio._CleanUpAfterBattle = function()
 	libSneedio.ClearBattle();
 	sneedio._ListOfRegisteredVoicesOnBattle = {
@@ -254,7 +329,115 @@ sneedio._CleanUpAfterBattle = function()
 	};
 end
 
+sneedio._UpdateCameraOnBattle = function()
+	if(BM) then
+		local camera = BM:camera();
+		sneedio.UpdateCameraPosition(camera:position(), camera:target());
+	end
+end
+
+sneedio._BattleOnTick = function()
+	sneedio._UpdateCameraOnBattle();
+	sneedio._bHasSpeedChanged = sneedio._CurrentSpeed ~= sneedio.GetBattleSpeedMode();
+	sneedio._CurrentSpeed = sneedio.GetBattleSpeedMode();
+	if(sneedio._bHasSpeedChanged) then
+		sneedio._ProcessSpeedEvents(sneedio._CurrentSpeed);
+	end
+	
+	sneedio._ProcessSelectedUnitRightClickBattle();
+end
+
+sneedio._ProcessSpeedEvents = function(eventToProcess)
+	-- print("event "..eventToProcess);
+	for uniqueName, eventsList in pairs(sneedio._ListOfCallbacksForBattleEvent) do
+		for eventKey, callback in pairs(eventsList) do
+			if(eventKey == eventToProcess)then
+				callback();
+				return;
+			end
+		end
+	end
+	-- print("event process done");
+end
+
+
+sneedio._RegisterSneedioTickBattleFuns = function()
+	
+	if(BM)then
+		sneedio._BattleOnTick();
+		core:add_listener(
+			"sneedio_battletick_0",
+			"ShortcutTriggered",
+			function(context)
+				var_dump(context.string);
+				return true;
+			end,
+			function()
+				BM:callback(function()
+					sneedio._BattleOnTick();
+				end, 0.1);
+			end,
+		  true);
+		  
+		core:add_listener(
+			"sneedio_battletick_1",
+			"ComponentLClickUp",
+			function(context)
+				var_dump(context.string);
+				return true;
+			end,
+			function()
+				BM:callback(function()
+					sneedio._BattleOnTick();
+				end, 0.1);
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_battletick_2",
+			"ComponentMouseOn",
+			function(context)
+				return true;
+			end,
+			function()
+				BM:callback(function()
+					sneedio._BattleOnTick();
+				end, 0.1);
+			end,
+		true);	
+		
+		
+		
+		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "Paused", function()
+			print("pause the music");
+			print("pause all sound effects");
+		end);
+		
+		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "Normal", function()
+			print("unpause the music");
+			print("unpause all sound effects");
+			print("unmute all sound effects");
+		end);
+		
+		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "FastForward", function()
+			print("mute all sound effects");
+		end);
+
+	end
+	
+end
+
 ---------------------------------------Private variables----------------------------------------------------------
+
+---------------Battle Events--------------------
+sneedio._bHasSpeedChanged = false;
+sneedio._CurrentSpeed = "Normal";
+
+sneedio._ListOfCallbacksForBattleEvent = {};
+
+sneedio._ListOfRegisteredVoicesOnBattle = {
+	["null"] = {},
+};
 
 sneedio._ListOfRegisteredVoicesForAmbientOnBattle = {
 	["null"] = {
@@ -262,34 +445,23 @@ sneedio._ListOfRegisteredVoicesForAmbientOnBattle = {
 		["attack"] = {},
 		["wavering"] = {},
 		["winning"] = {},
-		["always"] = {}
+		["rampage"] = {}
 	}
-}
-
-sneedio._ListOfRegisteredVoicesOnAttack = {
-	["null"] = {},
-};
-
-sneedio._ListOfRegisteredVoicesOnReject = {
-	["null"] = {},
-};
-
-
-sneedio._ListOfRegisteredVoicesOnActivate = {
-	["null"] = {},
-};
-
------------------------------------------ not persistent -------------------------------
-
-sneedio._ListOfRegisteredVoicesOnBattle = {
-	["null"] = {},
 };
 
 sneedio._MapUnitToSelected = {
 	["null"] = false,
 };
 
------------------------------------------ not persistent -------------------------------
+sneedio._MapUnitInstanceNameToActualUnits = {
+	["null"] = nil,
+};
+
+sneedio._ListOfRegisteredVoices = {
+	["null"] = {},
+};
+
+
 
 print("all ok");
 
@@ -297,21 +469,14 @@ _G.sneedio = sneedio;
 
 --return sneedio;
 
-
-local BM;
-if core:is_battle() then
-    BM = get_bm();
-end
-
-
 -- let's register our audio first
 
-sneedio.RegisterVoiceOnActivate("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
+sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
 	"woman_yell_1.ogg", 
 	"woman_yell_2.ogg"
 });
 
-sneedio.RegisterVoiceOnActivate("wh2_dlc14_brt_cha_henri_le_massif_0", {
+sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
 	"man_grunt_1.ogg", 
 	"man_grunt_2.ogg",
 	"man_grunt_5.ogg",
@@ -321,21 +486,24 @@ sneedio.RegisterVoiceOnActivate("wh2_dlc14_brt_cha_henri_le_massif_0", {
 
 sneedio.Debug();
 
+out("hello world");
+
 function UpdateCamera()
 	if(BM) then
 		local camera = BM:camera();
 		sneedio.UpdateCameraPosition(camera:position(), camera:target());
+		sneedio._BattleOnTick();
 	end
 end
 
 BM:register_repeating_timer("UpdateCamera", 100);
-
-out("hello world");
+sneedio._RegisterSneedioTickBattleFuns();
 
 var_dump(sneedio);
 var_dump(libSneedio);
 
 local SneedioBattleMain = function()
+
 
     local ForEachUnitsPlayer =  function (FunctionToProcess)
         local PlayerAlliance = BM:get_player_alliance();
@@ -353,11 +521,11 @@ local SneedioBattleMain = function()
         end;
     end;
 
-	--- setup voices here ---
-
 	local ListOfUnits = {};
     ForEachUnitsPlayer(function(CurrentUnit, CurrentArmy)
 		table.insert(ListOfUnits, CurrentUnit);
+		local instancedName = sneedio._UnitTypeToInstanced(CurrentUnit);
+		sneedio._MapUnitInstanceNameToActualUnits[instancedName] = CurrentUnit;
     end);
 
 	out("ListOfUnits have sneeded!");
@@ -388,22 +556,23 @@ local SneedioBattleMain = function()
             end);
     end);
 	
-	--- setup ui event here ---
-	core:add_listener(
-		"admiralnelson_escape_mute_music_and_sound_effects",
-		"ShortcutTriggered", function(context)
-			return context.string == "escape_menu"
-		end, function()
-			bm:callback(function()
-				print("escape_menu called");
-				-- sneedio.PauseAll();
-			end, 
-			0.5);
-		end, 
-		true);
-		
-		
 	out("battle has sneeded!");
 end
 
 if BM ~= nil then SneedioBattleMain(); end
+
+sneedio.RegisterCallbackSpeedEventOnBattle("test", "Normal", function()
+	print("game is being played");
+end);
+
+sneedio.RegisterCallbackSpeedEventOnBattle("test", "SlowMo", function()
+	print("game is on slowmo");
+end);
+
+sneedio.RegisterCallbackSpeedEventOnBattle("test", "Paused", function()
+	print("game is paused");
+end);
+
+sneedio.RegisterCallbackSpeedEventOnBattle("test", "FastForward", function()
+	print("game is on fastforward");
+end);
