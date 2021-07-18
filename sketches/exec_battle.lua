@@ -137,17 +137,6 @@ sneedio.RegisterVoice = function(unittype, fileNames)
 	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
 end
 
-sneedio.RegisterAmbientVoice = function(unitType, fileNames, mode)
-	if(not ArrayContains({"idle", "attack", "wavering", "winning", "rampage"}, mode)) then 
-		print("invalid mode "..mode.." allowed: {'idle', 'attack', 'wavering', 'winning', 'rampage'}");
-		return;
-	end
-	if(not sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType]) then 
-		sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType] = {};
-	end
-	sneedio._ListOfRegisteredVoicesForAmbientOnBattle[unitType][mode] = fileNames;
-end
-
 sneedio.GetListOfVoicesFromUnit = function(unitType, voiceType)
 	if(sneedio._ListOfRegisteredVoices[unitType]) then
 		return sneedio._ListOfRegisteredVoices[unitType][voiceType];
@@ -180,7 +169,7 @@ sneedio.IsUnitSelected = function(unit)
 	return sneedio._MapUnitToSelected[unitTypeInstanced];
 end
 
-sneedio.IfBattlePaused = function()
+sneedio.IsBattlePaused = function()
 	if (BM) then
 		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
 		if(parent)then
@@ -191,7 +180,7 @@ sneedio.IfBattlePaused = function()
 	end
 end
 
-sneedio.IfBattleInSlowMo = function()
+sneedio.IsBattleInSlowMo = function()
 	if (BM) then
 		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
 		if(parent)then
@@ -202,7 +191,7 @@ sneedio.IfBattleInSlowMo = function()
 	end
 end
 
-sneedio.IfBattleInNormalPlay = function()
+sneedio.IsBattleInNormalPlay = function()
 	if (BM) then
 		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
 		if(parent)then
@@ -213,7 +202,7 @@ sneedio.IfBattleInNormalPlay = function()
 	end
 end
 
-sneedio.IfBattleInFastForward = function()
+sneedio.IsBattleInFastForward = function()
 	if (BM) then
 		local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
 		if(parent) then
@@ -226,37 +215,41 @@ end
 
 sneedio.GetBattleSpeedMode = function()
 	if(BM) then
-		if(sneedio.IfBattlePaused()) then return "Paused"; end	
-		if(sneedio.IfBattleInSlowMo()) then return "SlowMo"; end
-		if(sneedio.IfBattleInNormalPlay()) then return "Normal"; end
-		if(sneedio.IfBattleInFastForward()) then return "FastForward"; end
+		if(sneedio.IsBattlePaused()) then return "Paused"; end	
+		if(sneedio.IsBattleInSlowMo()) then return "SlowMo"; end
+		if(sneedio.IsBattleInNormalPlay()) then return "Normal"; end
+		if(sneedio.IsBattleInFastForward()) then return "FastForward"; end
 		return "None";
 	end
 	return "None";
 end
 
+sneedio.GetBattleTicks = function()
+	return sneedio._BattleCurrentTicks;
+end
+
 ---------------------------------PRIVATE methods----------------------------------
 
 sneedio._UnitTypeToInstancedSelect = function (unit)
-	return unit:type().."_instance_select_"..tostring(unit:name());
+	return unit:type().."_instance_select_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
 sneedio._UnitTypeToInstancedAffirmative = function (unit)
-	return unit:type().."_instance_affirmative_"..tostring(unit:name());
+	return unit:type().."_instance_affirmative_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
 sneedio._UnitTypeToInstancedAbort = function (unit)
-	return unit:type().."_instance_abort_"..tostring(unit:name());
+	return unit:type().."_instance_abort_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
 sneedio._UnitTypeToInstancedHostile = function (unit)
-	return unit:type().."_instance_hostile_"..tostring(unit:name());
+	return unit:type().."_instance_hostile_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
 
 
 
-sneedio._UnitTypeToInstancedAmbient = function (unit)
-	return unit:type().."_instanceAmbient_"..tostring(unit:name());
+sneedio._UnitTypeToInstancedAmbient = function (unit, AmbientType)
+	return unit:type().."_instance_ambient_type_"..AmbientType.."_"..tostring(unit:name());
 end
 
 ---------------Battle Events--------------------
@@ -306,7 +299,7 @@ end
 
 sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle = function()
 	for unitInstanceName, selected in pairs(sneedio._MapUnitToSelected) do
-		--print("line 280");
+		--print("line 298");
 		local actualUnit = sneedio._MapUnitInstanceNameToActualUnits[unitInstanceName];
 		if(selected and is_unit(actualUnit)) then	
 			local camPos = BM:camera():position();
@@ -320,15 +313,78 @@ sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle = function()
 end
 
 sneedio._ProcessAmbientUnitSoundBattle = function()	
-	-- local bIsMoving = actualUnit:is_moving();
-	-- local bIsIdle = actualUnit:is_idle();
-	-- local bIsWavering = actualUnit:is_wavering() or 
-						-- actualUnit:is_routing() or 
-						-- actualUnit:is_shattered();
-	-- local bIsWinning = (actualUnit:is_in_melee() or actualUnit:is_rampaging()) and 
-						-- actualUnit:unary_hitpoints() > 0.5;
-	-- local bIsRampaging = actualUnit:is_rampaging();
+	if(sneedio.IsBattleInNormalPlay())then
+		local cameraPos = BM:camera():position();
+	
+		for unitInstanceName, TheActualUnit in pairs(sneedio._MapUnitInstanceNameToActualUnits) do
+			local Distance = cameraPos:distance(TheActualUnit:position());
+			local RollToQueueAmbience = math.random(1,62) == 1;
+			local randomDelay = 3*10;
+			if(Distance < 20 and RollToQueueAmbience) then
+				--print("line 318 -- process ambient sound");
+				if(TheActualUnit:is_idle()) then
+					print("line 326 -- process ambient sound");
+					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Idle");
+					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+				elseif(TheActualUnit:is_wavering() or 
+					   TheActualUnit:is_routing() or
+				       TheActualUnit:is_shattered()) then
+					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Wavering");
+					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+				elseif(TheActualUnit:is_rampaging()) then
+					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Rampage");
+					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+				elseif(TheActualUnit:is_in_melee()) then
+					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Attack");
+					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+				elseif((TheActualUnit:is_in_melee() or 
+						TheActualUnit:is_rampaging()) and
+						TheActualUnit:unary_hitpoints() > 0.5) then
+					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Winning");
+					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+				end
+			end
+		end
+	end
+end
 
+sneedio._ProcessAmbienceQueues = function()
+	local Timestamp = sneedio.GetBattleTicks();
+	for unitInstanceName, queues in pairs(sneedio._AmbienceQueues) do
+		-- print("processed "..unitInstanceName);
+		if(queues and #queues > 0) then
+			local top = queues[1];
+			local camPos = BM:camera():position();
+			print("pop ambiencequeue "..top.InstancedName.." current tick "..tostring(sneedio.GetBattleTicks()));
+			sneedio._PlayVoiceBattle(top.InstancedName, camPos, top.Unit:position());
+			table.remove(queues, 1);
+		end
+	end
+end
+
+sneedio._QueueAmbienceVoiceToPlay = function(unitInstanceName, delayInSecs, theUnit)
+	local Timestamp = sneedio.GetBattleTicks();
+	local Queue = {
+		InstancedName = unitInstanceName,
+		PlayAfterTicks = Timestamp + delayInSecs*1000,
+		Unit = theUnit
+	};
+	-- table.insert(sneedio._AmbienceQueues, Queue);
+	if(not sneedio._AmbienceQueues[unitInstanceName]) then
+		sneedio._AmbienceQueues[unitInstanceName] = {};
+		print("queued new ambience voice "..unitInstanceName.." delayInSecs "..tostring(delayInSecs).." will play at ticks "..tostring(Queue.PlayAfterTicks).." current ticks "..tostring(Timestamp));
+		table.insert(sneedio._AmbienceQueues[unitInstanceName], Queue);
+	elseif(#sneedio._AmbienceQueues[unitInstanceName] < 1) then
+		print("queued new ambience voice "..unitInstanceName.." delayInSecs "..tostring(delayInSecs).." will play at ticks "..tostring(Queue.PlayAfterTicks).." current ticks "..tostring(Timestamp));
+		-- local prev = sneedio._AmbienceQueues[unitInstanceName][#sneedio._AmbienceQueues];
+		-- if(Queue.PlayAfterTicks - prev.PlayAfterTicks < 2*1000)then
+			-- Queue.PlayAfterTicks = Queue.PlayAfterTicks + math.random(2,5)*1000;
+		-- end
+		table.insert(sneedio._AmbienceQueues[unitInstanceName], Queue);
+	else
+		print("queue is overloaded. ");
+	end
+	
 end
 
 sneedio._InitBattle = function(units)
@@ -348,7 +404,6 @@ sneedio._InitBattle = function(units)
 	-- for affirmative voice
 	for _, unit in ipairs(units) do 
 		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Affirmative");
-		local InstancedName = sneedio._UnitTypeToInstancedAffirmative(unit);
 		if(UnitVoices ~= nil) then
 			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Affirmative");
 		else
@@ -359,33 +414,57 @@ sneedio._InitBattle = function(units)
 	-- for abort voice
 	for _, unit in ipairs(units) do 
 		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Abort");
-		local InstancedName = sneedio._UnitTypeToInstancedAbort(unit);
 		if(UnitVoices ~= nil) then
 			sneedio._RegisterVoiceOnBattle(unit, UnitVoices, "Abort");
 		else
 			print("Voice on Abort, Warning unit:"..unit:type().." doesnt have associated voices");
 		end
 	end
+	
+	-- for ambiences voices
+	for _, unit in ipairs(units) do 
+		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Ambiences");
+		if(UnitVoices ~= nil)then
+			for ambientType, ambienceVoices in pairs(UnitVoices) do
+				if(ambienceVoices) then
+					sneedio._RegisterVoiceOnBattle(unit, ambienceVoices, ambientType);
+				end
+			end
+		else
+			print("Voice on Ambiences, Warning unit:"..unit:type().." doesnt have associated voices");
+		end
+	end
+	
 end
 
 sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
 	local unitTypeInstanced = "";
+	
 	if(VoiceType == "Select")then
 		unitTypeInstanced = sneedio._UnitTypeToInstancedSelect(unit);
 	elseif(VoiceType == "Affirmative") then
 		unitTypeInstanced = sneedio._UnitTypeToInstancedAffirmative(unit);
 	elseif(VoiceType == "Abort") then
 		unitTypeInstanced = sneedio._UnitTypeToInstancedAbort(unit);
+	elseif(VoiceType == "Idle" or 
+		   VoiceType == "Attack" or 
+		   VoiceType == "Wavering" or 
+		   VoiceType == "Winning" or 
+		   VoiceType == "Rampage") then
+		unitTypeInstanced = sneedio._UnitTypeToInstancedAmbient(unit, VoiceType);
 	else
 		print("warning, unknown type "..VoiceType.." aborting this function");
 		return;
 	end
+	
 	if(Voices) then
 		sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced] = Voices;
 		for __, filename in ipairs(Voices) do
 			print("attempt to load: "..filename);
 			if(libSneedio.LoadVoiceBattle(filename, unitTypeInstanced)) then
 				print(unitTypeInstanced..": audio loaded "..filename.." for voice type "..VoiceType);
+			else
+				print("warning, failed to load .."..unitTypeInstanced.." filename path: "..filename.." for voice type "..VoiceType.." maybe file doesn't exist or wrong path");
 			end
 		end
 	end
@@ -414,6 +493,10 @@ sneedio._BattleOnTick = function()
 	end
 	
 	sneedio._ProcessSelectedUnitRightClickBattle();
+	sneedio._ProcessAmbientUnitSoundBattle();
+	sneedio._ProcessAmbienceQueues();
+	
+	sneedio._BattleCurrentTicks = sneedio._BattleCurrentTicks + 100;
 end
 
 sneedio._ProcessSpeedEvents = function(eventToProcess)
@@ -536,16 +619,6 @@ sneedio._ListOfRegisteredVoicesOnBattle = {
 	["null"] = {},
 };
 
-sneedio._ListOfRegisteredVoicesForAmbientOnBattle = {
-	["null"] = {
-		["idle"] = {},
-		["attack"] = {},
-		["wavering"] = {},
-		["winning"] = {},
-		["rampage"] = {}
-	}
-};
-
 sneedio._MapUnitToSelected = {
 	["null"] = false,
 };
@@ -554,15 +627,25 @@ sneedio._MapUnitInstanceNameToActualUnits = {
 	["null"] = nil,
 };
 
+sneedio._AmbienceQueues = {};
+
 sneedio._ListOfRegisteredVoices = {
 	["null"] = {
 		["Select"] = {},
 		["Affirmative"] = {},
-		["Hostile"] = {}
+		["Hostile"] = {},
+		["Ambiences"] = {
+			["CampaignMap"] = {},
+			["Idle"] = {},
+			["Attack"] = {},
+			["Wavering"] = {},
+			["Winning"] = {},
+			["Rampage"] = {},
+		},		
 	},
 };
 
-
+sneedio._BattleCurrentTicks = 0;
 
 print("all ok");
 
@@ -594,6 +677,17 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
 		"man_grunt_5.ogg",
 		"man_grunt_3.ogg",
 	},
+	["Ambiences"] = {
+		["Idle"] = {
+			"man_insult_13.ogg",
+			"man_insult_7.ogg",
+			"man_insult_3.ogg",
+		},
+		["Attack"] = {
+			"man_yell_11.ogg",
+			"man_yell_15.ogg"
+		}
+	}
 });
 
 sneedio.Debug();
@@ -632,9 +726,29 @@ local SneedioBattleMain = function()
             end;
         end;
     end;
+	
+	local ForEachUnitsAll = function(FunctionToProcess)
+		local Alliances = BM:alliances();
+		for a = 1, Alliances:count() do
+			local Alliance = Alliances:item(a);
+			local Armies = Alliance:armies();
+			
+			for i = 1, Armies:count() do
+				local CurrentArmy = Armies:item(i);
+				local units = CurrentArmy:units();
+				for j = 1, units:count() do
+					local CurrentUnit = units:item(j);
+					if CurrentUnit then
+						FunctionToProcess(CurrentUnit, CurrentArmy);
+					end;
+				end;
+			end;
+		end
+		
+	end
 
 	local ListOfUnits = {};
-    ForEachUnitsPlayer(function(CurrentUnit, CurrentArmy)
+    ForEachUnitsAll(function(CurrentUnit, CurrentArmy)
 		table.insert(ListOfUnits, CurrentUnit);
 		local instancedName = sneedio._UnitTypeToInstancedSelect(CurrentUnit);
 		sneedio._MapUnitInstanceNameToActualUnits[instancedName] = CurrentUnit;
