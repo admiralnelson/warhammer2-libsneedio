@@ -579,12 +579,21 @@ sneedio._PlayMusic = function (musicData)
 	end
 	table.insert(sneedio._Last2PlayedMusic, musicData);
 	print("now playing "..musicData.FileName.." duration is "..tostring(musicData.MaxDuration));
-	
+	if(libSneedio.PlayMusic(musicData.FileName)) then
+		print("music played...");
+		if(BM) then
+			BM:set_volume(0, 0);
+		end
+	else
+		print("failed to play music: "..musicData.FileName);
+		print("fallback to warscape music");
+		BM:set_volume(0, 1);
+	end
 end
 
 sneedio._MusicTimeTracker = function ()
 	sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-	print(sneedio._CurrentPlayedMusic.CurrentDuration);
+	-- print(sneedio._CurrentPlayedMusic.CurrentDuration);
 end
 
 sneedio._UpdateMusicSituation = function ()
@@ -757,13 +766,15 @@ sneedio._ProcessSelectedUnitOnStopOrBackspaceBattle = function()
 	end
 end
 
+
+-- PRONE TO CRASHING FIX ME PLS
 sneedio._ProcessAmbientUnitSoundBattle = function()	
 	if(sneedio.IsBattleInNormalPlay())then
 		local cameraPos = BM:camera():position();
 	
 		for unitInstanceName, TheActualUnit in pairs(sneedio._MapUnitInstanceNameToActualUnits) do
 			local Distance = cameraPos:distance(TheActualUnit:position());
-			local RollToQueueAmbience = math.random(1,65) == 1;
+			local RollToQueueAmbience = math.random(1,10) == 1;
 			local randomDelay = 9*10; --todo, improve this algo!
 			if(Distance < 40 and RollToQueueAmbience) then
 				--print("line 318 -- process ambient sound");
@@ -887,7 +898,6 @@ sneedio._BattleOnTick = function()
 	end
 	
 	sneedio._ProcessSelectedUnitRightClickBattle();
-	sneedio._ProcessAmbientUnitSoundBattle();
 	sneedio._ProcessAmbienceQueues();
 	
 	sneedio._BattleCurrentTicks = sneedio._BattleCurrentTicks + 100;
@@ -922,7 +932,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 			function()
 				BM:callback(function()
-					sneedio._BattleOnTick();
+					--sneedio._BattleOnTick();
 				end, 0.1);
 			end,
 		true);
@@ -936,7 +946,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 			function()
 				BM:callback(function()
-					sneedio._BattleOnTick();
+					--sneedio._BattleOnTick();
 				end, 0.1);
 			end,
 		true);
@@ -1002,6 +1012,11 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 				end, 0.1);
 			end,
 		true);
+
+		BM:repeat_callback(function ()
+			sneedio._ProcessAmbientUnitSoundBattle();
+		end, 5*1000,
+		"sneedio_process_ambient_event");
 		
 		core:add_listener(
 			"sneedio_button_right_click_test_3",
@@ -1096,7 +1111,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			sneedio._ProcessMusicEvent();
 		end, 3*1000,
 		"sneedio_monitor_music_event");
-
+		
 		-- monitor for general routs here...
 
 		BM:repeat_callback(function ()
@@ -1352,42 +1367,68 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_3", {
 
 sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Deployment", 
 	{
-		FileName = "medieval_2_deploy.mp3",
-		MaxDuration = 60
+		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+		MaxDuration = 210
 	},
 	{
-		FileName = "medieval_2_deploy_1.mp3",
-		MaxDuration = 30
+		FileName = "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+		MaxDuration = 182
+	},
+	{
+		FileName = "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+		MaxDuration = 177
+	},
+	{
+		FileName = "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+		MaxDuration = 162
 	}
 );
 
 sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "FirstEngagement", 
 	{
-		FileName = "medieval_2_approach_1.mp3",
-		MaxDuration = 60
+		FileName = "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+		MaxDuration = 222
 	},
 	{
-		FileName = "medieval_2_approach_2.mp3",
-		MaxDuration = 100
+		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+		MaxDuration = 210
 	},
 	{
-		FileName = "medieval_2_approach_3.mp3",
-		MaxDuration = 120
+		FileName = "music/first_engage/46 Medieval II Total War (First Engagement) 3m 29s.mp3",
+		MaxDuration = 210
+	},
+	{
+		FileName = "music/first_engage/54 Medieval II Total War (First Engagement) 4m 27s.mp3",
+		MaxDuration = 267
 	}
 );
 
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced", 
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
 	{
-		FileName = "medieval_2_Balanced_1.mp3",
-		MaxDuration = 20
+		FileName = "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+		MaxDuration = 248
 	},
 	{
-		FileName = "medieval_2_Balanced_2.mp3",
-		MaxDuration = 50
+		FileName = "music/balanced/44 Medieval II Total War (Balanced) 3m 26s.mp3",
+		MaxDuration = 206
 	},
 	{
-		FileName = "medieval_2_Balanced_3.mp3",
-		MaxDuration = 30
+		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+		MaxDuration = 237
+	}
+);
+
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Losing",
+	{
+		FileName = "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+		MaxDuration = 207
+	}
+);
+
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Losing",
+	{
+		FileName = "music/losing/36 Medieval II Total War (winning) 3m 10s.mp3",
+		MaxDuration = 190
 	}
 );
 
