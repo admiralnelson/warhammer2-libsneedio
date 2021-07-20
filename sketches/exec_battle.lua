@@ -1,9 +1,9 @@
 
 local print = function (x)
-	out("sneedio: "..x);
+	out("chuckio: "..x);
 end;
 
-local MOCK_UP = false;
+local MOCK_UP = true;
 local PATH = "/script/bin/";
 local OUTPUTPATH = "";
 
@@ -66,7 +66,6 @@ local libSneedio = require(DLL_FILENAMES[1]);
 if(libSneedio) then
 
 	print("lib loaded ok");
-  print("debugger is running");
 else
 	local err = nil;
 	local UnpackThemDlls = function()
@@ -135,6 +134,19 @@ local ConcatArray = function (...)
 	return result;
 end
 
+local GetArrayIndexByPred = function (array, pred)
+	for i=1, #array do
+		if(pred(array[i]))then
+			return i;
+		end
+	end
+	return 0;
+end
+
+local HasKey = function (hashMap, key)
+	if(type(hashMap) ~= "table") then return false; end
+	return hashMap[key] ~= nil
+end
 
 local IsBetween = function (Min, Max, X)
 	return Max >= X and X >= Min;
@@ -238,6 +250,7 @@ sneedio.LoadMusic = function (factionId, MusicPlaylist)
 end
 
 sneedio.AddMusicCampaign = function (factionId, fileName)
+	
 	if(sneedio._MusicPlaylist[factionId] and sneedio._MusicPlaylist[factionId]["CampaignMap"])then
 		if(sneedio._MusicPlaylist[factionId]["CampaignMap"])then
 			table.insert(sneedio._MusicPlaylist[factionId]["CampaignMap"], fileName);
@@ -245,10 +258,31 @@ sneedio.AddMusicCampaign = function (factionId, fileName)
 	end
 end
 
-sneedio.AddMusicBattle = function (factionId, Situation, filename)
-	if(sneedio._MusicPlaylist[factionId] and sneedio._MusicPlaylist[factionId]["Battle"])then
-		if(sneedio._MusicPlaylist[factionId]["Battle"][Situation])then
-			table.insert(sneedio._MusicPlaylist[factionId]["Battle"][Situation], filename);
+sneedio.AddMusicBattle = function (factionId, Situation, ...)
+	local fileNamesArr = {...};
+	
+	for _, fileName in ipairs(fileNamesArr) do
+		if(not HasKey(fileName, "FileName") and not HasKey(fileName, "MaxDuration") ) then
+			print("error this element doesn't have FileName and MaxDuration param");
+			var_dump(fileName);
+			return;
+		end
+		if(not sneedio._MusicPlaylist[factionId]) then
+			sneedio._MusicPlaylist[factionId] = {};
+		end
+		if(not sneedio._MusicPlaylist[factionId]["Battle"]) then
+			sneedio._MusicPlaylist[factionId]["Battle"] = {};
+		end
+		if(sneedio._MusicPlaylist[factionId] and sneedio._MusicPlaylist[factionId]["Battle"])then
+			if(not sneedio._MusicPlaylist[factionId]["Battle"][Situation]) then
+				sneedio._MusicPlaylist[factionId]["Battle"][Situation] = {};
+			end
+			if(sneedio._MusicPlaylist[factionId]["Battle"][Situation])then
+				local fileName = fileName;
+				fileName.CurrentDuration = 0;
+				table.insert(sneedio._MusicPlaylist[factionId]["Battle"][Situation], fileName);
+				print("added music for faction "..factionId.." situation "..Situation.." filename "..fileName.FileName.." max duration "..tostring(fileName.MaxDuration));
+			end
 		end
 	end
 end
@@ -287,9 +321,9 @@ end
 
 sneedio.GetPlayerFactionPlaylistForBattle = function (Situation)
 	if(Situation) then	
-		local availableSituations = {"Deployment", "Deployed", "Complete"};
+		local availableSituations = {"Deployment", "Complete", "Balanced", "FirstEngagement", "Losing", "Winning", "LastStand"};
 		if(not InArray(availableSituations, Situation))then
-			print("warn ".."invalid Situation. Situation are {'Deployment', 'Deployed', 'Complete'} yours was "..Situation);
+			print("warn ".."invalid Situation. Situation are {'Deployment', 'Complete', 'FirstEngagement', 'Losing', 'Winning', 'LastStand'} yours was "..Situation);
 		end
 	end
 	local factionKey = sneedio.GetPlayerFaction();
@@ -331,17 +365,20 @@ end
 sneedio.GetNextMusicData = function ()
 	if(BM) then
 		local battlePlaylist = sneedio.GetPlayerFactionPlaylistForBattle(sneedio.GetBattleSituation());
-		local last2PlayedMusic = sneedio._Last2PlayedMusic;
-		local nextPlaylist = {};
-		for _, prevMusic in last2PlayedMusic do
-			for _, nextMusic in battlePlaylist do
-				if(prevMusic.FileName ~= nextMusic.FileName)then
-					table.insert(nextPlaylist, nextMusic);
-				end
-			end
+		--print("battle play list");
+		local rand = math.random(#battlePlaylist);
+		local result = battlePlaylist[rand];
+		--print("prev battle music");
+		--var_dump(sneedio._Last2PlayedMusic);
+		local bPlayed2PrevMusic = GetArrayIndexByPred(sneedio._Last2PlayedMusic, function (e)
+			return result.FileName == e.FileName;
+		end);
+		if(bPlayed2PrevMusic ~= 0) then
+			print("pick music again, hope this time won't be the same");
+			rand = math.random(#battlePlaylist);
+			result = battlePlaylist[rand];
 		end
-		local rand = math.random(#nextPlaylist);
-		return nextPlaylist[rand];
+		return result;
 	end
 end
 
@@ -504,7 +541,7 @@ end
 ---------------------------------PRIVATE methods----------------------------------
 
 sneedio._IsFirstEngagement = function ()
-	return sneedio._BattlePhaseStatus == "FirstEngagement";
+	return sneedio._BattlePhaseStatus == "Deployed";
 end
 
 sneedio._MonitorRoutingUnits = function ()
@@ -534,6 +571,9 @@ end
 --------------------------------Music methods------------------------------------
 
 sneedio._PlayMusic = function (musicData)
+	print("playing music ".. musicData.FileName);
+	sneedio._CurrentPlayedMusic = musicData;
+	sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
 	if(#sneedio._Last2PlayedMusic >= 2) then
 		table.remove(sneedio._Last2PlayedMusic, 1);
 	end
@@ -544,15 +584,17 @@ end
 
 sneedio._MusicTimeTracker = function ()
 	sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
+	print(sneedio._CurrentPlayedMusic.CurrentDuration);
 end
 
 sneedio._UpdateMusicSituation = function ()
+	if(sneedio._CurrentSituation == "Deployment") then return; end
+	if(sneedio._CurrentSituation == "FirstEngagement") then return; end
+
 	local PlayerRouts = sneedio.GetPlayerSideRoutRatioQuick();
 	local EnemyRouts = sneedio.GetPlayerSideRoutRatioQuick();
 
-	if(sneedio._IsFirstEngagement()) then
-		sneedio._CurrentSituation = "FirstEngagement";
-	elseif (IsBetween(0, 0.4, PlayerRouts) and IsBetween(0, 0.4, EnemyRouts))then
+	if (IsBetween(0, 0.4, PlayerRouts) and IsBetween(0, 0.4, EnemyRouts))then
 		sneedio._CurrentSituation = "Balanced";
 	elseif (IsBetween(0.5, 0.7, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
 		sneedio._CurrentSituation = "Losing";
@@ -564,15 +606,33 @@ sneedio._UpdateMusicSituation = function ()
 end
 
 -- called only when transitioning:
--- Deployment -> Deployed.
+-- Deployment -> FirstEngagement.
 -- FirstEngagement Balanced Losing LastStand Winning -> Complete.
 -- FirstEngagement Balanced -> Losing (when general wounded).
 sneedio._ProcessMusicPhaseChanges = function ()
+	print("important phase changes!")
 	sneedio._PlayMusic(sneedio.GetNextMusicData());
 end
 
 sneedio._ProcessMusicEvent = function ()
 	if(sneedio.IsCurrentMusicFinished())then
+		print("music finished, new music pls");
+		-- reset the current music duration.
+		sneedio._CurrentPlayedMusic.CurrentDuration = 0;
+		-- print("current music");
+		-- var_dump(sneedio._CurrentPlayedMusic);
+		-- print("all music");
+		-- var_dump(sneedio._MusicPlaylist);
+		local playlist = sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation];
+		-- var_dump(playlist);
+		local idx = GetArrayIndexByPred(playlist, function (el)
+			return el.FileName == sneedio._CurrentPlayedMusic.FileName;
+		end);
+		-- print("index "..tostring(idx));
+		-- print("current situation: "..sneedio._CurrentSituation);
+		-- var_dump(sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx]);
+		sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx].CurrentDuration = 0;
+		
 		sneedio._PlayMusic(sneedio.GetNextMusicData());
 	end
 	if(sneedio.IsCurrentMusicHalfWaythrough()) then
@@ -943,6 +1003,19 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 		true);
 		
+		core:add_listener(
+			"sneedio_button_right_click_test_3",
+			"ComponentRClickUp",
+			function(context)				
+				return context.string == "root";
+			end,
+			function()
+				BM:callback(function()
+					print("root click click pressed");
+				end, 0.1);
+			end,
+		true);
+
 		sneedio.RegisterCallbackSpeedEventOnBattle("__SneedioInternal", "Paused", function()
 			print("pause the music");
 			print("pause all sound effects");
@@ -971,17 +1044,24 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		end);
 
 		-- used for music callbacks
-		BM:register_phase_change_callback("Deployment", function ()
-			print("battle in Deployment");
+		if(MOCK_UP) then
 			sneedio._BattlePhaseStatus = "Deployment";
 			sneedio._CurrentSituation = "Deployment";
 			sneedio._ProcessMusicPhaseChanges();
-		end);
+		else
+			BM:register_phase_change_callback("Deployment", function ()
+				print("battle in Deployment");
+				sneedio._BattlePhaseStatus = "Deployment";
+				sneedio._CurrentSituation = "Deployment";
+				sneedio._ProcessMusicPhaseChanges();
+			end);
+		end
+		
 
 		BM:register_phase_change_callback("Deployed", function ()
 			print("battle Deployment");
 			sneedio._BattlePhaseStatus = "Deployed";
-			sneedio._CurrentSituation = "Deployed";
+			sneedio._CurrentSituation = "FirstEngagement";
 			sneedio._ProcessMusicPhaseChanges();
 		end);
 
@@ -1000,8 +1080,9 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			true,
 			function ()
 				BM:callback(function()
-					print("change music to heated battle");
-					sneedio._BattlePhaseStatus = "FirstEngagement";
+					print("no longer in FirstEngagement");
+					sneedio._CurrentSituation = "Balanced";
+					sneedio._ProcessMusicPhaseChanges();
 				end, 0.1);
 			end,
 		true);
@@ -1207,6 +1288,16 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
 	}
 });
 
+sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_1", {
+	["Select"] = {
+		"woman_yell_1.ogg", 		
+	},
+	["Affirmative"] = {
+		"woman_yell_2.ogg"
+	}
+});
+
+
 sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
 	["Select"] = {
 		"man_grunt_1.ogg", 
@@ -1233,7 +1324,76 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
 	}
 });
 
+sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_3", {
+	["Select"] = {
+		"man_grunt_1.ogg", 
+		"man_grunt_2.ogg",
+		"man_grunt_5.ogg",
+		"man_grunt_13.ogg",
+		"man_grunt_3.ogg",
+	},
+	["Affirmative"] = {
+		"man_grunt_1.ogg", 
+		"man_grunt_5.ogg",
+		"man_grunt_3.ogg",
+	},
+	["Ambiences"] = {
+		["Idle"] = {
+			"man_insult_13.ogg",
+			"man_insult_7.ogg",
+			"man_insult_3.ogg",
+		},
+		["Attack"] = {
+			"man_yell_11.ogg",
+			"man_yell_15.ogg"
+		}
+	}
+});
+
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Deployment", 
+	{
+		FileName = "medieval_2_deploy.mp3",
+		MaxDuration = 60
+	},
+	{
+		FileName = "medieval_2_deploy_1.mp3",
+		MaxDuration = 30
+	}
+);
+
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "FirstEngagement", 
+	{
+		FileName = "medieval_2_approach_1.mp3",
+		MaxDuration = 60
+	},
+	{
+		FileName = "medieval_2_approach_2.mp3",
+		MaxDuration = 100
+	},
+	{
+		FileName = "medieval_2_approach_3.mp3",
+		MaxDuration = 120
+	}
+);
+
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced", 
+	{
+		FileName = "medieval_2_Balanced_1.mp3",
+		MaxDuration = 20
+	},
+	{
+		FileName = "medieval_2_Balanced_2.mp3",
+		MaxDuration = 50
+	},
+	{
+		FileName = "medieval_2_Balanced_3.mp3",
+		MaxDuration = 30
+	}
+);
+
 sneedio.Debug();
+
+print(sneedio.GetPlayerFaction());
 
 out("hello world");
 
