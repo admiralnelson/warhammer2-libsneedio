@@ -302,10 +302,26 @@ int L_PlayVoiceBattle(lua_State* L)
 		lua_pushstring(L, Msg.data());
 		lua_call(L, 1, 4);
 
-		lua_pushboolean(L, 2);
+		lua_pushinteger(L, 2);
 		return 1;
 	}
+}
 
+int L_IsMusicFileValid(lua_State* L)
+{
+	std::string File = luaL_checkstring(L, 1);
+	bool Result = SneedioMusic::Get().IsFileValid(File);
+
+	if (Result)
+	{
+		lua_pushboolean(L, true);
+		return 1;
+	}
+	else
+	{
+		lua_pushboolean(L, false);
+		return 1;
+	}
 }
 
 int L_PlayMusic(lua_State* L)
@@ -315,7 +331,8 @@ int L_PlayMusic(lua_State* L)
 	int repeats = -1;
 	if (lua_gettop(L) > 1)
 	{
-		repeats = std::stoi(lua_tostring(L, -2));
+		std::string repeat = lua_tostring(L, -2);
+		repeats = std::stoi(repeat.c_str());
 	}
 	if (FileNameParam)
 	{
@@ -326,8 +343,12 @@ int L_PlayMusic(lua_State* L)
 			lua_getglobal(L, "print");
 			lua_pushstring(L, ErrorMsg.data());
 			lua_call(L, 1, 0);
+
+			lua_pushboolean(L, false);
+
+			return 1;
 		}
-		lua_pushboolean(L, false);
+		lua_pushboolean(L, true);
 
 		return 1;
 	}
@@ -365,6 +386,15 @@ int L_MuteMusic(lua_State* L)
 	return 0;
 }
 
+int L_SetMusicVolume(lua_State* L)
+{
+	std::string volume = luaL_checkstring(L, 1);
+	float v = std::atof(volume.c_str());
+	SneedioMusic::Get().SetVolume(v);
+
+	return 0;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -384,6 +414,8 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"Pause", L_Pause},
 	{"MuteSoundFX", L_MuteSoundFX},
 	{"MuteMusic", L_MuteMusic},
+	{"SetMusicVolume", L_SetMusicVolume},
+	{"IsMusicValid", L_IsMusicFileValid},
 	{NULL,NULL}  // last entry; list terminator
 };
 

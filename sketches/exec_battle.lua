@@ -537,6 +537,10 @@ end
 sneedio.GetBattleTicks = function()
 	return sneedio._BattleCurrentTicks;
 end
+
+sneedio.SetMusicVolume = function (amount)
+	libSneedio.SetMusicVolume(tostring(amount));
+end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
@@ -570,8 +574,58 @@ end
 
 --------------------------------Music methods------------------------------------
 
+sneedio._ProcessSmoothMusicTransition = function ()
+	if(sneedio._TransitionMusicFlag == 0) then -- no need to process any transition if flag is not set
+		return;
+	end
+	-- transition to mute
+	if(sneedio._CurrentMusicVolume <= 0 ) then
+		print("current _CurrentMusicVolume is 0, set flag = 2");
+		sneedio._TransitionMusicFlag = 2;
+		
+		local musicData = table.remove(sneedio._TransitionMusicQueue, 1);
+		if(not musicData) then
+			print("unknown music data");
+			return;
+		end
+		if( libSneedio.PlayMusic(musicData.FileName)) then
+			print("music played...");
+			if(BM) then
+				BM:set_volume(0, 0);
+			end
+		else
+			print("failed to play music: "..musicData.FileName);
+			print("fallback to warscape music");
+			BM:set_volume(0, 1);
+		end
+	end
+	-- transition complete
+	if(sneedio._TransitionMusicFlag == 2 and sneedio._CurrentMusicVolume  >= sneedio._MaximumMusicVolume) then
+		print("flag 2, now it is not muted and play audio");
+		sneedio._TransitionMusicFlag = 0;
+		print("set flag to 0");
+	end
+	-- unmute it
+	if(sneedio._TransitionMusicFlag == 2 and sneedio._CurrentMusicVolume <= sneedio._MaximumMusicVolume) then
+		print("processing flag = 2 until not mute");
+		sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume + 0.05;
+		sneedio.SetMusicVolume(sneedio._CurrentMusicVolume);
+	end
+	-- mute it
+	if(sneedio._TransitionMusicFlag == 1) then
+		print("processing flag = 1 until equal to mute");
+		sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume - 0.05;
+		sneedio.SetMusicVolume(sneedio._CurrentMusicVolume);
+	end
+end
+
 sneedio._PlayMusic = function (musicData)
 	print("playing music ".. musicData.FileName);
+	if(not libSneedio.IsMusicValid(musicData.FileName))then
+		print("unable to load file "..musicData.FileName);
+		return;
+	end
+
 	sneedio._CurrentPlayedMusic = musicData;
 	sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
 	if(#sneedio._Last2PlayedMusic >= 2) then
@@ -579,21 +633,15 @@ sneedio._PlayMusic = function (musicData)
 	end
 	table.insert(sneedio._Last2PlayedMusic, musicData);
 	print("now playing "..musicData.FileName.." duration is "..tostring(musicData.MaxDuration));
-	if(libSneedio.PlayMusic(musicData.FileName)) then
-		print("music played...");
-		if(BM) then
-			BM:set_volume(0, 0);
-		end
-	else
-		print("failed to play music: "..musicData.FileName);
-		print("fallback to warscape music");
-		BM:set_volume(0, 1);
-	end
+	-- start mute transition
+	sneedio._TransitionMusicFlag = 1;
+	print("flag is set "..tostring(sneedio._TransitionMusicFlag));
+	table.insert(sneedio._TransitionMusicQueue, musicData);
 end
 
 sneedio._MusicTimeTracker = function ()
 	sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-	-- print(sneedio._CurrentPlayedMusic.CurrentDuration);
+	print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
 end
 
 sneedio._UpdateMusicSituation = function ()
@@ -774,30 +822,35 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 	
 		for unitInstanceName, TheActualUnit in pairs(sneedio._MapUnitInstanceNameToActualUnits) do
 			local Distance = cameraPos:distance(TheActualUnit:position());
-			local RollToQueueAmbience = math.random(1,10) == 1;
+			local RollToQueueAmbience = math.random(40) == 5;
 			local randomDelay = 9*10; --todo, improve this algo!
 			if(Distance < 40 and RollToQueueAmbience) then
 				--print("line 318 -- process ambient sound");
 				if(TheActualUnit:is_idle()) then
 					print("line 326 -- process ambient sound");
 					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Idle");
-					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+					sneedio._PlayVoiceBattle(instancedAmbientName, cameraPos, TheActualUnit:position(), true);
+					--sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
 				elseif(TheActualUnit:is_wavering() or 
 					   TheActualUnit:is_routing() or
 				       TheActualUnit:is_shattered()) then
 					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Wavering");
-					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+					sneedio._PlayVoiceBattle(instancedAmbientName, cameraPos, TheActualUnit:position(), true);
+					--sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
 				elseif(TheActualUnit:is_rampaging()) then
 					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Rampage");
-					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+					sneedio._PlayVoiceBattle(instancedAmbientName, cameraPos, TheActualUnit:position(), true);
+					--sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
 				elseif(TheActualUnit:is_in_melee()) then
 					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Attack");
-					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+					sneedio._PlayVoiceBattle(instancedAmbientName, cameraPos, TheActualUnit:position(), true);
+					--sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
 				elseif((TheActualUnit:is_in_melee() or 
 						TheActualUnit:is_rampaging()) and
 						TheActualUnit:unary_hitpoints() > 0.5) then
 					local instancedAmbientName = sneedio._UnitTypeToInstancedAmbient(TheActualUnit, "Winning");
-					sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
+					sneedio._PlayVoiceBattle(instancedAmbientName, cameraPos, TheActualUnit:position(), true);
+					--sneedio._QueueAmbienceVoiceToPlay(instancedAmbientName, randomDelay, TheActualUnit);
 				end
 			end
 		end
@@ -1080,12 +1133,20 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			sneedio._ProcessMusicPhaseChanges();
 		end);
 
+		BM:register_phase_change_callback("VictoryCountdown", function ()
+			print("battle Deployment");
+			sneedio._BattlePhaseStatus = "VictoryCountdown";
+			sneedio._CurrentSituation = "Winning";
+			sneedio._ProcessMusicPhaseChanges();
+		end);
+
 		BM:register_phase_change_callback("Complete", function ()
 			print("Battle complete in Deployment");
 			sneedio._BattlePhaseStatus = "Complete";
 			sneedio._CurrentSituation = "Complete";
 			sneedio._ProcessMusicPhaseChanges();
 		end);
+
 
 		BM:start_engagement_monitor();
 
@@ -1111,6 +1172,14 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			sneedio._ProcessMusicEvent();
 		end, 3*1000,
 		"sneedio_monitor_music_event");
+
+		BM:repeat_callback(function ()
+			sneedio._ProcessSmoothMusicTransition();
+		end, 100,
+		"sneedio_monitor_music_transition");
+
+		-- get current music volume from config...
+		sneedio._CurrentMusicVolume = 1.0;
 		
 		-- monitor for general routs here...
 
@@ -1253,6 +1322,18 @@ sneedio._ListOfCustomAudio = {};
 --#endregion audio vars
 
 --#region music vars
+
+--get this value from user config
+-- sneedio._ProcessSmoothMusicTransition needs this
+sneedio._MaximumMusicVolume = 1;
+
+-- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
+sneedio._CurrentMusicVolume = 1;
+-- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
+sneedio._TransitionMusicFlag = 0;
+-- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
+sneedio._TransitionMusicQueue = {};
+
 sneedio._CurrentPlayedMusic = {
 	FileName = "None",
 	MaxDuration = 0,
@@ -1396,11 +1477,11 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "FirstEngagement"
 	{
 		FileName = "music/first_engage/46 Medieval II Total War (First Engagement) 3m 29s.mp3",
 		MaxDuration = 210
-	},
-	{
-		FileName = "music/first_engage/54 Medieval II Total War (First Engagement) 4m 27s.mp3",
-		MaxDuration = 267
 	}
+	-- {
+	-- 	FileName = "music/first_engage/54 Medieval II Total War (First Engagement) 4m 27s.mp3",
+	-- 	MaxDuration = 267
+	-- }
 );
 
 sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
@@ -1425,9 +1506,9 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Losing",
 	}
 );
 
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Losing",
+sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Winning",
 	{
-		FileName = "music/losing/36 Medieval II Total War (winning) 3m 10s.mp3",
+		FileName = "music/winning/36 Medieval II Total War (winning) 3m 10s.mp3",
 		MaxDuration = 190
 	}
 );

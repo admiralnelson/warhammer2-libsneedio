@@ -10,6 +10,8 @@ public:
 
 	bool PlayMusic(const std::string& FileName, int Repeats = -1, float FadesInMs = 2000 );
 
+	bool IsFileValid(const std::string& FileName);
+
 	void Pause(bool bIsPaused = true);
 
 	void SetVolume(float Strength);

@@ -14,12 +14,26 @@ bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats, float Fad
 		SoundSource = audeo::load_source(FileName, audeo::AudioType::Music);
 		if (Repeats >= 0)
 		{
-			audeo::play_sound(SoundSource, Repeats, FadesInMs);
+			CurrentMusic = audeo::play_sound(SoundSource, Repeats, FadesInMs);
 		}
 		else
 		{
-			audeo::play_sound(SoundSource, audeo::loop_forever, FadesInMs);
+			CurrentMusic = audeo::play_sound(SoundSource, audeo::loop_forever, FadesInMs);
 		}
+	}
+	catch (const audeo::exception& exception)
+	{
+		std::cout << "unable to load audio: " << exception.what() << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool SneedioMusic::IsFileValid(const std::string& FileName)
+{
+	try
+	{
+		audeo::SoundSource source = audeo::load_source(FileName, audeo::AudioType::Music);		
 	}
 	catch (const audeo::exception& exception)
 	{
@@ -56,6 +70,7 @@ float SneedioMusic::GetVolume()
 void SneedioMusic::Mute(bool mute)
 {
 	bMute = mute;
+	SetVolume(MusicVolume);
 }
 
 SneedioMusic::SneedioMusic() : bMute(false)
