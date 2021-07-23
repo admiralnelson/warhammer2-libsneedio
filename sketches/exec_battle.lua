@@ -313,6 +313,13 @@ sneedio.IsCurrentMusicHalfWaythrough = function ()
 	return (sneedio._CurrentPlayedMusic.CurrentDuration / MaxDur) >= 0.5;
 end
 
+sneedio.IsCurrentMusicQuarterWaythrough = function ()
+	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
+	if(MaxDur <= 0) then return true; end
+	return (sneedio._CurrentPlayedMusic.CurrentDuration / MaxDur) >= 0.25;
+end
+
+
 sneedio.IsCurrentMusicFinished = function ()
 	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
 	if(MaxDur <= 0) then return true; end
@@ -368,16 +375,11 @@ sneedio.GetNextMusicData = function ()
 		--print("battle play list");
 		local rand = math.random(#battlePlaylist);
 		local result = battlePlaylist[rand];
-		--print("prev battle music");
-		--var_dump(sneedio._Last2PlayedMusic);
-		local bPlayed2PrevMusic = GetArrayIndexByPred(sneedio._Last2PlayedMusic, function (e)
-			return result.FileName == e.FileName;
-		end);
-		if(bPlayed2PrevMusic ~= 0) then
-			print("pick music again, hope this time won't be the same");
+		while (result.FileName == sneedio._CurrentPlayedMusic.FileName and #battlePlaylist > 1) do
 			rand = math.random(#battlePlaylist);
 			result = battlePlaylist[rand];
-		end
+			
+		end 
 		return result;
 	end
 end
@@ -460,6 +462,22 @@ end
 --#endregion audio/voices operations
 
 --#region battle helper
+sneedio.GetPlayerGeneralOnBattle = function ()
+	if(BM and sneedio._PlayerGeneral == nil)then
+		local general = nil;
+		ForEachUnitsPlayer(function (Unit, Armies)
+			if(Unit:is_commanding_unit()) then 
+				general = Unit;
+				return;
+			end
+		end);
+		sneedio._PlayerGeneral = general;
+		return general;
+	elseif (BM) then
+		return sneedio._PlayerGeneral;
+	end
+end
+
 sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Callback)
 	print("registered event "..UniqueName.." for event "..EventName);
 	if (not sneedio._ListOfCallbacksForBattleEvent[UniqueName]) then
@@ -568,18 +586,48 @@ sneedio._MonitorRoutingUnits = function ()
 		end
 		TotalPlayerUnits = TotalPlayerUnits + 1;
 	end);
+
+	local General = sneedio.GetPlayerGeneralOnBattle();
+
+	-- check player general state
+	if(General:is_valid_target())then
+		if(General:is_routing() or General:is_wavering() or General:is_shattered())then
+			sneedio._CurrentSituation = "Losing";
+			sneedio._ProcessMusicPhaseChanges();
+		end
+	end
+
 	sneedio._CountPlayerUnits = TotalPlayerUnits;
+	print("sneedio._CountPlayerUnits "..tostring(sneedio._CountPlayerUnits));
 	sneedio._CountPlayerRoutedUnits = PlayerRouting;
+	print("sneedio._CountPlayerRoutedUnits"..tostring(sneedio._CountPlayerRoutedUnits))
 end
 
 --------------------------------Music methods------------------------------------
+
+sneedio._FadeToMuteMusic = function (bMute)
+	if(bMute)then
+		sneedio._bFlagMute = true;
+		sneedio._TransitionMusicFlag = 1;
+	else
+		sneedio._bFlagMute = false;
+		sneedio._TransitionMusicFlag = 2;
+	end
+end
 
 sneedio._ProcessSmoothMusicTransition = function ()
 	if(sneedio._TransitionMusicFlag == 0) then -- no need to process any transition if flag is not set
 		return;
 	end
+
+	-- just mute the music
+	if(sneedio._CurrentMusicVolume <= 0 and sneedio._bFlagMute) then
+		sneedio._TransitionMusicFlag = 0;
+		return;
+	end
+
 	-- transition to mute
-	if(sneedio._CurrentMusicVolume <= 0 ) then
+	if(sneedio._CurrentMusicVolume <= 0) then
 		print("current _CurrentMusicVolume is 0, set flag = 2");
 		sneedio._TransitionMusicFlag = 2;
 		
@@ -622,12 +670,22 @@ end
 sneedio._PlayMusic = function (musicData)
 	print("playing music ".. musicData.FileName);
 	if(not libSneedio.IsMusicValid(musicData.FileName))then
-		print("unable to load file "..musicData.FileName);
+		print("unable to load file "..musicData.FileName.. " this will not change the situation!");
+		return;
+	end
+	-- don't replay the music if the filename is the same with the current played one
+	-- but change the situation	
+	if(sneedio._CurrentPlayedMusic) then
+		sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
+	end
+
+	if(musicData.FileName == sneedio._CurrentPlayedMusic.FileName) then
+		print("same music is being played");
 		return;
 	end
 
 	sneedio._CurrentPlayedMusic = musicData;
-	sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
+	--sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
 	if(#sneedio._Last2PlayedMusic >= 2) then
 		table.remove(sneedio._Last2PlayedMusic, 1);
 	end
@@ -649,15 +707,21 @@ sneedio._UpdateMusicSituation = function ()
 	if(sneedio._CurrentSituation == "FirstEngagement") then return; end
 
 	local PlayerRouts = sneedio.GetPlayerSideRoutRatioQuick();
-	local EnemyRouts = sneedio.GetPlayerSideRoutRatioQuick();
+	print("PlayerRouts" .. tostring(PlayerRouts));
+	local EnemyRouts = sneedio.GetEnemySideRoutRatioQuick();
+	print("EnemyRouts" .. tostring(EnemyRouts));
 
 	if (IsBetween(0, 0.4, PlayerRouts) and IsBetween(0, 0.4, EnemyRouts))then
+		print("changed to balanced");
 		sneedio._CurrentSituation = "Balanced";
 	elseif (IsBetween(0.5, 0.7, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
+		print("changed to losing");
 		sneedio._CurrentSituation = "Losing";
 	elseif (IsBetween(0.7, 1, PlayerRouts) and IsBetween(0, 0.6, EnemyRouts)) then
+		print("changed to last stand");
 		sneedio._CurrentSituation = "LastStand";
 	elseif (IsBetween(0, 0.3, PlayerRouts) and IsBetween(0.8, 1, EnemyRouts)) then
+		print("changed to winning");
 		sneedio._CurrentSituation = "Winning";
 	end
 end
@@ -676,12 +740,13 @@ sneedio._ProcessMusicEvent = function ()
 		print("music finished, new music pls");
 		-- reset the current music duration.
 		sneedio._CurrentPlayedMusic.CurrentDuration = 0;
-		-- print("current music");
-		-- var_dump(sneedio._CurrentPlayedMusic);
-		-- print("all music");
-		-- var_dump(sneedio._MusicPlaylist);
+		print("current music");
+		var_dump(sneedio._CurrentPlayedMusic);
+		print("all music");
+		var_dump(sneedio._MusicPlaylist);
+		print("current situation: "..sneedio._CurrentSituation);
 		local playlist = sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation];
-		-- var_dump(playlist);
+		var_dump(playlist);
 		local idx = GetArrayIndexByPred(playlist, function (el)
 			return el.FileName == sneedio._CurrentPlayedMusic.FileName;
 		end);
@@ -689,10 +754,9 @@ sneedio._ProcessMusicEvent = function ()
 		-- print("current situation: "..sneedio._CurrentSituation);
 		-- var_dump(sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx]);
 		sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx].CurrentDuration = 0;
-		
 		sneedio._PlayMusic(sneedio.GetNextMusicData());
 	end
-	if(sneedio.IsCurrentMusicHalfWaythrough()) then
+	if(sneedio.IsCurrentMusicQuarterWaythrough()) then
 		sneedio._UpdateMusicSituation();
 	end
 end
@@ -1133,7 +1197,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			sneedio._ProcessMusicPhaseChanges();
 		end);
 
-		BM:register_phase_change_callback("VictoryCountdown", function ()
+		BM:setup_victory_callback(function ()
 			print("battle Deployment");
 			sneedio._BattlePhaseStatus = "VictoryCountdown";
 			sneedio._CurrentSituation = "Winning";
@@ -1145,6 +1209,8 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			sneedio._BattlePhaseStatus = "Complete";
 			sneedio._CurrentSituation = "Complete";
 			sneedio._ProcessMusicPhaseChanges();
+			
+			sneedio._FadeToMuteMusic(); -- for testing only!
 		end);
 
 
@@ -1180,13 +1246,11 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
 		-- get current music volume from config...
 		sneedio._CurrentMusicVolume = 1.0;
-		
-		-- monitor for general routs here...
 
 		BM:repeat_callback(function ()
 			sneedio._MonitorRoutingUnits()
-		end, 5*1000, --expensive operations
-		"sneedio_monitor_player+enemies_rallying_units");
+		end, 4*1000, --expensive operations
+		"sneedio_monitor_player+enemies_rallying_units_and_general");
 
 	end
 	
@@ -1270,7 +1334,7 @@ sneedio._CurrentSpeed = "Normal";
 sneedio._ListOfCallbacksForBattleEvent = {};
 sneedio._BattleCurrentTicks = 0;
 sneedio._BattlePhaseStatus = "undefined";
-
+sneedio._PlayerGeneral = nil;
 -- balance of power
 sneedio._CountPlayerUnits = 0;
 sneedio._CountEnemyUnits = 0;
@@ -1281,8 +1345,6 @@ sneedio._CountEnemyRoutedUnits = 0;
 sneedio._CountPlayerRoutedGenerals = 0;
 sneedio._CountEnemyRoutedGenerals = 0;
 
-sneedio._bPlayerGeneralDiesOrWounded = false;
-sneedio._bEnemyGeneralDiesOrWounded = false;
 --#endregion battle event vars
 
 --#region audio vars
@@ -1331,6 +1393,9 @@ sneedio._MaximumMusicVolume = 1;
 sneedio._CurrentMusicVolume = 1;
 -- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
 sneedio._TransitionMusicFlag = 0;
+-- this is controlled by sneedio._FadeToMuteMusic, will affect sneedio._ProcessSmoothMusicTransition
+sneedio._bFlagMute = false;
+
 -- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
 sneedio._TransitionMusicQueue = {};
 
@@ -1473,15 +1538,7 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "FirstEngagement"
 	{
 		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
 		MaxDuration = 210
-	},
-	{
-		FileName = "music/first_engage/46 Medieval II Total War (First Engagement) 3m 29s.mp3",
-		MaxDuration = 210
 	}
-	-- {
-	-- 	FileName = "music/first_engage/54 Medieval II Total War (First Engagement) 4m 27s.mp3",
-	-- 	MaxDuration = 267
-	-- }
 );
 
 sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
@@ -1490,8 +1547,8 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
 		MaxDuration = 248
 	},
 	{
-		FileName = "music/balanced/44 Medieval II Total War (Balanced) 3m 26s.mp3",
-		MaxDuration = 206
+	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s",
+	 	MaxDuration = 208
 	},
 	{
 		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
