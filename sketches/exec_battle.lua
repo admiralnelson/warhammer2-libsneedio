@@ -1,7 +1,16 @@
-
+local math = math;
 local print = function (x)
 	out("chuckio: "..x);
 end;
+
+print("location of load");
+print(tostring(load));
+
+local MOUSE_NORMAL = "1";
+local MOUSE_NOT_ALLOWED = "3"; 
+local MOUSE_ATTACK = "18";
+local MOUSE_MOVE_UNIT = "86";
+local MOUSE_MOVE_UNIT_1 = "86";
 
 local MOCK_UP = true;
 local PATH = "/script/bin/";
@@ -61,11 +70,11 @@ print("line 30 ok");
 
 local sneedio = {};
 
-local libSneedio = require(DLL_FILENAMES[1]);
+local libSneedio =  require(DLL_FILENAMES[1]);-- require2("libsneedio", "luaopen_libsneedio") --require(DLL_FILENAMES[1]);
 
 if(libSneedio) then
-
 	print("lib loaded ok");
+	
 else
 	local err = nil;
 	local UnpackThemDlls = function()
@@ -104,6 +113,8 @@ local BM;
 if core:is_battle() then
     BM = get_bm();
 end
+
+local CM = cm or nil;
 
 local InArray = function (array, item)
 	for _, v in ipairs(array) do
@@ -149,17 +160,44 @@ local HasKey = function (hashMap, key)
 end
 
 local IsBetween = function (Min, Max, X)
+	if(type(Min) == "string")then
+		Min = tonumber(Min);
+	end
+	if(type(Max) == "string")then
+		Max = tonumber(Max);
+	end
+	if(type(X) == "string")then
+		X = tonumber(X);
+	end
 	return Max >= X and X >= Min;
 end
 
+local CampaignCameraToTargetPos = function (cameraPos, heading)
+	if(type(cameraPos)~="table")then
+		return;
+	end
+	return {
+		x=cameraPos.x + math.cos(heading),
+		y=cameraPos.y + math.sin(heading) + 5,
+		z=0
+	};
+end
 
 local CAVectorToSneedVector = function(CAVector)
 	--yeah I have to convert them to string, my DLL can't accept number for some reason.
-	return { 
-		x = tostring(CAVector:get_x()),
-		y = tostring(CAVector:get_y()),
-		z = tostring(CAVector:get_z())
-	};
+	if(is_vector(CAVector)) then
+		return { 
+			x = tostring(CAVector:get_x()),
+			y = tostring(CAVector:get_y()),
+			z = tostring(CAVector:get_z())
+		};
+	elseif(type(CAVector) == "table")then
+		return {
+			x = tostring(CAVector.x),
+			y = tostring(CAVector.y),
+			z = tostring(CAVector.z)
+		}
+	end
 end
 
 local ForEachUnitsPlayer =  function (FunctionToProcess)
@@ -221,6 +259,14 @@ local ForEachUnitsEnemy = function (FunctionToProcess)
 	
 end
 
+local CharacterPositionInCampaign = function (characterScriptInterfaceObject)
+	return {
+		x = characterScriptInterfaceObject:display_position_x(),
+		y = characterScriptInterfaceObject:display_position_y(),
+		z = 0
+	};
+end
+
 sneedio.Pause = function (bPause)
 	libSneedio.Pause(tostring(bPause));
 end
@@ -250,7 +296,6 @@ sneedio.LoadMusic = function (factionId, MusicPlaylist)
 end
 
 sneedio.AddMusicCampaign = function (factionId, fileName)
-	
 	if(sneedio._MusicPlaylist[factionId] and sneedio._MusicPlaylist[factionId]["CampaignMap"])then
 		if(sneedio._MusicPlaylist[factionId]["CampaignMap"])then
 			table.insert(sneedio._MusicPlaylist[factionId]["CampaignMap"], fileName);
@@ -287,6 +332,9 @@ sneedio.AddMusicBattle = function (factionId, Situation, ...)
 	end
 end
 
+-- loaded in battle only
+--#region battle procedures only
+
 sneedio.GetPlayerSideRoutRatioQuick = function ()
 	if(sneedio._CountPlayerUnits == 0) then return 1; end
 	return sneedio._CountPlayerRoutedUnits / sneedio._CountPlayerUnits;
@@ -306,6 +354,8 @@ sneedio.GetEnemySideRoutRatio = function ()
 	sneedio._MonitorRoutingUnits();
 	return sneedio.GetEnemySideRoutRatioQuick();
 end
+
+--#endregion battle procedures only
 
 sneedio.IsCurrentMusicHalfWaythrough = function ()
 	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
@@ -357,9 +407,11 @@ sneedio.GetPlayerFaction = function ()
 	if(BM) then
 		return BM:get_player_army():faction_key();
 	else
-		-- must be in CampaignMap
-		print("warn ".."not implemented! getplayerfaction");
-		return "not implemented";
+		if(CM) then
+			return CM:get_local_faction_name(true);
+		else
+			print("called outside battle or campaign");
+		end
 	end
 end
 
@@ -408,15 +460,34 @@ sneedio.PlayCustomAudio2D = function (identifier , volume)
 	local pos = nil;
 	if(BM)then
 		pos = BM:camera():position();
+	elseif(CM) then
+		local x,y, distance, bearing, height = CM:get_camera_position();
+		pos = {x =x, y=y, z=height};
+	end
+	if(pos)then
 		sneedio.PlayCustomAudio(identifier, pos, 600, volume, pos);
 	end
 end
 
-sneedio.PlayCustomAudio = function(identifier, atPosition, maxDistance, volume, listener)
-	local defaultPosition = v(0,0,0);
-	if(BM)then
-		defaultPosition = BM:camera():position();
+sneedio.PlayCustomAudioCampaign = function (identifier, atPosition, maxDistance, volume)
+	if(not CM) then
+		print("error not in campaign mode");
+		return;
 	end
+
+	local x, y, distance, bearing, h = CM:get_camera_position();
+	local cameraPos = {x=x,y=y,z=h};
+	local target = CampaignCameraToTargetPos(cameraPos, bearing);
+	libSneedio.PlayVoiceBattle(identifier, tostring(1), CAVectorToSneedVector(atPosition), tostring(maxDistance), tostring(volume));
+	sneedio.UpdateCameraPosition(cameraPos, target);
+end
+
+sneedio.PlayCustomAudioBattle = function(identifier, atPosition, maxDistance, volume, listener)
+	if(not BM) then 
+		print("error not in battle mode");
+		return;
+	end
+	local defaultPosition = BM:camera():position();
 	listener = listener or defaultPosition;
 	maxDistance = maxDistance or 400;
 	volume = volume or 1;
@@ -445,7 +516,9 @@ sneedio.PlayCustomAudio = function(identifier, atPosition, maxDistance, volume, 
 	if(res == 0)then
 		print("audio played "..identifier);
 	end
-	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(listener));
+
+	local lookat = BM:camera():target();
+	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(listener), CAVectorToSneedVector(lookat));
 end
 
 sneedio.RegisterVoice = function(unittype, fileNames)
@@ -562,6 +635,197 @@ end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
+--#region campaign procedures
+
+sneedio._InitCampaign = function ()
+	if(CM) then
+		core:add_listener(
+			"sneedio_on_unit_select_campaign",
+			"CharacterSelected",
+			true,
+			function (context)
+				sneedio._SelectedCharacterOnCampaign = context:character();
+
+				var_dump(context:character());
+				sneedio._ProcessSomeCampaignEventIDK();
+				sneedio._ProcessCharacterSelectedCampaign(context:character());
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_on_unit_deselcted_campaign",
+			"CharacterDeselected",
+			true,
+			function(context)
+				sneedio._SelectedCharacterOnCampaign = nil;
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_on_pause_menu",
+			"ShortcutPressed",
+			function (context)
+				var_dump(context.string);
+				return context.string == "escape_menu";
+			end,
+			function (context)
+				print("game paused");
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_mouse_test_detector",
+			"ComponentLClickUp",
+			function (context)
+				var_dump(context);
+				return true
+			end,
+			function (context)
+				print("cursor test");
+				print(libSneedio.GetCursorType());
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_if_pause_or_any_panel_displayed",
+			"PanelOpenedCampaign",
+			function (context)
+				var_dump(context.string);
+				return true;
+			end,
+			function (context)
+				
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_if_diplomatic_panel_displayed",
+			"PanelOpenedCampaign",
+			function (context)
+				return context.string == "diplomacy_dropdown";
+			end,
+			function (context)
+				print("diplomacy is open");
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_if_battle_prompt_displayed",
+			"PendingBattle",
+			true,
+			function (context)
+				print("battle prompt displayed");
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_for_char_movement",
+			"ScriptEventPlayerCharacterFinishedMovingEvent",
+			function (context)
+				var_dump(context);
+				return true
+			end,
+			function (context)
+				print("character moved");
+			end,
+		true);
+
+		CM:repeat_callback(function ()
+			sneedio._campaignTime = sneedio._campaignTime + 1;
+			print("current time "..tostring(sneedio._campaignTime));
+			sneedio._UpdateCamera();
+		end, 1, "sneedio_music_tracker_and_camera_pos");
+
+		CM:repeat_callback(function ()
+			sneedio._ProcessSmoothMusicTransition();
+		end, 0.1, "sneedio_smooth_music_transition");
+
+		CM:repeat_callback(function ()
+			sneedio._MonitorRightClickEvent();
+		end, 0.1, "sneedio_monitor_right_click");
+
+	end
+end
+
+--just for test, will be removed 
+sneedio._ProcessSomeCampaignEventIDK = function ()
+	local x,y,distance, bearing, height = CM:get_camera_position();
+	print("current position");
+	var_dump({x=x,y=y,z=height});
+	var_dump(CampaignCameraToTargetPos({x=x,y=y,z=0}, bearing));
+end
+
+-- will be deleted
+sneedio._ProcessCharacterSelectedCampaign = function (characterObject)
+	print("campaign :"..characterObject:character_type_key());
+	print(characterObject:character_subtype_key());
+	print("pos");
+	var_dump(CharacterPositionInCampaign(characterObject));
+end
+
+sneedio._RegisterCharacterVoiceOnRightClickAndSelect = function (characterKey, VoiceList)
+
+end
+
+sneedio._RegisterCharacterVoiceOnDiplomacy = function (characterKey, VoiceList)
+	
+end
+
+sneedio._RegisterCharacterVoiceOnAmbient = function (characterKey, VoiceList)
+	
+end
+
+sneedio._PlayCharacterOnCampaign = function(unitKey, voiceType, position)
+	if(sneedio._ListOfRegisteredVoices[unitKey])then
+		if(sneedio._ListOfRegisteredVoices[unitKey][voiceType])then
+			print("playing audio for "..unitKey.." type "..voiceType);
+		else
+			print("unit key "..unitKey.. " has no associated voice type "..voiceType);
+		end
+	else
+		print("unit key "..unitKey.. " has no associated voices");
+	end
+end
+
+sneedio._OnRightClickEventWithCharacter = function()
+	print("right click was released");
+	if(sneedio._SelectedCharacterOnCampaign)then
+		local characterKey = sneedio._SelectedCharacterOnCampaign:character_type_key();
+		if(libSneedio.GetCursorType() == MOUSE_NOT_ALLOWED) then
+			print("character key "..characterKey.."says no (hostile)");
+			sneedio._PlayCharacterOnCampaign(characterKey, "Hostile");
+		elseif(libSneedio.GetCursorType() == MOUSE_ATTACK) then
+			print("character key "..characterKey.." says attack (abilities)");
+			sneedio._PlayCharacterOnCampaign(characterKey, "Abilities");
+
+			print("maybe play medieval 2 attack audio here (2D)");
+		else
+			print("character key "..characterKey.." says move (affirmative)");
+			sneedio._PlayCharacterOnCampaign(characterKey, "Affirmative");
+
+			print("cursor type "..libSneedio.GetCursorType());
+		end
+	else
+		print("no unit was selected");
+	end
+end
+
+sneedio._MonitorRightClickEvent = function()
+	if(libSneedio.WasRightClickHeld())then
+		sneedio._RightClickHeldMs = sneedio._RightClickHeldMs + 100;
+	else
+		if(sneedio._RightClickHeldMs >= 100)then
+			sneedio._RightClickHeldMs = 0;
+			sneedio._OnRightClickEventWithCharacter();
+		end
+	end
+end
+
+sneedio._RightClickHeldMs = 0;
+
+--#endregion campaign procedures
+
+--#region only exists in battle
 sneedio._IsFirstEngagement = function ()
 	return sneedio._BattlePhaseStatus == "Deployed";
 end
@@ -602,6 +866,7 @@ sneedio._MonitorRoutingUnits = function ()
 	sneedio._CountPlayerRoutedUnits = PlayerRouting;
 	print("sneedio._CountPlayerRoutedUnits"..tostring(sneedio._CountPlayerRoutedUnits))
 end
+--#endregion only exists in battle
 
 --------------------------------Music methods------------------------------------
 
@@ -643,8 +908,10 @@ sneedio._ProcessSmoothMusicTransition = function ()
 			end
 		else
 			print("failed to play music: "..musicData.FileName);
-			print("fallback to warscape music");
-			BM:set_volume(0, 1);
+			if(BM) then
+				print("fallback to warscape music");
+				BM:set_volume(0, 100);
+			end
 		end
 	end
 	-- transition complete
@@ -698,8 +965,10 @@ sneedio._PlayMusic = function (musicData)
 end
 
 sneedio._MusicTimeTracker = function ()
-	sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-	print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+	if(sneedio._CurrentPlayedMusic or sneedio._CurrentPlayedMusic.FileName ~= "None") then
+		sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
+		print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+	end
 end
 
 sneedio._UpdateMusicSituation = function ()
@@ -735,7 +1004,7 @@ sneedio._ProcessMusicPhaseChanges = function ()
 	sneedio._PlayMusic(sneedio.GetNextMusicData());
 end
 
-sneedio._ProcessMusicEvent = function ()
+sneedio._ProcessMusicEventBattle = function ()
 	if(sneedio.IsCurrentMusicFinished())then
 		print("music finished, new music pls");
 		-- reset the current music duration.
@@ -764,7 +1033,7 @@ end
 ---------------------------Sound effects methods----------------------------------
 
 --#region Sound effects
-
+--#region only exists in battle only
 sneedio._UnitTypeToInstancedSelect = function (unit)
 	return unit:type().."_instance_select_"..tostring(unit:name().."_fac_idx_"..tostring(unit:alliance_index()));
 end
@@ -791,7 +1060,6 @@ end
 
 ---------------Battle Events--------------------
 
-
 sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIsAmbient)
 	bIsAmbient = bIsAmbient or false;
 	print("about to play audio");
@@ -815,7 +1083,10 @@ sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIs
 	else
 		print("no audio regisered for "..unitTypeInstanced);
 	end
-	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(cameraPos));
+	
+	local lookat = BM:camera():target();
+
+	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(cameraPos), CAVectorToSneedVector(lookat));
 	-- print(" at camera pos: ".. v_to_s(cameraPos).. " from: ".. v_to_s(playAtPos));
 end
 
@@ -995,19 +1266,25 @@ sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
 	end
 end
 
+--#endregion only exists in battle only
 --#endregion sound effects
 
 --#region tick procedures
-sneedio._UpdateCameraOnBattle = function()
+sneedio._UpdateCamera = function()
 	if(BM) then
 		local camera = BM:camera();
 		sneedio.UpdateCameraPosition(camera:position(), camera:target());
+	elseif(CM) then
+		local x,y,d,b,h = CM:get_camera_position();
+		local cam = {x=x,y=y,z=h};
+		local target = CampaignCameraToTargetPos(cam, h);
+		sneedio.UpdateCameraPosition(cam, target);
 	end
 end
 
 
 sneedio._BattleOnTick = function()
-	sneedio._UpdateCameraOnBattle();
+	sneedio._UpdateCamera();
 	sneedio._bHasSpeedChanged = sneedio._CurrentSpeed ~= sneedio.GetBattleSpeedMode();
 	sneedio._CurrentSpeed = sneedio.GetBattleSpeedMode();
 	if(sneedio._bHasSpeedChanged) then
@@ -1039,6 +1316,8 @@ end
 sneedio._RegisterSneedioTickBattleFuns = function()
 	
 	if(BM)then
+		print("battle mode");
+
 		sneedio._BattleOnTick();
 		core:add_listener(
 			"sneedio_battletick_0",
@@ -1235,7 +1514,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		"sneedio_monitor_music_time_tracker");
 		
 		BM:repeat_callback(function ()
-			sneedio._ProcessMusicEvent();
+			sneedio._ProcessMusicEventBattle();
 		end, 3*1000,
 		"sneedio_monitor_music_event");
 
@@ -1252,6 +1531,14 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		end, 4*1000, --expensive operations
 		"sneedio_monitor_player+enemies_rallying_units_and_general");
 
+		BM:repeat_callback(function ()
+			if(BM) then
+				local camera = BM:camera();
+				sneedio.UpdateCameraPosition(camera:position(), camera:target());
+				sneedio._BattleOnTick();
+			end
+		end, 100, 
+		"sneedio_monitor_battle_camera_position_and_run_tick_funs");
 	end
 	
 end
@@ -1368,20 +1655,43 @@ sneedio._ListOfRegisteredVoices = {
 		["Affirmative"] = {},
 		["Hostile"] = {},
 		["Abilities"] = {},
+		["Diplomacy"] = {
+			["fac_none"] = {
+				["Hateful"] = {},
+				["Dislike"] = {},
+				["Normal"] = {},
+				["Acquainted"] = {},
+				["Trusted"] = {},
+			}
+		},
 		["Ambiences"] = {
-			["CampaignMap"] = {},
+			["CampaignMap"] = {
+				["Any"] = {},
+				["Desert"] = {},
+				["OldWorld"] = {},
+				["HighElves"] = {},
+				["Lustria"] = {},
+				["Snow"] = {},
+				["Chaos"] = {}
+			},
 			["Idle"] = {},
 			["Attack"] = {},
 			["Wavering"] = {},
 			["Winning"] = {},
 			["Rampage"] = {},
-		},		
+		},
 	},
 };
 
 sneedio._ListOfCustomAudio = {};
 
 --#endregion audio vars
+
+--#region campaign vars
+
+sneedio._SelectedCharacterOnCampaign = nil;
+
+--#endregion campaign vars
 
 --#region music vars
 
@@ -1576,17 +1886,6 @@ print(sneedio.GetPlayerFaction());
 
 out("hello world");
 
-function UpdateCamera()
-	if(BM) then
-		local camera = BM:camera();
-		sneedio.UpdateCameraPosition(camera:position(), camera:target());
-		sneedio._BattleOnTick();
-	end
-end
-
-BM:register_repeating_timer("UpdateCamera", 100);
-sneedio._RegisterSneedioTickBattleFuns();
-
 var_dump(sneedio);
 var_dump(libSneedio);
 
@@ -1626,10 +1925,19 @@ local SneedioBattleMain = function()
             end);
     end);
 	
+	sneedio._RegisterSneedioTickBattleFuns();
+
 	print("battle has sneeded!");
 end
 
+local SneedioCampaignMain = function ()
+	sneedio._InitCampaign();
+	print("campaign has sneeded!");
+end
+
 if BM ~= nil then SneedioBattleMain(); end
+if CM ~= nil then SneedioCampaignMain(); end
+
 
 sneedio.RegisterCallbackSpeedEventOnBattle("test", "Normal", function()
 	print("game is being played");

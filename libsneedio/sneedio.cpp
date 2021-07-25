@@ -3,6 +3,9 @@
 #include "sneedio.h"
 #include "music_library.h"
 #include "audio_library.h"
+#include <sstream>
+#include <iomanip>
+
 extern "C" {
     #include "lua.h"
     #include "lauxlib.h"
@@ -46,6 +49,36 @@ bool InitSneedio()
 		bIsSneedioReady = true;
 		return true;
 	}
+}
+
+typedef int(__fastcall* GET_CURSOR_MODE)(void);
+
+static GET_CURSOR_MODE cursor_mode = nullptr;
+bool SetupCursorDetector()
+{
+	HMODULE Warhammer2EXE = GetModuleHandleA("Warhammer2.exe");
+	if (!Warhammer2EXE)
+	{
+		std::cout << "failed to find base module";;
+		return false;
+	}
+	void* get_mode_empire = (void*)GetProcAddress(Warhammer2EXE, "?get_mode@HARDWARE_CURSOR@EMPIREUTILITY@@YA?AW4CURSOR_MODE@12@XZ");
+	if (!get_mode_empire)
+	{
+		std::cout << "failed to find the procedure";
+		return false;
+	}
+	cursor_mode = (GET_CURSOR_MODE)get_mode_empire;
+}
+
+template< typename T >
+std::string IntToHex(T i)
+{
+	std::stringstream stream;
+	stream << "0x"
+		<< std::setfill('0') << std::setw(sizeof(T) * 2)
+		<< std::hex << i;
+	return stream.str();
 }
 
 extern "C" {
@@ -112,12 +145,21 @@ static void tableDump(lua_State* L, int idx, const char* text)
 */
 
 // TODO: example somefunction, add more here
-int L_somefunction(lua_State* L)
+int L_GetLuaTopMemPos(lua_State* L)
 {
 	// TODO: add implementation
+	lua_gettop(L);
+	void *x = (void*) &lua_gettop;
+
+	std::string test = "Now running somefunction..." + std::to_string((int)x);
 	lua_getglobal(L, "print");
-	lua_pushstring(L, "Now running somefunction...");
+	lua_pushstring(L,test.c_str());
 	lua_call(L, 1, 0);
+
+	std::string retLua_gettopPos = IntToHex<void*>(x);
+
+	lua_pushstring(L, retLua_gettopPos.c_str());;
+	return 1;
 
 #ifndef NDEBUG
 	stackDump(L, "stack from somefunction()");
@@ -125,6 +167,21 @@ int L_somefunction(lua_State* L)
 
 	return 0;	// number of return values on the Lua stack
 };
+
+int L_GetCursorType(lua_State* L)
+{
+	if (cursor_mode == nullptr)
+	{
+		SetupCursorDetector();
+	}
+	if (cursor_mode)
+	{
+		int Mode = cursor_mode();
+		lua_pushstring(L, std::to_string(Mode).c_str());
+		return 1;
+	}
+	return 0;
+}
 
 int L_WasRightClickHeld(lua_State* L)
 {
@@ -395,6 +452,12 @@ int L_SetMusicVolume(lua_State* L)
 	return 0;
 }
 
+int L_KillMe(lua_State* L)
+{
+	audeo::quit();
+	return 0;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -405,7 +468,8 @@ int L_SetMusicVolume(lua_State* L)
 static const struct luaL_Reg LuaExportFunctions[] = {
 
 	// TODO: add functions from 'exposed Lua API' section above
-	{"somefunction",L_somefunction},
+	{"GetLuaTopMemPos",L_GetLuaTopMemPos},
+	{"GetCursorType", L_GetCursorType},
 	{"PlayMusic",L_PlayMusic},
 	{"LoadVoiceBattle",L_LoadVoiceBattle},
 	{"PlayVoiceBattle",L_PlayVoiceBattle},
