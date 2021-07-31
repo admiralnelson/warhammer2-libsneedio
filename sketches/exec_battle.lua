@@ -788,6 +788,28 @@ sneedio._InitCampaign = function ()
 		true);
 
 		core:add_listener(
+			"sneedio_check_if_game_menu_displayed",
+			"PanelOpenedCampaign",
+			function (context)
+				return context.string == "esc_menu_campaign";
+			end,
+			function (context)
+				print("pause the music");
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_if_game_menu_closed",
+			"PanelClosedCampaign",
+			function (context)
+				return context.string == "esc_menu_campaign";
+			end,
+			function (context)
+				print("unpause the music");
+			end,
+		true);
+
+		core:add_listener(
 			"sneedio_check_if_battle_prompt_displayed",
 			"ScriptEventPreBattlePanelOpened",
 			true,
@@ -845,8 +867,7 @@ sneedio._InitCampaign = function ()
 		true);
 
 		CM:repeat_callback(function ()
-			sneedio._campaignTime = sneedio._campaignTime + 1;
-			print("current time "..tostring(sneedio._campaignTime));
+			sneedio._MusicTimeTracker();
 		end, 1, "sneedio_music_tracker");
 		
 		CM:repeat_callback(function ()
