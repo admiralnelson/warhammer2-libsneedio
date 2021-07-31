@@ -1,10 +1,12 @@
 local math = math;
 local print = function (x)
-	out("chuckio: "..x);
+	out("chuckio: "..tostring(x));
 end;
 
 print("location of load");
 print(tostring(load));
+print(string);
+print(string.gsub);
 
 local MOUSE_NORMAL = "1";
 local MOUSE_NOT_ALLOWED = "3"; 
@@ -20,7 +22,7 @@ local OUTPUTPATH = "";
 
 local base64 = require("base64");
 
-local function string(o)
+local function string_(o)
     return '"' .. tostring(o) .. '"'
 end
 
@@ -32,13 +34,13 @@ local function recurse(o, indent)
         local first = true
         for k,v in pairs(o) do
             if first == false then s = s .. ', \n' end
-            if type(k) ~= 'number' then k = string(k) end
+            if type(k) ~= 'number' then k = string_(k) end
             s = s .. indent2 .. '[' .. k .. '] = ' .. recurse(v, indent2)
             first = false
         end
         return s .. '\n' .. indent .. '}'
     else
-        return string(o)
+        return string_(o)
     end
 end
 
@@ -116,13 +118,60 @@ end
 
 local CM = cm or nil;
 
+--#region helper functions
+
+local Split = function (str, delim, maxNb)
+    -- Eliminate bad cases...
+    if string.find(str, delim) == nil then
+       return { str };
+    end
+    if maxNb == nil or maxNb < 1 then
+       maxNb = 0;
+    end
+    local result = {};
+    local pat = "(.-)" .. delim .. "()";
+    local nb = 0;
+    local lastPos;
+    for part, pos in string.gfind(str, pat) do
+       nb = nb + 1;
+       result[nb] = part;
+       lastPos = pos;
+       if nb == maxNb then
+          break;
+       end
+    end
+    -- Handle the last field
+    if nb ~= maxNb then
+       result[nb + 1] = string.sub(str, lastPos);
+    end
+    return result;
+end
+
+local Trim = function (s)
+    return s:match'^%s*(.*%S)' or '';
+end
+
+local FindEl = function (Parent, ElPath)
+	if not is_uicomponent(Parent) then
+		ElPath = Parent;
+		Parent = core:get_ui_root();
+	end
+
+	ElPath = Trim(ElPath);
+	local str = string.gsub(ElPath, "%s*root%s*>%s+", "");
+	local args = Split(str, ">");
+	for k, v in pairs(args) do
+		args[k] = Trim(v);
+	end
+	return find_uicomponent(Parent, unpack(args));
+end
+
 local InArray = function (array, item)
 	for _, v in ipairs(array) do
 		if(v == item) then return true; end
 	end
 	return false;
 end
-
 
 local FilterArray = function (array, pred)
 	local results = {};
@@ -266,6 +315,9 @@ local CharacterPositionInCampaign = function (characterScriptInterfaceObject)
 		z = 0
 	};
 end
+
+
+--#endregion helper functions
 
 sneedio.Pause = function (bPause)
 	libSneedio.Pause(tostring(bPause));
@@ -683,6 +735,9 @@ sneedio._InitCampaign = function ()
 			function (context)
 				print("cursor test");
 				print(libSneedio.GetCursorType());
+				print("element test");
+				var_dump(context);
+				var_dump(context.component);
 			end,
 		true);
 
@@ -730,6 +785,35 @@ sneedio._InitCampaign = function ()
 			end,
 		true);
 
+		core:add_listener(
+			"sneedio_check_for_diplomacy",
+			"DiplomacyNegotiationStarted",
+			function (context)
+				var_dump(context.string);
+				return true;
+			end,
+			function (context)
+				print("diplomacy initated");
+				CM:callback(function ()
+					print("callback after diplomacy initiated");
+					var_dump(sneedio._GetCurrentDiplomacyRightSideString());
+					local TextBoxDiplomacyRight = FindEl(core:get_ui_root(), "root > diplomacy_dropdown > faction_right_status_panel > speech_bubble > dy_text");
+					if(TextBoxDiplomacyRight) then
+						local Text, Code = TextBoxDiplomacyRight:GetStateText();
+						sneedio._CurrentDiplomacyStringRightSide = Text;
+					end
+
+					local TextBoxDiplomacyLeft = FindEl(core:get_ui_root(), "root > diplomacy_dropdown > faction_left_status_panel > speech_bubble > dy_text");
+					if(TextBoxDiplomacyLeft) then
+						local Text, Code = TextBoxDiplomacyLeft:GetStateText();
+						sneedio._CurrentDiplomacyStringLeftSide = Text;
+					end
+
+					sneedio._ProcessDiplomacyEventLateCampaign();
+				end, 0.5);
+			end,
+		true);
+
 		CM:repeat_callback(function ()
 			sneedio._campaignTime = sneedio._campaignTime + 1;
 			print("current time "..tostring(sneedio._campaignTime));
@@ -755,27 +839,43 @@ sneedio._ProcessSomeCampaignEventIDK = function ()
 	var_dump(CampaignCameraToTargetPos({x=x,y=y,z=0}, bearing));
 end
 
--- will be deleted
+sneedio._GetCurrentDiplomacyRightSideString = function()
+	return sneedio._CurrentDiplomacyStringRightSide;
+end
+
+sneedio._GetCurrentDiplomacyLeftSideString = function ()
+	return sneedio._CurrentDiplomacyStringLeftSide;
+end
+
 sneedio._ProcessCharacterSelectedCampaign = function (characterObject)
 	print("campaign :"..characterObject:character_type_key());
 	print(characterObject:character_subtype_key());
 	print("pos");
 	var_dump(CharacterPositionInCampaign(characterObject));
+	sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
 end
 
-sneedio._RegisterCharacterVoiceOnRightClickAndSelect = function (characterKey, VoiceList)
-
-end
-
-sneedio._RegisterCharacterVoiceOnDiplomacy = function (characterKey, VoiceList)
+sneedio._ProcessDiplomacyEventLateCampaign = function ()
 	
 end
 
-sneedio._RegisterCharacterVoiceOnAmbient = function (characterKey, VoiceList)
+sneedio._ProcessDiplomacyScreenCampaign = function ()
 	
 end
 
-sneedio._PlayCharacterOnCampaign = function(unitKey, voiceType, position)
+sneedio._RegisterCharacterVoiceOnRightClickAndSelectCampaign = function (characterKey, VoiceList)
+
+end
+
+sneedio._RegisterCharacterVoiceOnDiplomacyCampaign = function (characterKey, VoiceList)
+	
+end
+
+sneedio._RegisterCharacterVoiceOnAmbientCampaign = function (characterKey, VoiceList)
+	
+end
+
+sneedio._PlayVoiceCharacterOnCampaign = function(unitKey, voiceType, position)
 	if(sneedio._ListOfRegisteredVoices[unitKey])then
 		if(sneedio._ListOfRegisteredVoices[unitKey][voiceType])then
 			print("playing audio for "..unitKey.." type "..voiceType);
@@ -793,15 +893,15 @@ sneedio._OnRightClickEventWithCharacter = function()
 		local characterKey = sneedio._SelectedCharacterOnCampaign:character_type_key();
 		if(libSneedio.GetCursorType() == MOUSE_NOT_ALLOWED) then
 			print("character key "..characterKey.."says no (hostile)");
-			sneedio._PlayCharacterOnCampaign(characterKey, "Hostile");
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Hostile");
 		elseif(libSneedio.GetCursorType() == MOUSE_ATTACK) then
 			print("character key "..characterKey.." says attack (abilities)");
-			sneedio._PlayCharacterOnCampaign(characterKey, "Abilities");
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Abilities");
 
 			print("maybe play medieval 2 attack audio here (2D)");
 		else
 			print("character key "..characterKey.." says move (affirmative)");
-			sneedio._PlayCharacterOnCampaign(characterKey, "Affirmative");
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Affirmative");
 
 			print("cursor type "..libSneedio.GetCursorType());
 		end
@@ -816,12 +916,20 @@ sneedio._MonitorRightClickEvent = function()
 	else
 		if(sneedio._RightClickHeldMs >= 100)then
 			sneedio._RightClickHeldMs = 0;
-			sneedio._OnRightClickEventWithCharacter();
+			if(CM) then
+				sneedio._OnRightClickEventWithCharacter();
+			end
 		end
 	end
 end
 
 sneedio._RightClickHeldMs = 0;
+
+sneedio._CurrentDiplomacyStringRightSide = "";
+
+sneedio._CurrentDiplomacyStringLeftSide = "";
+
+sneedio._MapFactionIdToFactionLeader = {};
 
 --#endregion campaign procedures
 
@@ -1656,13 +1764,8 @@ sneedio._ListOfRegisteredVoices = {
 		["Hostile"] = {},
 		["Abilities"] = {},
 		["Diplomacy"] = {
-			["fac_none"] = {
-				["Hateful"] = {},
-				["Dislike"] = {},
-				["Normal"] = {},
-				["Acquainted"] = {},
-				["Trusted"] = {},
-			}
+			["Diplomacy_str_x"] = "",
+			["Diplomacy_str_y"] = "",
 		},
 		["Ambiences"] = {
 			["CampaignMap"] = {
