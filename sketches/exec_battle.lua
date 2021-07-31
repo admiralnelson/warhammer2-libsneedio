@@ -147,6 +147,15 @@ local Split = function (str, delim, maxNb)
     return result;
 end
 
+local TrimPrefix = function (s, prefix)
+	local t = (s:sub(0, #prefix) == prefix) and s:sub(#prefix+1) or s;
+	return t;
+end
+
+local StartsWith = function (s, prefix)
+	return string.sub(s,1,string.len(prefix))==prefix;
+end
+
 local Trim = function (s)
     return s:match'^%s*(.*%S)' or '';
 end
@@ -221,13 +230,13 @@ local IsBetween = function (Min, Max, X)
 	return Max >= X and X >= Min;
 end
 
-local CampaignCameraToTargetPos = function (cameraPos, heading)
+local CampaignCameraToTargetPos = function (cameraPos, bearing)
 	if(type(cameraPos)~="table")then
 		return;
 	end
 	return {
-		x=cameraPos.x + math.cos(heading),
-		y=cameraPos.y + math.sin(heading) + 5,
+		x=cameraPos.x + math.cos(bearing),
+		y=cameraPos.y + math.sin(bearing) + 5,
 		z=0
 	};
 end
@@ -742,6 +751,20 @@ sneedio._InitCampaign = function ()
 		true);
 
 		core:add_listener(
+			"sneedio_diplomacy_panel_onclick",
+			"ComponentLClickUp",
+			function (context)
+				local name = context.string;
+				return StartsWith(name, "faction_row_entry_");
+			end,
+			function (context)
+				local factionId = TrimPrefix(context.string, "faction_row_entry_")
+				print("faction selected "..factionId);
+				sneedio._ProcessDiplomacyOnClickAtFactionItemCampaign(factionId);
+			end,
+		true);
+
+		core:add_listener(
 			"sneedio_check_if_pause_or_any_panel_displayed",
 			"PanelOpenedCampaign",
 			function (context)
@@ -766,10 +789,21 @@ sneedio._InitCampaign = function ()
 
 		core:add_listener(
 			"sneedio_check_if_battle_prompt_displayed",
-			"PendingBattle",
+			"ScriptEventPreBattlePanelOpened",
 			true,
-			function (context)
+			function ()
 				print("battle prompt displayed");
+				print("play attack campaign music here");
+			end,
+		true);
+
+		core:add_listener(
+			"sneedio_check_if_battle_prompt_is_closed",
+			"ScriptEventPreBattlePanelOpened",
+			true,
+			function ()
+				print("battle prompt cloosed");
+				print("stop attack campaign music here");
 			end,
 		true);
 
@@ -788,15 +822,11 @@ sneedio._InitCampaign = function ()
 		core:add_listener(
 			"sneedio_check_for_diplomacy",
 			"DiplomacyNegotiationStarted",
-			function (context)
-				var_dump(context.string);
-				return true;
-			end,
-			function (context)
+			true,
+			function ()
 				print("diplomacy initated");
 				CM:callback(function ()
 					print("callback after diplomacy initiated");
-					var_dump(sneedio._GetCurrentDiplomacyRightSideString());
 					local TextBoxDiplomacyRight = FindEl(core:get_ui_root(), "root > diplomacy_dropdown > faction_right_status_panel > speech_bubble > dy_text");
 					if(TextBoxDiplomacyRight) then
 						local Text, Code = TextBoxDiplomacyRight:GetStateText();
@@ -809,7 +839,7 @@ sneedio._InitCampaign = function ()
 						sneedio._CurrentDiplomacyStringLeftSide = Text;
 					end
 
-					sneedio._ProcessDiplomacyEventLateCampaign();
+					sneedio._ProcessDiplomacyOnEngagementCampaign();
 				end, 0.5);
 			end,
 		true);
@@ -817,11 +847,11 @@ sneedio._InitCampaign = function ()
 		CM:repeat_callback(function ()
 			sneedio._campaignTime = sneedio._campaignTime + 1;
 			print("current time "..tostring(sneedio._campaignTime));
-			sneedio._UpdateCamera();
-		end, 1, "sneedio_music_tracker_and_camera_pos");
-
+		end, 1, "sneedio_music_tracker");
+		
 		CM:repeat_callback(function ()
 			sneedio._ProcessSmoothMusicTransition();
+			sneedio._UpdateCamera();
 		end, 0.1, "sneedio_smooth_music_transition");
 
 		CM:repeat_callback(function ()
@@ -839,28 +869,58 @@ sneedio._ProcessSomeCampaignEventIDK = function ()
 	var_dump(CampaignCameraToTargetPos({x=x,y=y,z=0}, bearing));
 end
 
-sneedio._GetCurrentDiplomacyRightSideString = function()
-	return sneedio._CurrentDiplomacyStringRightSide;
-end
-
-sneedio._GetCurrentDiplomacyLeftSideString = function ()
-	return sneedio._CurrentDiplomacyStringLeftSide;
-end
-
 sneedio._ProcessCharacterSelectedCampaign = function (characterObject)
 	print("campaign :"..characterObject:character_type_key());
 	print(characterObject:character_subtype_key());
 	print("pos");
 	var_dump(CharacterPositionInCampaign(characterObject));
-	sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
+	local playerFaction = CM:get_local_faction(true); -- warning;
+	local selectedCharFaction = characterObject:faction();
+	if(playerFaction:name() == selectedCharFaction:name()) then
+		sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
+	else
+		local bIsAtWar = selectedCharFaction:at_war_with(playerFaction);
+		if(bIsAtWar)then
+			sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Hostile");
+		else
+			sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
+		end
+	end
 end
 
-sneedio._ProcessDiplomacyEventLateCampaign = function ()
-	
+sneedio._ProcessDiplomacyOnClickAtFactionItemCampaign = function (factionId)
+	local faction = CM:get_faction(factionId);
+	local leader = faction:faction_leader();
+	local charLeaderId = leader:character_subtype_key();
+	print("faction "..factionId.." charLeaderId "..charLeaderId);
+	sneedio._PlayVoiceCharacterOnCampaign(charLeaderId, "Affirmative");
+	sneedio._CurrentDiplomacySelectedFaction = faction;
 end
 
-sneedio._ProcessDiplomacyScreenCampaign = function ()
+sneedio._ProcessDiplomacyOnEngagementCampaign = function ()
+	local stringLeftSide = sneedio._CurrentDiplomacyStringLeftSide;
+	local stringRightSide = sneedio._CurrentDiplomacyStringRightSide;
 	
+	if(stringRightSide ~= "") then -- player requesting diplomacy
+		print("local player request diplo");
+		print("bubble on the right side "..stringRightSide);
+		if(is_faction(sneedio._CurrentDiplomacySelectedFaction))then
+			local targetFaction = sneedio._CurrentDiplomacySelectedFaction;
+			local leader = targetFaction:faction_leader();
+			local leaderId = leader:character_subtype_key();
+			sneedio._PlayVoiceCharacterDiplomacyOnCampaign(leaderId, stringLeftSide);
+		end
+	elseif(stringLeftSide ~= "") then -- player got diplomacy request from bot or other player
+		print("local player got request diplo from ai/player");
+		print("bubble on the left side "..stringLeftSide);
+		local playerLeaderChar = CM:get_local_faction(true):faction_leader(); -- warning
+		local playerLeaderId = playerLeaderChar:character_subtype_key();
+		sneedio._PlayVoiceCharacterDiplomacyOnCampaign(playerLeaderId, stringLeftSide);
+	end
+
+	-- clear left and right diplomatic bubble text left and right
+	sneedio._CurrentDiplomacyStringRightSide = "";
+	sneedio._CurrentDiplomacyStringLeftSide = "";
 end
 
 sneedio._RegisterCharacterVoiceOnRightClickAndSelectCampaign = function (characterKey, VoiceList)
@@ -873,6 +933,22 @@ end
 
 sneedio._RegisterCharacterVoiceOnAmbientCampaign = function (characterKey, VoiceList)
 	
+end
+
+sneedio._PlayVoiceCharacterDiplomacyOnCampaign = function (unitKey, diplomacyString)
+	if(sneedio._ListOfRegisteredVoices[unitKey])then
+		if(sneedio._ListOfRegisteredVoices[unitKey]["Diplomacy"])then
+			if(sneedio._ListOfRegisteredVoices[unitKey]["Diplomacy"][diplomacyString])then
+				print("playing diplomacy audio for "..unitKey.." from this quote "..diplomacyString);
+			else
+				print("unit key "..unitKey.." has no diplomacy voice with this quote "..diplomacyString);
+			end
+		else
+			print("unit key "..unitKey.." has no diplomacy voice");
+		end
+	else
+		print("unit key "..unitKey.. " has no associated voices");
+	end
 end
 
 sneedio._PlayVoiceCharacterOnCampaign = function(unitKey, voiceType, position)
@@ -890,7 +966,14 @@ end
 sneedio._OnRightClickEventWithCharacter = function()
 	print("right click was released");
 	if(sneedio._SelectedCharacterOnCampaign)then
-		local characterKey = sneedio._SelectedCharacterOnCampaign:character_type_key();
+		
+		local playerFaction = CM:get_local_faction(true); -- warning;
+		local bIsSelectedCharOwnedByPlayer = sneedio._SelectedCharacterOnCampaign:faction():name() == playerFaction:name();
+		if(not bIsSelectedCharOwnedByPlayer) then
+			return; -- don't play audio on rightclick if char is not owned by player!
+		end
+
+		local characterKey = sneedio._SelectedCharacterOnCampaign:character_subtype_key();
 		if(libSneedio.GetCursorType() == MOUSE_NOT_ALLOWED) then
 			print("character key "..characterKey.."says no (hostile)");
 			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Hostile");
@@ -925,11 +1008,15 @@ end
 
 sneedio._RightClickHeldMs = 0;
 
+sneedio._CurrentDiplomacySelectedFaction = nil;
+
 sneedio._CurrentDiplomacyStringRightSide = "";
 
 sneedio._CurrentDiplomacyStringLeftSide = "";
 
 sneedio._MapFactionIdToFactionLeader = {};
+
+sneedio._MapLocalisedFactionToFactionId = {};
 
 --#endregion campaign procedures
 
@@ -1384,8 +1471,8 @@ sneedio._UpdateCamera = function()
 		sneedio.UpdateCameraPosition(camera:position(), camera:target());
 	elseif(CM) then
 		local x,y,d,b,h = CM:get_camera_position();
-		local cam = {x=x,y=y,z=h};
-		local target = CampaignCameraToTargetPos(cam, h);
+		local cam = {x=x,y=y,z=0};
+		local target = CampaignCameraToTargetPos(cam, b);
 		sneedio.UpdateCameraPosition(cam, target);
 	end
 end
