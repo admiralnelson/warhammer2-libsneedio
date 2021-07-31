@@ -869,6 +869,11 @@ sneedio._ProcessSomeCampaignEventIDK = function ()
 	var_dump(CampaignCameraToTargetPos({x=x,y=y,z=0}, bearing));
 end
 
+sneedio._ProcessWhen3BattleOptionIsHovered = function (whichButton)
+	print("general on player faction side ");
+	print("button was hovered "..whichButton);
+end
+
 sneedio._ProcessCharacterSelectedCampaign = function (characterObject)
 	print("campaign :"..characterObject:character_type_key());
 	print(characterObject:character_subtype_key());
@@ -1013,10 +1018,6 @@ sneedio._CurrentDiplomacySelectedFaction = nil;
 sneedio._CurrentDiplomacyStringRightSide = "";
 
 sneedio._CurrentDiplomacyStringLeftSide = "";
-
-sneedio._MapFactionIdToFactionLeader = {};
-
-sneedio._MapLocalisedFactionToFactionId = {};
 
 --#endregion campaign procedures
 
@@ -1869,6 +1870,9 @@ sneedio._ListOfRegisteredVoices = {
 			["Wavering"] = {},
 			["Winning"] = {},
 			["Rampage"] = {},
+			["EnslaveOption"] = {},
+			["KillOption"] = {},
+			["RansomOption"] = {},
 		},
 	},
 };
