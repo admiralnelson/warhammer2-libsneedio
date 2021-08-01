@@ -437,6 +437,21 @@ sneedio.IsCurrentMusicFinished = function ()
 	return sneedio._CurrentPlayedMusic.CurrentDuration >= MaxDur;
 end
 
+sneedio.GetPlayerFactionPlaylistForCampaign = function ()
+	if(CM)then
+		local factionKey = sneedio.GetPlayerFaction();
+		if(sneedio._MusicPlaylist[factionKey])then
+			if(sneedio._MusicPlaylist[factionKey]["CampaignMap"])then
+				return sneedio._MusicPlaylist[factionKey]["CampaignMap"];
+			else
+				print("faction "..factionKey.." has no campaign map music playlist");
+			end
+		else
+			print("faction "..factionKey.." has no playlist registered");
+		end
+	end
+end
+
 sneedio.GetPlayerFactionPlaylistForBattle = function (Situation)
 	if(Situation) then	
 		local availableSituations = {"Deployment", "Complete", "Balanced", "FirstEngagement", "Losing", "Winning", "LastStand"};
@@ -467,12 +482,10 @@ end
 sneedio.GetPlayerFaction = function ()
 	if(BM) then
 		return BM:get_player_army():faction_key();
+	elseif(CM) then
+		return CM:get_local_faction_name(true); -- warning
 	else
-		if(CM) then
-			return CM:get_local_faction_name(true);
-		else
-			print("called outside battle or campaign");
-		end
+		print("called outside battle or campaign");
 	end
 end
 
@@ -483,18 +496,23 @@ sneedio.GetBattleSituation = function ()
 end
 
 sneedio.GetNextMusicData = function ()
+	local Playlist = {};
 	if(BM) then
-		local battlePlaylist = sneedio.GetPlayerFactionPlaylistForBattle(sneedio.GetBattleSituation());
-		--print("battle play list");
-		local rand = math.random(#battlePlaylist);
-		local result = battlePlaylist[rand];
-		while (result.FileName == sneedio._CurrentPlayedMusic.FileName and #battlePlaylist > 1) do
-			rand = math.random(#battlePlaylist);
-			result = battlePlaylist[rand];
-			
-		end 
-		return result;
+		Playlist = sneedio.GetPlayerFactionPlaylistForBattle(sneedio.GetBattleSituation());
+	elseif(CM)then
+		Playlist = sneedio.GetPlayerFactionPlaylistForCampaign();
+	else
+		print("ERROR!. called outside campaign or battle mode!");
+		return;
 	end
+	--print("battle play list");
+	local rand = math.random(#Playlist);
+	local result = Playlist[rand];
+	while (result.FileName == sneedio._CurrentPlayedMusic.FileName and #Playlist > 1) do
+		rand = math.random(#Playlist);
+		result = Playlist[rand];
+	end 
+	return result;
 end
 
 --#region audio/voice operations
@@ -698,6 +716,26 @@ end
 
 --#region campaign procedures
 
+sneedio._CharTypeToSelect = function (charKey)
+	return charKey.."_Select";
+end
+
+sneedio._CharTypeToAffirmative = function (charKey)
+	return charKey.."_Affirmative";
+end
+
+sneedio._CharTypeToHostile = function (charKey)
+	return charKey.."_Hostile";
+end
+
+sneedio._CharTypeToAbilities = function (charKey)
+	return charKey.."_Abilities";
+end
+
+sneedio._CharDialogToDiplomacy = function (dialog)
+	return dialog.."_Dialog";
+end
+
 sneedio._InitCampaign = function ()
 	if(CM) then
 		core:add_listener(
@@ -723,34 +761,6 @@ sneedio._InitCampaign = function ()
 		true);
 
 		core:add_listener(
-			"sneedio_on_pause_menu",
-			"ShortcutPressed",
-			function (context)
-				var_dump(context.string);
-				return context.string == "escape_menu";
-			end,
-			function (context)
-				print("game paused");
-			end,
-		true);
-
-		core:add_listener(
-			"sneedio_mouse_test_detector",
-			"ComponentLClickUp",
-			function (context)
-				var_dump(context);
-				return true
-			end,
-			function (context)
-				print("cursor test");
-				print(libSneedio.GetCursorType());
-				print("element test");
-				var_dump(context);
-				var_dump(context.component);
-			end,
-		true);
-
-		core:add_listener(
 			"sneedio_diplomacy_panel_onclick",
 			"ComponentLClickUp",
 			function (context)
@@ -761,18 +771,6 @@ sneedio._InitCampaign = function ()
 				local factionId = TrimPrefix(context.string, "faction_row_entry_")
 				print("faction selected "..factionId);
 				sneedio._ProcessDiplomacyOnClickAtFactionItemCampaign(factionId);
-			end,
-		true);
-
-		core:add_listener(
-			"sneedio_check_if_pause_or_any_panel_displayed",
-			"PanelOpenedCampaign",
-			function (context)
-				var_dump(context.string);
-				return true;
-			end,
-			function (context)
-				
 			end,
 		true);
 
@@ -795,6 +793,8 @@ sneedio._InitCampaign = function ()
 			end,
 			function (context)
 				print("pause the music");
+				sneedio.Pause(true);
+				sneedio.MuteSoundFX(true);
 			end,
 		true);
 
@@ -806,6 +806,8 @@ sneedio._InitCampaign = function ()
 			end,
 			function (context)
 				print("unpause the music");
+				sneedio.Pause(false);
+				sneedio.MuteSoundFX(false);
 			end,
 		true);
 
@@ -868,6 +870,7 @@ sneedio._InitCampaign = function ()
 
 		CM:repeat_callback(function ()
 			sneedio._MusicTimeTracker();
+			sneedio._ProcessMusicState();
 		end, 1, "sneedio_music_tracker");
 		
 		CM:repeat_callback(function ()
@@ -879,6 +882,18 @@ sneedio._InitCampaign = function ()
 			sneedio._MonitorRightClickEvent();
 		end, 0.1, "sneedio_monitor_right_click");
 
+		sneedio._RegisterAllCharactersVoiceCampaign();
+	end
+end
+
+sneedio._GetCameraPositionCampaign = function ()
+	local x,y,distance, bearing, height = CM:get_camera_position();
+	return {x=x,y=y,z=height};
+end
+
+sneedio._ProcessMusicState = function ()
+	if(sneedio.IsCurrentMusicFinished()) then
+		sneedio._PlayMusic(sneedio.GetNextMusicData());
 	end
 end
 
@@ -902,14 +917,22 @@ sneedio._ProcessCharacterSelectedCampaign = function (characterObject)
 	var_dump(CharacterPositionInCampaign(characterObject));
 	local playerFaction = CM:get_local_faction(true); -- warning;
 	local selectedCharFaction = characterObject:faction();
+	local charKey = characterObject:character_subtype_key();
+	local handle = "";
+	var_dump(playerFaction:name());
+	var_dump(selectedCharFaction:name());
+	var_dump(playerFaction:name() == selectedCharFaction:name());
 	if(playerFaction:name() == selectedCharFaction:name()) then
-		sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
+		handle = sneedio._CharTypeToSelect(charKey);
+		sneedio._PlayVoiceCharacterOnCampaign(handle);
 	else
 		local bIsAtWar = selectedCharFaction:at_war_with(playerFaction);
 		if(bIsAtWar)then
-			sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Hostile");
+			handle = sneedio._CharTypeToSelect(charKey);
+			sneedio._PlayVoiceCharacterOnCampaign(handle);
 		else
-			sneedio._PlayVoiceCharacterOnCampaign(characterObject:character_subtype_key(), "Affirmative");
+			handle = sneedio._CharTypeToHostile(charKey);
+			sneedio._PlayVoiceCharacterOnCampaign(handle);
 		end
 	end
 end
@@ -919,7 +942,8 @@ sneedio._ProcessDiplomacyOnClickAtFactionItemCampaign = function (factionId)
 	local leader = faction:faction_leader();
 	local charLeaderId = leader:character_subtype_key();
 	print("faction "..factionId.." charLeaderId "..charLeaderId);
-	sneedio._PlayVoiceCharacterOnCampaign(charLeaderId, "Affirmative");
+	local handle = sneedio._CharTypeToSelect(charLeaderId);
+	sneedio._PlayVoiceCharacterOnCampaign(handle);
 	sneedio._CurrentDiplomacySelectedFaction = faction;
 end
 
@@ -934,14 +958,16 @@ sneedio._ProcessDiplomacyOnEngagementCampaign = function ()
 			local targetFaction = sneedio._CurrentDiplomacySelectedFaction;
 			local leader = targetFaction:faction_leader();
 			local leaderId = leader:character_subtype_key();
-			sneedio._PlayVoiceCharacterDiplomacyOnCampaign(leaderId, stringLeftSide);
+			local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringRightSide);
+			sneedio._PlayVoiceCharacterOnCampaign(stringToDiploKey, leaderId);
 		end
 	elseif(stringLeftSide ~= "") then -- player got diplomacy request from bot or other player
 		print("local player got request diplo from ai/player");
 		print("bubble on the left side "..stringLeftSide);
 		local playerLeaderChar = CM:get_local_faction(true):faction_leader(); -- warning
 		local playerLeaderId = playerLeaderChar:character_subtype_key();
-		sneedio._PlayVoiceCharacterDiplomacyOnCampaign(playerLeaderId, stringLeftSide);
+		local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringLeftSide);
+		sneedio._PlayVoiceCharacterOnCampaign(stringToDiploKey, playerLeaderId);
 	end
 
 	-- clear left and right diplomatic bubble text left and right
@@ -949,43 +975,107 @@ sneedio._ProcessDiplomacyOnEngagementCampaign = function ()
 	sneedio._CurrentDiplomacyStringLeftSide = "";
 end
 
-sneedio._RegisterCharacterVoiceOnRightClickAndSelectCampaign = function (characterKey, VoiceList)
-
-end
-
-sneedio._RegisterCharacterVoiceOnDiplomacyCampaign = function (characterKey, VoiceList)
-	
-end
-
-sneedio._RegisterCharacterVoiceOnAmbientCampaign = function (characterKey, VoiceList)
-	
-end
-
-sneedio._PlayVoiceCharacterDiplomacyOnCampaign = function (unitKey, diplomacyString)
-	if(sneedio._ListOfRegisteredVoices[unitKey])then
-		if(sneedio._ListOfRegisteredVoices[unitKey]["Diplomacy"])then
-			if(sneedio._ListOfRegisteredVoices[unitKey]["Diplomacy"][diplomacyString])then
-				print("playing diplomacy audio for "..unitKey.." from this quote "..diplomacyString);
-			else
-				print("unit key "..unitKey.." has no diplomacy voice with this quote "..diplomacyString);
-			end
-		else
-			print("unit key "..unitKey.." has no diplomacy voice");
-		end
-	else
-		print("unit key "..unitKey.. " has no associated voices");
+sneedio._RegisterAllCharactersVoiceCampaign = function ()
+	for key, _ in pairs(sneedio._ListOfRegisteredVoices) do
+		print("registering "..key);
+		sneedio._RegisterCharacterVoiceCampaign(key);
 	end
 end
 
-sneedio._PlayVoiceCharacterOnCampaign = function(unitKey, voiceType, position)
-	if(sneedio._ListOfRegisteredVoices[unitKey])then
-		if(sneedio._ListOfRegisteredVoices[unitKey][voiceType])then
-			print("playing audio for "..unitKey.." type "..voiceType);
-		else
-			print("unit key "..unitKey.. " has no associated voice type "..voiceType);
+sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
+	local voices = sneedio._ListOfRegisteredVoices[characterKey];
+	if(voices)then
+		if(voices["Select"])then
+			for _, subvoice in ipairs(voices["Select"]) do
+				local charType = sneedio._CharTypeToSelect(characterKey);
+				if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
+					print(characterKey..": registered Select voice "..subvoice);
+					if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
+						sneedio._MapCharTypeToAudioFile[charType] = {};
+					end
+					table.insert(sneedio._MapCharTypeToAudioFile[charType], subvoice);
+				else
+					print("failed to register "..characterKey.." Select voice "..subvoice.." maybe path was wrong or invalid file?");
+				end
+			end
+		end
+		if(voices["Affirmative"])then
+			for _, subvoice in ipairs(voices["Affirmative"]) do
+				local charType = sneedio._CharTypeToAffirmative(characterKey);
+				if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
+					print(characterKey..": registered Affirmative voice "..subvoice);
+					if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
+						sneedio._MapCharTypeToAudioFile[charType] = {};
+					end
+					table.insert(sneedio._MapCharTypeToAudioFile[charType], subvoice);
+				else
+					print("failed to register "..characterKey.." Affirmative voice "..subvoice.." maybe path was wrong or invalid file?");
+				end
+			end
+		end
+		if(voices["Hostile"])then
+			for _, subvoice in ipairs(voices["Hostile"]) do
+				local charType = sneedio._CharTypeToHostile(characterKey);
+				if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
+					print(characterKey..": registered Hostile voice "..subvoice);
+					if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
+						sneedio._MapCharTypeToAudioFile[charType] = {};
+					end
+					table.insert(sneedio._MapCharTypeToAudioFile[charType], subvoice);
+				else
+					print("failed to register "..characterKey.." Hostile voice "..subvoice.." maybe path was wrong or invalid file?");
+				end
+			end
+		end
+		if(voices["Abilities"])then
+			for _, subvoice in ipairs(voices["Abilities"]) do
+				local charType = sneedio._CharTypeToAbilities(characterKey);
+				if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
+					print(characterKey..": registered Abilities voice "..subvoice);
+					if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
+						sneedio._MapCharTypeToAudioFile[charType] = {};
+					end
+					table.insert(sneedio._MapCharTypeToAudioFile[charType], subvoice);
+				else
+					print("failed to register "..characterKey.." Abilities voice "..subvoice.." maybe path was wrong or invalid file?");
+				end
+			end
+		end
+		if(voices["Diplomacy"])then
+			for dialogKey, subvoice in pairs(voices["Diplomacy"]) do
+				local charDialogCode = sneedio._CharDialogToDiplomacy(dialogKey);
+				if(libSneedio.LoadVoiceBattle(subvoice, charDialogCode)) then
+					print(characterKey..": registered Dialog voice "..subvoice);
+					if(sneedio._MapCharTypeToAudioFile[charDialogCode] == nil) then
+						sneedio._MapCharTypeToAudioFile[charDialogCode] = {};
+					end
+					table.insert(sneedio._MapCharTypeToAudioFile[charDialogCode], subvoice);
+				else
+					print("failed to register "..characterKey.." Dialog voice "..subvoice.." maybe path was wrong or invalid file?");
+				end
+			end
 		end
 	else
-		print("unit key "..unitKey.. " has no associated voices");
+		print("no campaign voice registered for this characterKey "..characterKey);
+	end
+end
+
+
+sneedio._PlayVoiceCharacterOnCampaign = function(unitHandle, playAtPos)
+	playAtPos = playAtPos or sneedio._GetCameraPositionCampaign();
+	local MaxDistance = 390;
+	local Volume = 0.8;
+	if(sneedio._MapCharTypeToAudioFile[unitHandle])then
+		local ListOfAudio = sneedio._MapCharTypeToAudioFile[unitHandle];
+		local PickRandom = math.random(#ListOfAudio);
+		print("playing voice: ".. ListOfAudio[PickRandom]);
+		local result = libSneedio.PlayVoiceBattle(unitHandle, tostring(PickRandom), CAVectorToSneedVector(playAtPos), tostring(MaxDistance), tostring(Volume));
+		var_dump(result);
+		if(result == 0) then
+			print("audio played");
+		end
+	else
+		print("no audio found for "..unitHandle)
 	end
 end
 
@@ -1002,16 +1092,17 @@ sneedio._OnRightClickEventWithCharacter = function()
 		local characterKey = sneedio._SelectedCharacterOnCampaign:character_subtype_key();
 		if(libSneedio.GetCursorType() == MOUSE_NOT_ALLOWED) then
 			print("character key "..characterKey.."says no (hostile)");
-			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Hostile");
+			characterKey = sneedio._CharTypeToHostile(characterKey);
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey);
 		elseif(libSneedio.GetCursorType() == MOUSE_ATTACK) then
 			print("character key "..characterKey.." says attack (abilities)");
-			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Abilities");
-
+			characterKey = sneedio._CharTypeToAbilities(characterKey);
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey);
 			print("maybe play medieval 2 attack audio here (2D)");
 		else
 			print("character key "..characterKey.." says move (affirmative)");
-			sneedio._PlayVoiceCharacterOnCampaign(characterKey, "Affirmative");
-
+			characterKey = sneedio._CharTypeToAffirmative(characterKey);
+			sneedio._PlayVoiceCharacterOnCampaign(characterKey);
 			print("cursor type "..libSneedio.GetCursorType());
 		end
 	else
@@ -1039,6 +1130,8 @@ sneedio._CurrentDiplomacySelectedFaction = nil;
 sneedio._CurrentDiplomacyStringRightSide = "";
 
 sneedio._CurrentDiplomacyStringLeftSide = "";
+
+sneedio._MapCharTypeToAudioFile = {};
 
 --#endregion campaign procedures
 
@@ -1074,7 +1167,7 @@ sneedio._MonitorRoutingUnits = function ()
 	if(General:is_valid_target())then
 		if(General:is_routing() or General:is_wavering() or General:is_shattered())then
 			sneedio._CurrentSituation = "Losing";
-			sneedio._ProcessMusicPhaseChanges();
+			sneedio._ProcessMusicPhaseChangesBattle();
 		end
 	end
 
@@ -1152,6 +1245,10 @@ sneedio._ProcessSmoothMusicTransition = function ()
 end
 
 sneedio._PlayMusic = function (musicData)
+	if(not musicData)then
+		print("musicdata is null. aborting");
+		return;
+	end
 	print("playing music ".. musicData.FileName);
 	if(not libSneedio.IsMusicValid(musicData.FileName))then
 		print("unable to load file "..musicData.FileName.. " this will not change the situation!");
@@ -1184,7 +1281,7 @@ end
 sneedio._MusicTimeTracker = function ()
 	if(sneedio._CurrentPlayedMusic or sneedio._CurrentPlayedMusic.FileName ~= "None") then
 		sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-		print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+		--print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
 	end
 end
 
@@ -1216,7 +1313,7 @@ end
 -- Deployment -> FirstEngagement.
 -- FirstEngagement Balanced Losing LastStand Winning -> Complete.
 -- FirstEngagement Balanced -> Losing (when general wounded).
-sneedio._ProcessMusicPhaseChanges = function ()
+sneedio._ProcessMusicPhaseChangesBattle = function ()
 	print("important phase changes!")
 	sneedio._PlayMusic(sneedio.GetNextMusicData());
 end
@@ -1675,13 +1772,13 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		if(MOCK_UP) then
 			sneedio._BattlePhaseStatus = "Deployment";
 			sneedio._CurrentSituation = "Deployment";
-			sneedio._ProcessMusicPhaseChanges();
+			sneedio._ProcessMusicPhaseChangesBattle();
 		else
 			BM:register_phase_change_callback("Deployment", function ()
 				print("battle in Deployment");
 				sneedio._BattlePhaseStatus = "Deployment";
 				sneedio._CurrentSituation = "Deployment";
-				sneedio._ProcessMusicPhaseChanges();
+				sneedio._ProcessMusicPhaseChangesBattle();
 			end);
 		end
 		
@@ -1690,21 +1787,21 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			print("battle Deployment");
 			sneedio._BattlePhaseStatus = "Deployed";
 			sneedio._CurrentSituation = "FirstEngagement";
-			sneedio._ProcessMusicPhaseChanges();
+			sneedio._ProcessMusicPhaseChangesBattle();
 		end);
 
 		BM:setup_victory_callback(function ()
 			print("battle Deployment");
 			sneedio._BattlePhaseStatus = "VictoryCountdown";
 			sneedio._CurrentSituation = "Winning";
-			sneedio._ProcessMusicPhaseChanges();
+			sneedio._ProcessMusicPhaseChangesBattle();
 		end);
 
 		BM:register_phase_change_callback("Complete", function ()
 			print("Battle complete in Deployment");
 			sneedio._BattlePhaseStatus = "Complete";
 			sneedio._CurrentSituation = "Complete";
-			sneedio._ProcessMusicPhaseChanges();
+			sneedio._ProcessMusicPhaseChangesBattle();
 			
 			sneedio._FadeToMuteMusic(); -- for testing only!
 		end);
@@ -1720,7 +1817,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 				BM:callback(function()
 					print("no longer in FirstEngagement");
 					sneedio._CurrentSituation = "Balanced";
-					sneedio._ProcessMusicPhaseChanges();
+					sneedio._ProcessMusicPhaseChangesBattle();
 				end, 0.1);
 			end,
 		true);
@@ -2036,6 +2133,46 @@ sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_3", {
 	}
 });
 
+sneedio.RegisterVoice("teb_borgio_the_besieger", {
+	["Select"] = {
+		"voice_over/borgio/interactive/select/audio (1).wav",
+		"voice_over/borgio/interactive/select/audio (2).wav", 
+		"voice_over/borgio/interactive/select/audio (3).wav",
+		"voice_over/borgio/interactive/select/audio (10).wav",
+	},
+	["Affirmative"] = {
+		"voice_over/borgio/interactive/move/audio (4).wav",
+		"voice_over/borgio/interactive/move/audio (5).wav",
+		"voice_over/borgio/interactive/move/audio (7).wav",
+		"voice_over/borgio/interactive/move/audio (11).wav",
+		"voice_over/borgio/interactive/move/audio (12).wav",
+	},
+	["Hostile"] = {
+		"voice_over/borgio/interactive/reject/audio (9).wav",
+		"voice_over/borgio/interactive/reject/audio (13).wav",
+	},
+	["Abilities"] = {
+		"voice_over/borgio/interactive/attack/audio (6).wav",
+		"voice_over/borgio/interactive/attack/audio (8).wav",
+		"voice_over/borgio/interactive/attack/audio.wav",
+	},
+	["Diplomacy"] = {
+		["Why talk to you? The Grand Theogonist should declare you traitors and heretics! "] = "voice_over/borgio/diplomacy/Why talk to you The Grand Theogonist should declare you traitors and heretics.wav",
+		["Surely an agreement will be reached, for are we all not sons of Sigmar? "] = "voice_over/borgio/diplomacy/Surely an agreement will be reached, for are we all not sons of Sigmar.wav",
+		["Greetings my countrymen, do you come in peace on this fine Marktag? "] = "voice_over/borgio/diplomacy/Greetings my countrymen, do you come in peace on this fine Marktag.wav",
+		["It is good to see fellow sons of the Empire this day! "] = "voice_over/borgio/diplomacy/It is good to see fellow sons of the Empire this day.wav",
+		["You dare come at me making demands? Call yourself men of the Empire?! "] = "voice_over/borgio/diplomacy/You dare come at me making demands Call yourself men of the Empire.wav",
+		["Welcome, my countrymen! "] = "voice_over/borgio/diplomacy/Welcome, my countrymen.wav",
+		["You have a proposal? We are willing to hear it. "] = "voice_over/borgio/diplomacy/You have a proposal We are willing to hear it.wav",
+		["I am ready to parley, I hope your words are wise. "] = "voice_over/borgio/diplomacy/I am ready to parley, I hope your words are wise.",
+		["Greetings, strangerâ€¦ "] = "voice_over/borgio/diplomacy/Greetings, stranger.wav",
+		["Deliver your messageâ€¦ "] = "voice_over/borgio/diplomacy/Deliver your message.wav",
+		["Greetings - we may not be the Empire, but our realm has riches and strength in equal measure. "] = "voice_over/borgio/diplomacy/Greetings - we may not be the Empire, but our realm has riches and strength in equal measure.wav",
+	},
+	["Ambiences"] = {}
+});
+
+
 sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Deployment", 
 	{
 		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
@@ -2147,12 +2284,33 @@ end
 
 local SneedioCampaignMain = function ()
 	sneedio._InitCampaign();
+	var_dump(sneedio);
 	print("campaign has sneeded!");
 end
 
 if BM ~= nil then SneedioBattleMain(); end
 if CM ~= nil then SneedioCampaignMain(); end
 
+local TILEA_TEST = true;
+if(TILEA_TEST) then
+	CM:create_force_with_general(
+		"wh_main_teb_tilea", 
+		"til_greatswords", 
+		"wh_main_tilea_miragliano", 
+		0, 
+		0, 
+		"general",
+		"teb_borgio_the_besieger",
+		"997016",
+		"997017",
+		"",
+		"",
+		true,
+		function ()
+			print("debug: ok");
+		end
+	);
+end
 
 sneedio.RegisterCallbackSpeedEventOnBattle("test", "Normal", function()
 	print("game is being played");
