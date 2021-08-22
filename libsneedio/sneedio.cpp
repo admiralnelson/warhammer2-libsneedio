@@ -458,6 +458,60 @@ int L_KillMe(lua_State* L)
 	return 0;
 }
 
+uintptr_t FindDMAAddy(uintptr_t ptr, std::vector<unsigned int> offsets)
+{
+	uintptr_t addr = ptr;
+	for (unsigned int i = 0; i < offsets.size(); ++i)
+	{
+		addr = *(uintptr_t*)addr;
+		addr += offsets[i];
+	}
+	return addr;
+}
+
+static int UserOldVolume = 0;
+static bool bAlwaysMute = false;
+
+int GetWarscapeMusicVolume()
+{
+	uintptr_t BaseAddress = (uintptr_t)GetModuleHandleA("Warhammer2.exe");
+	uintptr_t PtrToMusicVolumeVal = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0x47c});
+
+	return *(int*)PtrToMusicVolumeVal;
+}
+
+void SetWarscapeMusicVolume(int val)
+{
+	uintptr_t BaseAddress = (uintptr_t)GetModuleHandleA("Warhammer2.exe");
+	uintptr_t PtrToMusicVolumeVal = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0x47c});
+	*(int*)PtrToMusicVolumeVal = val;
+}
+
+int L_GetWarscapeMusicVolume(lua_State* L)
+{
+	int volume = luaL_checknumber(L, 1);
+
+	lua_pushnumber(L, GetWarscapeMusicVolume());
+	return 1;
+}
+
+int L_SetWarscapeMusicVolume(lua_State* L)
+{
+	int volume = luaL_checknumber(L, 1);
+
+	SetWarscapeMusicVolume(volume);
+	std::cout << "volume is set to " << volume << std::endl;
+
+	return 0;
+}
+
+int L_AlwaysMuteWarscapeMusic(lua_State* L)
+{
+	bAlwaysMute = true;
+	SetWarscapeMusicVolume(0);
+	return 0;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -480,6 +534,9 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"MuteMusic", L_MuteMusic},
 	{"SetMusicVolume", L_SetMusicVolume},
 	{"IsMusicValid", L_IsMusicFileValid},
+	{"GetWarscapeMusicVolume", L_GetWarscapeMusicVolume},
+	{"SetWarscapeMusicVolume", L_SetWarscapeMusicVolume},
+	{"AlwaysMuteWarscapeMusic", L_AlwaysMuteWarscapeMusic},
 	{NULL,NULL}  // last entry; list terminator
 };
 
@@ -487,8 +544,6 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 // On success; return 1
 // On error; push errorstring on stack and return 0
 static int L_openLib(lua_State* L) {
-
-
 
 	// TODO: add startup/initialization code
 	lua_getglobal(L, "print");
@@ -509,8 +564,7 @@ static int L_openLib(lua_State* L) {
 	lua_pushvalue(L, 1); // pos 1 on the stack contains the module name
 	lua_call(L, 2, 0);
 
-
-
+	UserOldVolume = GetWarscapeMusicVolume();
 
 	return 1;	// report success
 }
@@ -527,6 +581,10 @@ static int L_closeLib(lua_State* L) {
 	lua_pushstring(L, "Now closing the Lua template library");
 	lua_call(L, 1, 0);
 
+	if (!bAlwaysMute) //otherwise leave it muted
+	{
+		SetWarscapeMusicVolume(UserOldVolume);
+	}
 
 	audeo::quit();
 
