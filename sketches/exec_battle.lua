@@ -1,12 +1,29 @@
 local math = math;
 local print = function (x)
 	out("chuckio: "..tostring(x));
+	print2(tostring(x).."\n");
 end;
+
+local PError = PrintError or nil;
+local PWarn = PrintWarning or print;
+local real_timer = real_timer;
+
+local PrintError = function (x)
+	if(PError) then PError(tostring(x).."\n"); else print("ERROR "..x); end
+	--print("ERROR "..x);
+end
+
+local PrintWarning = function (x)
+	if(PWarn) then PWarn(tostring(x).."\n"); else print("WARN "..x); end
+	--print("WARN "..x);
+end
+
 
 print("location of load");
 print(tostring(load));
 print(string);
 print(string.gsub);
+PrintError("test if red text is working");
 
 local MOUSE_NORMAL = "1";
 local MOUSE_NOT_ALLOWED = "3"; 
@@ -21,6 +38,10 @@ local OUTPUTPATH = "";
 --#region init stuff soon to be removed into their own libs
 
 local base64 = require("base64");
+local json = require("json");
+if(json)then
+	PrintWarning("json has loaded");
+end
 
 local function string_(o)
     return '"' .. tostring(o) .. '"'
@@ -49,10 +70,9 @@ local function var_dump(...)
     if #args > 1 then
         var_dump(args)
     else
-        out(recurse(args[1]))
+        print(recurse(args[1]))
     end
 end
-
 
 local DLL_FILENAMES = { 
 	"libsneedio", 
@@ -111,14 +131,89 @@ end
 
 --#endregion init stuff soon to be removed into their own libs
 
-local BM;
+local BM = nil;
 if core:is_battle() then
     BM = get_bm();
 end
 
 local CM = cm or nil;
+local TM = nil;
+
+var_dump(real_timer);
+
+-- timer_manager doesn't work properly in frontend, i have to code myself. thanks to vandy for the hint
+if(CM == nil or BM == nil) then
+	TM = {
+		_ListOfCallbacks = {},
+		_bInited = false,
+		RepeatCallback = function (callback, delay, name)
+			if(type(callback) ~= "function") then
+				PrintError("callback is not a function");
+				-- for type hint
+				callback = function ()	end
+				return;
+			end
+	
+			if(type(delay) ~= "number") then
+				PrintError("delay is not a number");
+				delay = 0;
+				return;
+			end
+			
+			if(type(name) ~= "string") then
+				PrintError("name is not a string");
+				name = "";
+				return;
+			end
+
+			TM._ListOfCallbacks[name] = callback;
+			real_timer.register_repeating(name, delay);
+		end,
+
+		RemoveCallback = function (name)
+			if type(name) ~= "string" then return end
+			if not TM._ListOfCallbacks[name] then return end
+
+			TM._ListOfCallbacks[name] = nil
+			real_timer.unregister(name);
+
+			--type hint
+			name = "";
+		end,
+
+		Init = function ()
+			if(TM._bInited) then return end;
+			PrintWarning("starting timer for frontend");
+			core:add_listener(
+				"sneedio_timer_handler",
+				"RealTimeTrigger",
+				function(context)
+					return TM._ListOfCallbacks[context.string] ~= nil;
+				end,
+				function(context)
+					local callback = TM._ListOfCallbacks[context.string]
+					local ok, er = pcall(function() callback() end);
+					if not ok then PrintError(er) end;
+				end,
+			true);
+			TM._bInited = true;
+		end
+	};
+	TM.Init();
+end
+
+if(TM == nil or TM == false)then
+	PrintError("time manager is fucking NULL or FALSE");
+end
 
 --#region helper functions
+
+local ReadFile = function (file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
+end
 
 local Split = function (str, delim, maxNb)
     -- Eliminate bad cases...
@@ -328,6 +423,73 @@ end
 
 --#endregion helper functions
 
+-- FIX ME, there must be better way....
+sneedio.MuteGameEngineMusic = function (bMute)
+	if(BM) then
+		if(bMute) then
+			BM:set_volume(0, 0);
+		else
+			BM:set_volume(0, 100);
+		end
+		return;
+	end
+
+	-- manipulate the memory first.
+	if(bMute) then
+		libSneedio.SetWarscapeMusicVolume(0);
+	else
+		libSneedio.SetWarscapeMusicVolume(100);
+	end
+
+	-- then apply the changes through SimulateLClick hacks
+	if(CM) then
+		-- through esc menu in the campaign
+		local root = core:get_ui_root();
+		root:TriggerShortcut("escape_menu");
+		local ButtonOptions = FindEl(root, "root > esc_menu_campaign > menu_1 > button_options");
+		if(ButtonOptions)then
+			ButtonOptions:SimulateLClick();
+			local ButtonAudio = FindEl(root, "root > options_main > menu_options > button_audio");
+			if(ButtonAudio)then
+				ButtonAudio:SimulateLClick();
+				local ButtonCancel = FindEl(root, "root > options_audio > basic_options > ok_cancel_buttongroup > button_cancel");
+				if(ButtonCancel)then
+					ButtonCancel:SimulateLClick();
+					print("mute ok");
+					local ButtonBack = FindEl(root, "root > options_main > menu_options > button_back");
+					ButtonBack:SimulateLClick();
+					local Resume = FindEl(root, "root > esc_menu_campaign > menu_1 > button_resume");
+					Resume:SimulateLClick();
+				else
+					PrintError("mute fail");
+				end
+			else
+				PrintError("fail to access audio button");
+			end
+		else
+			PrintError("fail to access options button");
+		end
+		return;
+	else
+		-- through frontend menu
+		local root = core:get_ui_root();
+		-- local ButtonOptions = FindEl(root, "root > main > banner_clip > fe_banner > menu > options_frame > holder > button_header_options");
+		local ButtonOptions = find_uicomponent(root, "main", "banner_clip", "fe_banner", "menu", "options_frame", "holder", " button_audio");
+		if(ButtonOptions) then  
+			ButtonOptions:SimulateLClick();
+			local ButtonCancel = FindEl(root, "root > options_audio > basic_options > ok_cancel_buttongroup > button_cancel");
+			if(ButtonCancel)then
+				ButtonCancel:SimulateLClick();
+				print("mute ok");
+			else
+				print("mute fail in frontend");
+			end
+		else
+			PrintError("unable to find button audio in frontend");
+		end
+	end
+end
+
 sneedio.Pause = function (bPause)
 	libSneedio.Pause(tostring(bPause));
 end
@@ -502,8 +664,7 @@ sneedio.GetNextMusicData = function ()
 	elseif(CM)then
 		Playlist = sneedio.GetPlayerFactionPlaylistForCampaign();
 	else
-		print("ERROR!. called outside campaign or battle mode!");
-		return;
+		return sneedio._FrontEndMusic;
 	end
 	--print("battle play list");
 	local rand = math.random(#Playlist);
@@ -711,8 +872,60 @@ end
 sneedio.SetMusicVolume = function (amount)
 	libSneedio.SetMusicVolume(tostring(amount));
 end
+
+
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
+
+sneedio._LoadUserConfig = function ()
+	local userConfigJson = ReadFile("user-sneedio.json");
+	if(not userConfigJson) then
+		PrintWarning("user-sneedio.json doesn't exist. Not loading user config.");
+		return;
+	end
+
+	local result, userConfig = pcall(json.decode, userConfigJson);
+	if(not result) then
+		PrintError("Fail to parse config file. Not loading user config.");
+		return;
+	end
+
+	var_dump(userConfig);
+	sneedio._FrontEndMusic = userConfig["FrontEndMusic"];
+	
+	if(userConfig["AlwaysMuteWarscapeMusic"]) then libSneedio.AlwaysMuteWarscapeMusic(); end
+
+end
+
+--#region frontend procedures
+
+sneedio._InitFrontEnd = function ()
+	sneedio._LoadUserConfig();
+
+	if(TM == nil) then
+		PrintError("current game is not frontend, operation failed");
+		return;
+	end
+
+	sneedio._bNotInFrontEnd = false;
+
+	if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
+		PrintWarning("user frontend music exist, muting frontend music");
+		sneedio.MuteGameEngineMusic(true);
+		sneedio._FrontEndMusic.CurrentDuration = 0;
+	end
+
+	TM.RepeatCallback(function ()
+		sneedio._MusicTimeTracker();
+		sneedio._ProcessMusicState();
+	end, 1000, "sneedio_music_tracker_frontend");
+
+	TM.RepeatCallback(function ()
+		sneedio._ProcessSmoothMusicTransition();
+	end, 100, "sneedio_process_music_transition");
+end
+
+--#endregion frontend procedures
 
 --#region campaign procedures
 
@@ -732,8 +945,8 @@ sneedio._CharTypeToAbilities = function (charKey)
 	return charKey.."_Abilities";
 end
 
-sneedio._CharDialogToDiplomacy = function (dialog)
-	return dialog.."_Dialog";
+sneedio._CharDialogToDiplomacy = function (dialog, leaderId)
+	return dialog.."_Dialog_"..leaderId;
 end
 
 sneedio._InitCampaign = function ()
@@ -958,7 +1171,7 @@ sneedio._ProcessDiplomacyOnEngagementCampaign = function ()
 			local targetFaction = sneedio._CurrentDiplomacySelectedFaction;
 			local leader = targetFaction:faction_leader();
 			local leaderId = leader:character_subtype_key();
-			local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringRightSide);
+			local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringRightSide, leaderId);
 			sneedio._PlayVoiceCharacterOnCampaign(stringToDiploKey, leaderId);
 		end
 	elseif(stringLeftSide ~= "") then -- player got diplomacy request from bot or other player
@@ -966,7 +1179,7 @@ sneedio._ProcessDiplomacyOnEngagementCampaign = function ()
 		print("bubble on the left side "..stringLeftSide);
 		local playerLeaderChar = CM:get_local_faction(true):faction_leader(); -- warning
 		local playerLeaderId = playerLeaderChar:character_subtype_key();
-		local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringLeftSide);
+		local stringToDiploKey = sneedio._CharDialogToDiplomacy(stringLeftSide, playerLeaderId);
 		sneedio._PlayVoiceCharacterOnCampaign(stringToDiploKey, playerLeaderId);
 	end
 
@@ -1043,7 +1256,7 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
 		end
 		if(voices["Diplomacy"])then
 			for dialogKey, subvoice in pairs(voices["Diplomacy"]) do
-				local charDialogCode = sneedio._CharDialogToDiplomacy(dialogKey);
+				local charDialogCode = sneedio._CharDialogToDiplomacy(dialogKey, characterKey);
 				if(libSneedio.LoadVoiceBattle(subvoice, charDialogCode)) then
 					print(characterKey..": registered Dialog voice "..subvoice);
 					if(sneedio._MapCharTypeToAudioFile[charDialogCode] == nil) then
@@ -1260,7 +1473,7 @@ sneedio._PlayMusic = function (musicData)
 		sneedio._CurrentPlayedMusic.Situation = sneedio._CurrentSituation;
 	end
 
-	if(musicData.FileName == sneedio._CurrentPlayedMusic.FileName) then
+	if(musicData.FileName == sneedio._CurrentPlayedMusic.FileName and sneedio._bNotInFrontEnd) then
 		print("same music is being played");
 		return;
 	end
@@ -1281,7 +1494,7 @@ end
 sneedio._MusicTimeTracker = function ()
 	if(sneedio._CurrentPlayedMusic or sneedio._CurrentPlayedMusic.FileName ~= "None") then
 		sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-		--print(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+		PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
 	end
 end
 
@@ -2050,9 +2263,16 @@ sneedio._MusicPlaylist = {
 			["LastStand"] = {},
 		},
 	},
-}
+};
 
 --#endregion music vars
+
+sneedio._FrontEndMusic = {
+    FileName = "",
+    MaxDuration = 0
+};
+
+sneedio._bNotInFrontEnd = true;
 
 print("all ok");
 
@@ -2165,8 +2385,8 @@ sneedio.RegisterVoice("teb_borgio_the_besieger", {
 		["Welcome, my countrymen! "] = "voice_over/borgio/diplomacy/Welcome, my countrymen.wav",
 		["You have a proposal? We are willing to hear it. "] = "voice_over/borgio/diplomacy/You have a proposal We are willing to hear it.wav",
 		["I am ready to parley, I hope your words are wise. "] = "voice_over/borgio/diplomacy/I am ready to parley, I hope your words are wise.",
-		["Greetings, strangerâ€¦ "] = "voice_over/borgio/diplomacy/Greetings, stranger.wav",
-		["Deliver your messageâ€¦ "] = "voice_over/borgio/diplomacy/Deliver your message.wav",
+		["Greetings, stranger… "] = "voice_over/borgio/diplomacy/Greetings, stranger.wav",
+		["Deliver your message… "] = "voice_over/borgio/diplomacy/Deliver your message.wav",
 		["Greetings - we may not be the Empire, but our realm has riches and strength in equal measure. "] = "voice_over/borgio/diplomacy/Greetings - we may not be the Empire, but our realm has riches and strength in equal measure.wav",
 	},
 	["Ambiences"] = {}
@@ -2238,8 +2458,8 @@ print(sneedio.GetPlayerFaction());
 
 out("hello world");
 
-var_dump(sneedio);
-var_dump(libSneedio);
+--var_dump(sneedio);
+--var_dump(libSneedio);
 
 local SneedioBattleMain = function()
 	local ListOfUnits = {};
@@ -2288,11 +2508,17 @@ local SneedioCampaignMain = function ()
 	print("campaign has sneeded!");
 end
 
+local SneedioFrontEndMain = function ()
+	PrintWarning("called in FRONT END\n");
+	sneedio._InitFrontEnd();
+end
+
 if BM ~= nil then SneedioBattleMain(); end
 if CM ~= nil then SneedioCampaignMain(); end
+if CM == nil and BM == nil then SneedioFrontEndMain(); end
 
 local TILEA_TEST = true;
-if(TILEA_TEST) then
+if(TILEA_TEST and CM) then
 	CM:create_force_with_general(
 		"wh_main_teb_tilea", 
 		"til_greatswords", 
