@@ -142,65 +142,65 @@ local TM = nil;
 var_dump(real_timer);
 
 -- timer_manager doesn't work properly in frontend, i have to code myself. thanks to vandy for the hint
-if(CM == nil or BM == nil) then
-	TM = {
-		_ListOfCallbacks = {},
-		_bInited = false,
-		RepeatCallback = function (callback, delay, name)
-			if(type(callback) ~= "function") then
-				PrintError("callback is not a function");
-				-- for type hint
-				callback = function ()	end
-				return;
-			end
-	
-			if(type(delay) ~= "number") then
-				PrintError("delay is not a number");
-				delay = 0;
-				return;
-			end
-			
-			if(type(name) ~= "string") then
-				PrintError("name is not a string");
-				name = "";
-				return;
-			end
 
-			TM._ListOfCallbacks[name] = callback;
-			real_timer.register_repeating(name, delay);
-		end,
-
-		RemoveCallback = function (name)
-			if type(name) ~= "string" then return end
-			if not TM._ListOfCallbacks[name] then return end
-
-			TM._ListOfCallbacks[name] = nil
-			real_timer.unregister(name);
-
-			--type hint
-			name = "";
-		end,
-
-		Init = function ()
-			if(TM._bInited) then return end;
-			PrintWarning("starting timer for frontend");
-			core:add_listener(
-				"sneedio_timer_handler",
-				"RealTimeTrigger",
-				function(context)
-					return TM._ListOfCallbacks[context.string] ~= nil;
-				end,
-				function(context)
-					local callback = TM._ListOfCallbacks[context.string]
-					local ok, er = pcall(function() callback() end);
-					if not ok then PrintError(er) end;
-				end,
-			true);
-			TM._bInited = true;
+TM = {
+	_ListOfCallbacks = {},
+	_bInited = false,
+	RepeatCallback = function (callback, delay, name)
+		if(type(callback) ~= "function") then
+			PrintError("callback is not a function");
+			-- for type hint
+			callback = function ()	end
+			return;
 		end
-	};
-	TM.Init();
-end
+
+		if(type(delay) ~= "number") then
+			PrintError("delay is not a number");
+			delay = 0;
+			return;
+		end
+		
+		if(type(name) ~= "string") then
+			PrintError("name is not a string");
+			name = "";
+			return;
+		end
+
+		TM._ListOfCallbacks[name] = callback;
+		real_timer.register_repeating(name, delay);
+	end,
+
+	RemoveCallback = function (name)
+		if type(name) ~= "string" then return end
+		if not TM._ListOfCallbacks[name] then return end
+
+		TM._ListOfCallbacks[name] = nil
+		real_timer.unregister(name);
+
+		--type hint
+		name = "";
+	end,
+
+	Init = function ()
+		if(TM._bInited) then return end;
+		PrintWarning("starting timer custom timer");
+		core:add_listener(
+			"sneedio_timer_handler",
+			"RealTimeTrigger",
+			function(context)
+				return TM._ListOfCallbacks[context.string] ~= nil;
+			end,
+			function(context)
+				local callback = TM._ListOfCallbacks[context.string]
+				local ok, er = pcall(function() callback() end);
+				if not ok then PrintError(er) end;
+			end,
+		true);
+		TM._bInited = true;
+	end
+};
+TM.Init();
+
 
 if(TM == nil or TM == false)then
 	PrintError("time manager is fucking NULL or FALSE");
@@ -491,6 +491,7 @@ sneedio.MuteGameEngineMusic = function (bMute)
 end
 
 sneedio.Pause = function (bPause)
+	PrintError("Pause is set to"..tostring(bPause));
 	libSneedio.Pause(tostring(bPause));
 end
 
@@ -792,12 +793,12 @@ sneedio.GetPlayerGeneralOnBattle = function ()
 end
 
 sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Callback)
-	print("registered event "..UniqueName.." for event "..EventName);
+	PrintError("registered event "..UniqueName.." for event "..EventName);
 	if (not sneedio._ListOfCallbacksForBattleEvent[UniqueName]) then
 		sneedio._ListOfCallbacksForBattleEvent[UniqueName] = {};
 	end
 	sneedio._ListOfCallbacksForBattleEvent[UniqueName][EventName] = Callback;
-	print("registered");
+	PrintError("registered");
 	-- var_dump(sneedio._ListOfCallbacksForBattleEvent);
 end
 
@@ -819,6 +820,7 @@ sneedio.IsBattlePaused = function()
 			return button:CurrentState() == "selected";
 		end
 	end
+	return false;
 end
 
 sneedio.IsBattleInSlowMo = function()
@@ -1404,6 +1406,9 @@ sneedio._FadeToMuteMusic = function (bMute)
 end
 
 sneedio._ProcessSmoothMusicTransition = function ()
+	
+	if(sneedio.IsBattlePaused()) then return; end
+
 	if(sneedio._TransitionMusicFlag == 0) then -- no need to process any transition if flag is not set
 		return;
 	end
@@ -1475,7 +1480,6 @@ sneedio._PlayMusic = function (musicData)
 
 	if(musicData.FileName == sneedio._CurrentPlayedMusic.FileName and sneedio._bNotInFrontEnd) then
 		print("same music is being played");
-		return;
 	end
 
 	sneedio._CurrentPlayedMusic = musicData;
@@ -1491,8 +1495,17 @@ sneedio._PlayMusic = function (musicData)
 	table.insert(sneedio._TransitionMusicQueue, musicData);
 end
 
+-- BIG BUG!
+-- if game was fast forward, the timer will get FASTER!
+
 sneedio._MusicTimeTracker = function ()
-	if(sneedio._CurrentPlayedMusic or sneedio._CurrentPlayedMusic.FileName ~= "None") then
+	if(sneedio.IsBattlePaused()) then
+		sneedio.Pause(true);
+		return;
+	else
+		sneedio.Pause(false);
+	end
+	if(sneedio._CurrentPlayedMusic) then
 		sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
 		PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
 	end
@@ -1541,7 +1554,7 @@ sneedio._ProcessMusicEventBattle = function ()
 		print("all music");
 		var_dump(sneedio._MusicPlaylist);
 		print("current situation: "..sneedio._CurrentSituation);
-		local playlist = sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation];
+		local playlist = sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentSituation];
 		var_dump(playlist);
 		local idx = GetArrayIndexByPred(playlist, function (el)
 			return el.FileName == sneedio._CurrentPlayedMusic.FileName;
@@ -1549,7 +1562,7 @@ sneedio._ProcessMusicEventBattle = function ()
 		-- print("index "..tostring(idx));
 		-- print("current situation: "..sneedio._CurrentSituation);
 		-- var_dump(sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx]);
-		sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx].CurrentDuration = 0;
+		sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentSituation][idx].CurrentDuration = 0;
 		sneedio._PlayMusic(sneedio.GetNextMusicData());
 	end
 	if(sneedio.IsCurrentMusicQuarterWaythrough()) then
@@ -1809,7 +1822,6 @@ sneedio._UpdateCamera = function()
 	end
 end
 
-
 sneedio._BattleOnTick = function()
 	sneedio._UpdateCamera();
 	sneedio._bHasSpeedChanged = sneedio._CurrentSpeed ~= sneedio.GetBattleSpeedMode();
@@ -1936,7 +1948,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 		true);
 
-		BM:repeat_callback(function ()
+		TM.RepeatCallback(function ()
 			sneedio._ProcessAmbientUnitSoundBattle();
 		end, 5*1000,
 		"sneedio_process_ambient_event");
@@ -2035,17 +2047,17 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 			end,
 		true);
 
-		BM:repeat_callback(function ()
+		TM.RepeatCallback(function ()
 			sneedio._MusicTimeTracker();
-		end, 1*1000,
+		end, 900,
 		"sneedio_monitor_music_time_tracker");
 		
-		BM:repeat_callback(function ()
+		TM.RepeatCallback(function ()
 			sneedio._ProcessMusicEventBattle();
 		end, 3*1000,
 		"sneedio_monitor_music_event");
 
-		BM:repeat_callback(function ()
+		TM.RepeatCallback(function ()
 			sneedio._ProcessSmoothMusicTransition();
 		end, 100,
 		"sneedio_monitor_music_transition");
@@ -2053,13 +2065,13 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		-- get current music volume from config...
 		sneedio._CurrentMusicVolume = 1.0;
 
-		BM:repeat_callback(function ()
+		TM.RepeatCallback(function ()
 			sneedio._MonitorRoutingUnits()
 		end, 4*1000, --expensive operations
 		"sneedio_monitor_player+enemies_rallying_units_and_general");
 
-		BM:repeat_callback(function ()
-			if(BM) then
+		TM.RepeatCallback(function ()
+			if(BM and not sneedio.IsBattlePaused()) then
 				local camera = BM:camera();
 				sneedio.UpdateCameraPosition(camera:position(), camera:target());
 				sneedio._BattleOnTick();
@@ -2429,7 +2441,7 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
 		MaxDuration = 248
 	},
 	{
-	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s",
+	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
 	 	MaxDuration = 208
 	},
 	{
@@ -2449,6 +2461,101 @@ sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Winning",
 	{
 		FileName = "music/winning/36 Medieval II Total War (winning) 3m 10s.mp3",
 		MaxDuration = 190
+	}
+);
+
+------------
+
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Deployment", 
+	{
+		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+		MaxDuration = 210
+	},
+	{
+		FileName = "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+		MaxDuration = 182
+	},
+	{
+		FileName = "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+		MaxDuration = 177
+	},
+	{
+		FileName = "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+		MaxDuration = 162
+	}
+);
+
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "FirstEngagement", 
+	{
+		FileName = "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+		MaxDuration = 222
+	},
+	{
+		FileName = "music/first_engage/06 Guillotine.mp3",
+		MaxDuration = 222
+	},
+	{
+		FileName = "music/first_engage/07 Honor.mp3",
+		MaxDuration = 81
+	},
+	{
+		FileName = "music/first_engage/17 The Fallen (alternative).mp3",
+		MaxDuration = 158
+	},
+	{
+		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+		MaxDuration = 210
+	}
+);
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Balanced",
+	{
+		FileName = "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+		MaxDuration = 248
+	},
+	{
+	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
+	 	MaxDuration = 210
+	},
+	{
+		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+		MaxDuration = 237
+	},
+	{
+		FileName = "music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
+		MaxDuration = 185
+	},
+	{
+		FileName = "music/balanced/37 Fight While Mounted 1.mp3",
+		MaxDuration = 180
+	},
+	{
+		FileName = "music/balanced/43 Fight 2.mp3",
+		MaxDuration = 117
+	},
+	{
+		FileName = "music/balanced/58 Ambushed By Rhodok.mp3",
+		MaxDuration = 120
+	},
+	{
+		FileName = "music/balanced/57 Ambushed By Swadian.mp3",
+		MaxDuration = 103
+	}
+);
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Losing",
+	{
+		FileName = "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+		MaxDuration = 207
+	}
+);
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Winning",
+	{
+		FileName = "music/first_engage/07 Honor.mp3",
+		MaxDuration = 81
 	}
 );
 
