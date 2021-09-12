@@ -1,0 +1,16 @@
+ src/SoundEngine.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/SoundEngine.cpp b/src/SoundEngine.cpp
+index 979057d..42a0934 100644
+--- a/src/SoundEngine.cpp
++++ b/src/SoundEngine.cpp
+@@ -18,7 +18,7 @@ namespace {
+ // Functions and data that control the engine's state
+ 
+ struct SoundSourceData {
+-    using data_t = union {
++    union data_t {
+         Mix_Chunk* chunk = nullptr;
+         Mix_Music* music;
+     };

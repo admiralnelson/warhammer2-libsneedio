@@ -1,0 +1,224 @@
+ VisualC/SDL_mixer.vcxproj               | 27 +++++++++++++++------------
+ VisualC/SDL_mixer.vcxproj.filters       |  3 ---
+ VisualC/native_midi/native_midi.vcxproj | 10 ++++++++++
+ VisualC/playmus/playmus.vcxproj         |  4 ++++
+ VisualC/playwave/playwave.vcxproj       |  4 ++++
+ VisualC/timidity/timidity.vcxproj       | 10 ++++++++++
+ 6 files changed, 43 insertions(+), 15 deletions(-)
+
+diff --git a/VisualC/SDL_mixer.vcxproj b/VisualC/SDL_mixer.vcxproj
+index 89ced71..572f638 100644
+--- a/VisualC/SDL_mixer.vcxproj
++++ b/VisualC/SDL_mixer.vcxproj
+@@ -26,15 +26,19 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>DynamicLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+@@ -79,6 +83,12 @@
+     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+     <Midl>
+       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -133,7 +143,7 @@
+       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+     </ResourceCompile>
+     <Link>
+-      <AdditionalDependencies>winmm.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+       <GenerateDebugInformation>true</GenerateDebugInformation>
+       <SubSystem>Windows</SubSystem>
+     </Link>
+@@ -188,7 +198,7 @@
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+     </ResourceCompile>
+     <Link>
+-      <AdditionalDependencies>winmm.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+       <SubSystem>Windows</SubSystem>
+     </Link>
+     <Bscmake />
+@@ -224,21 +234,14 @@
+     </ResourceCompile>
+   </ItemGroup>
+   <ItemGroup>
++    <ProjectReference Include="..\..\sdl\VisualC\SDL\SDL.vcxproj">
++      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
++    </ProjectReference>
+     <ProjectReference Include="native_midi\native_midi.vcxproj">
+       <Project>{ebda67ca-4a23-4f22-bfbc-b8dbe0580d4f}</Project>
+-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+-      <Private>false</Private>
+-      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+     </ProjectReference>
+     <ProjectReference Include="timidity\timidity.vcxproj">
+       <Project>{b162b6f1-e876-4d5f-a1f6-e3a6dc2f4a2c}</Project>
+-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+-      <Private>false</Private>
+-      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+     </ProjectReference>
+   </ItemGroup>
+   <ItemGroup>
+diff --git a/VisualC/SDL_mixer.vcxproj.filters b/VisualC/SDL_mixer.vcxproj.filters
+index b942737..b585e3e 100644
+--- a/VisualC/SDL_mixer.vcxproj.filters
++++ b/VisualC/SDL_mixer.vcxproj.filters
+@@ -96,9 +96,6 @@
+     <CustomBuild Include="external\lib\x64\LICENSE.modplug.txt">
+       <Filter>x64</Filter>
+     </CustomBuild>
+-    <CustomBuild Include="external\lib\x64\LICENSE.mikmod.txt">
+-      <Filter>x64</Filter>
+-    </CustomBuild>
+     <CustomBuild Include="external\lib\x64\LICENSE.FLAC.txt">
+       <Filter>x64</Filter>
+     </CustomBuild>
+diff --git a/VisualC/native_midi/native_midi.vcxproj b/VisualC/native_midi/native_midi.vcxproj
+index 3d701f6..6d2f06b 100644
+--- a/VisualC/native_midi/native_midi.vcxproj
++++ b/VisualC/native_midi/native_midi.vcxproj
+@@ -25,15 +25,19 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+@@ -78,6 +82,12 @@
+     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;..\..\src\codecs\native_midi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+diff --git a/VisualC/playmus/playmus.vcxproj b/VisualC/playmus/playmus.vcxproj
+index d1d0c8f..c725aad 100644
+--- a/VisualC/playmus/playmus.vcxproj
++++ b/VisualC/playmus/playmus.vcxproj
+@@ -25,15 +25,19 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/VisualC/playwave/playwave.vcxproj b/VisualC/playwave/playwave.vcxproj
+index 7f117ba..0cf6fac 100644
+--- a/VisualC/playwave/playwave.vcxproj
++++ b/VisualC/playwave/playwave.vcxproj
+@@ -25,15 +25,19 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+diff --git a/VisualC/timidity/timidity.vcxproj b/VisualC/timidity/timidity.vcxproj
+index f2571ce..4cd7d60 100644
+--- a/VisualC/timidity/timidity.vcxproj
++++ b/VisualC/timidity/timidity.vcxproj
+@@ -49,15 +49,19 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
++    <PlatformToolset>v142</PlatformToolset>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+@@ -102,6 +106,12 @@
+     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <IncludePath>$(SolutionDir)\external\sdl\include;$(IncludePath)</IncludePath>
++  </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

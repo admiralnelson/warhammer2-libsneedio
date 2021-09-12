@@ -1,0 +1,60 @@
+multiple selection
+lord
+paladin
+
+multiple selection
+lord 
+paladin
+
+
+OPTION TO DISABLE POSITIONAL AUDIO
+option for volume effect and music
+
+
+ambient sound from unit => normal PlayVoiceBattle but set the volume like 20% or something
+idle ambien sound DONE
+idle taunt sound DONE
+-optional- battle speeches
+
+dont't trigger right click voice over until battle phase begun DONE
+DON'T trigger right click voice over until the unit is moving DONE
+activating ablity trigger voice over
+
+background music from youtube.
+-- playlist for: {
+   bretonnia => {
+		campaign ambient => {
+			youtube.com/watch?v=232323232,
+			c:/mymusic.mp3
+			music/music.mp3
+		},
+		battle deploy phase => {
+			
+		},
+		battle engage phase => {
+			
+		},
+		battle winning phase => {
+		
+		},
+		battle losing phase => {
+		
+		}
+   },
+   empire => {
+   
+   },
+   main menu => youtube.com/watch?v=232323232
+}
+
+when game loads, check for youtube playlist. download them all.
+check if user has youtube-dl in warhammer2.exe location. otherwise abort and assume youtube videos as null music.
+prompt user to wait until all files are downloaded. 
+
+when game loads, check main menu music first.
+if set and the file exsits, mute game music and play user main menu theme
+
+if switching to campaign, check for played faction playlist. if it's contain ambient, mute game music again and play user playlist otherwise unmute game music.
+
+if all battle playlist are empty, unmute game music.
+if one of the battle playlists contain empty element, just play them all together, doesn't matter if it's matches context of the battle (i.e losing/winning)

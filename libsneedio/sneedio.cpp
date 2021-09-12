@@ -485,6 +485,10 @@ void SetWarscapeMusicVolume(int val)
 	uintptr_t BaseAddress = (uintptr_t)GetModuleHandleA("Warhammer2.exe");
 	uintptr_t PtrToMusicVolumeVal = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0x47c});
 	*(int*)PtrToMusicVolumeVal = val;
+
+	uintptr_t PtrToSoundConfigObj = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0});
+	HMODULE Warhammer2EXE = GetModuleHandleA("Warhammer2.exe");
+	void* get_mode_empire = (void*)GetProcAddress(Warhammer2EXE, "");
 }
 
 int L_GetWarscapeMusicVolume(lua_State* L)

@@ -1,0 +1,50 @@
+ lfs.c     | 4 ++--
+ lfs.h     | 2 +-
+ luaconf.h | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/lfs.c b/lfs.c
+index 4263ca4..e93c63e 100644
+--- a/lfs.c
++++ b/lfs.c
+@@ -1170,7 +1170,7 @@ static const struct luaL_Reg fslib[] = {
+   { NULL, NULL },
+ };
+ 
+-LFS_EXPORT int luaopen_lfs(lua_State * L)
++/*LFS_EXPORT int luaopen_lfs(lua_State * L)
+ {
+   dir_create_meta(L);
+   lock_create_meta(L);
+@@ -1179,4 +1179,4 @@ LFS_EXPORT int luaopen_lfs(lua_State * L)
+   lua_setglobal(L, LFS_LIBNAME);
+   set_info(L);
+   return 1;
+-}
++}*/
+diff --git a/lfs.h b/lfs.h
+index f87524d..9e8e0f5 100644
+--- a/lfs.h
++++ b/lfs.h
+@@ -28,7 +28,7 @@
+ extern "C" {
+ #endif
+ 
+-  LFS_EXPORT int luaopen_lfs(lua_State * L);
++  //LFS_EXPORT int luaopen_lfs(lua_State * L);
+ 
+ #ifdef __cplusplus
+ }
+diff --git a/luaconf.h b/luaconf.h
+index 6443f84..e2931d1 100644
+--- a/luaconf.h
++++ b/luaconf.h
+@@ -489,7 +489,7 @@
+ */
+ 
+ #define LUA_NUMBER_DOUBLE
+-#define LUA_NUMBER	double
++#define LUA_NUMBER	float
+ 
+ /*
+ @@ LUAI_UACNUMBER is the result of an 'usual argument conversion'
