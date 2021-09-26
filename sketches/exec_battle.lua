@@ -106,37 +106,36 @@ local libSneedio =  require(DLL_FILENAMES[1]);-- require2("libsneedio", "luaopen
 
 if(libSneedio) then
 	print("lib loaded ok");
-	
 else
-	local err = nil;
-	local UnpackThemDlls = function()
-		for _, filename in ipairs(DLL_FILENAMES) do
-			local path = PATH..filename;
-			if(MOCK_UP) then path = path..".lua" end;
-			print("unpacking file:", path);
-			local data = assert(loadfile(path))();
-			data = base64.decode(data);
-			local file = assert(io.open(OUTPUTPATH..filename..".dll", "wb"));
-			file:write(data);
-			file:close();
-		end
-		if(MOCK_UP) then
-			libSneedio, err = pcall(require, DLL_FILENAMES[1]);
-			if(not libSneedio) then
-				print("failed to load libSneedio, cleaning up..");
-				print(err);
-				for _, filename in ipairs(DLL_FILENAMES) do
-					local name = filename..".dll";
-					os.remove(name);
-					print("clean up ", name);
-				end
-			end
-		else
-			libSneedio, err = pcall(require, DLL_FILENAMES[1]);
-			if(not libSneedio) then print(err) end;
-		end
-	end
-	UnpackThemDlls();
+	-- local err = nil;
+	-- local UnpackThemDlls = function()
+	-- 	for _, filename in ipairs(DLL_FILENAMES) do
+	-- 		local path = PATH..filename;
+	-- 		if(MOCK_UP) then path = path..".lua" end;
+	-- 		print("unpacking file:", path);
+	-- 		local data = assert(loadfile(path))();
+	-- 		data = base64.decode(data);
+	-- 		local file = assert(io.open(OUTPUTPATH..filename..".dll", "wb"));
+	-- 		file:write(data);
+	-- 		file:close();
+	-- 	end
+	-- 	if(MOCK_UP) then
+	-- 		libSneedio, err = pcall(require, DLL_FILENAMES[1]);
+	-- 		if(not libSneedio) then
+	-- 			print("failed to load libSneedio, cleaning up..");
+	-- 			print(err);
+	-- 			for _, filename in ipairs(DLL_FILENAMES) do
+	-- 				local name = filename..".dll";
+	-- 				os.remove(name);
+	-- 				print("clean up ", name);
+	-- 			end
+	-- 		end
+	-- 	else
+	-- 		libSneedio, err = pcall(require, DLL_FILENAMES[1]);
+	-- 		if(not libSneedio) then print(err) end;
+	-- 	end
+	-- end
+	-- UnpackThemDlls();
 end
 
 --#endregion init stuff soon to be removed into their own libs
