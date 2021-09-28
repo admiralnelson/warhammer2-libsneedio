@@ -66,7 +66,7 @@ local base64 = require("base64");
 if(base64) then
 	PrintWarning("base64 is working");
 end
-local json = require("json");
+local json = require("json") or require("libsneedio_json");
 if(json)then
 	PrintWarning("json has loaded");
 end
@@ -129,35 +129,7 @@ local libSneedio =  require(DLL_FILENAMES[1]);-- require2("libsneedio", "luaopen
 if(libSneedio) then
 	print("lib loaded ok");
 else
-	-- local err = nil;
-	-- local UnpackThemDlls = function()
-	-- 	for _, filename in ipairs(DLL_FILENAMES) do
-	-- 		local path = PATH..filename;
-	-- 		if(MOCK_UP) then path = path..".lua" end;
-	-- 		print("unpacking file:", path);
-	-- 		local data = assert(loadfile(path))();
-	-- 		data = base64.decode(data);
-	-- 		local file = assert(io.open(OUTPUTPATH..filename..".dll", "wb"));
-	-- 		file:write(data);
-	-- 		file:close();
-	-- 	end
-	-- 	if(MOCK_UP) then
-	-- 		libSneedio, err = pcall(require, DLL_FILENAMES[1]);
-	-- 		if(not libSneedio) then
-	-- 			print("failed to load libSneedio, cleaning up..");
-	-- 			print(err);
-	-- 			for _, filename in ipairs(DLL_FILENAMES) do
-	-- 				local name = filename..".dll";
-	-- 				os.remove(name);
-	-- 				print("clean up ", name);
-	-- 			end
-	-- 		end
-	-- 	else
-	-- 		libSneedio, err = pcall(require, DLL_FILENAMES[1]);
-	-- 		if(not libSneedio) then print(err) end;
-	-- 	end
-	-- end
-	-- UnpackThemDlls();
+	PrintError("unable to load libsneedio!");
 end
 
 --#endregion init stuff soon to be removed into their own libs
@@ -968,8 +940,27 @@ sneedio._LoadUserConfig = function ()
 	var_dump(userConfig);
 	sneedio._FrontEndMusic = userConfig["FrontEndMusic"];
 
-	if(userConfig["AlwaysMuteWarscapeMusic"]) then libSneedio.AlwaysMuteWarscapeMusic(); end
+	local BatteMusic = userConfig["BattleMusic"];
 
+
+	ForEach(BatteMusic, function (battleMusicTypes, faction)
+		print("_LoadUserConfig: processing "..faction);
+		sneedio._MusicPlaylist[faction] = {};
+		sneedio._MusicPlaylist[faction]["Battle"] = {};
+		ForEach(battleMusicTypes, function (music, type)
+			if(sneedio._MusicPlaylist[faction]["Battle"][type] == nil) then
+				sneedio._MusicPlaylist[faction]["Battle"][type] = {};
+			end
+			ForEach(music, function (m)
+				local mus = m;
+				mus.CurrentDuration = 0;
+				table.insert(sneedio._MusicPlaylist[faction]["Battle"][type], mus);
+			end);
+		end);
+	end);
+
+	if(userConfig["AlwaysMuteWarscapeMusic"]) then libSneedio.AlwaysMuteWarscapeMusic(); end
+	print("audio loaded");
 end
 
 --#region frontend procedures
@@ -1026,6 +1017,10 @@ end
 
 sneedio._InitCampaign = function ()
 	if(CM == nil) then return false; end
+
+	sneedio._LoadUserConfig();
+	sneedio._ValidateMusicData();
+
 	core:add_listener(
 		"sneedio_on_unit_select_campaign",
 		"CharacterSelected",
@@ -1485,7 +1480,7 @@ sneedio._FadeToMuteMusic = function (bMute)
 end
 
 sneedio._ProcessSmoothMusicTransition = function ()
-	
+
 	if(sneedio.IsBattlePaused()) then return; end
 
 	if(sneedio._TransitionMusicFlag == 0) then -- no need to process any transition if flag is not set
@@ -1650,6 +1645,44 @@ sneedio._ProcessMusicEventBattle = function ()
 	if(sneedio.IsCurrentMusicQuarterWaythrough()) then
 		sneedio._UpdateMusicSituation();
 	end
+end
+
+sneedio._ValidateMusicData = function ()
+	ForEach(sneedio._MusicPlaylist, function (musicData, factionKey)
+		if(factionKey == "faction_none") then return; end
+		if(CM) then
+			local battleMusicData = musicData["CampaignMap"];
+			if(battleMusicData == nil or #battleMusicData == 0) then
+				PrintError(factionKey.." has empty music list");
+			end
+		end
+		if(BM) then
+			local hasMissingTypes = false;
+			local missingTypes = {
+				["Deployment"] = true,
+				["FirstEngagement"] = true,
+				["Balanced"] = true,
+				["Losing"] = true,
+				["Winning"] = true;
+			};
+			local battleMusicData = musicData["Battle"];
+			ForEach(battleMusicData, function (music, musicType)
+				missingTypes[musicType] = #music == 0;
+			end);
+			ForEach(missingTypes, function (value, key)
+				if(value) then
+					PrintError(factionKey.." battle music has missing music type: "..key.." this can cause playback problem");
+					hasMissingTypes = true;
+				end
+			end);
+			if(hasMissingTypes) then
+				PrintWarning("there is playlist problem for faction "..factionKey);
+			else
+				print(factionKey.." playlist is ok");
+			end
+		end
+	end);
+	var_dump(sneedio._MusicPlaylist);
 end
 
 ---------------------------Sound effects methods----------------------------------
@@ -1970,8 +2003,10 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 		PrintError("not in battle mode!");
 		return;
 	end
-
 	print("battle mode");
+
+	sneedio._LoadUserConfig();
+	sneedio._ValidateMusicData();
 
 	sneedio._BattleOnTick();
 	core:add_listener(
@@ -2547,331 +2582,7 @@ sneedio.RegisterVoice("teb_borgio_the_besieger", {
 });
 
 
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Deployment",
-	{
-		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-		MaxDuration = 210
-	},
-	{
-		FileName = "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-		MaxDuration = 182
-	},
-	{
-		FileName = "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-		MaxDuration = 177
-	},
-	{
-		FileName = "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-		MaxDuration = 162
-	}
-);
 
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "FirstEngagement",
-	{
-		FileName = "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-		MaxDuration = 210
-	},
-	{
-		FileName = "music/first_engage/06 Guillotine.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/07 Honor.mp3",
-		MaxDuration = 81
-	},
-	{
-		FileName = "music/first_engage/17 The Fallen (alternative).mp3",
-		MaxDuration = 158
-	}
-);
-
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Balanced",
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-		MaxDuration = 135
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-		MaxDuration = 135
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-		MaxDuration = 188
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-		MaxDuration = 188
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
-		MaxDuration = 138
-	},
-
-	{
-		FileName = "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-		MaxDuration = 248
-	},
-	{
-	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-	 	MaxDuration = 208
-	},
-	{
-		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-		MaxDuration = 237
-	}
-);
-
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Losing",
-	{
-		FileName = "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-		MaxDuration = 207
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
-		MaxDuration = 110
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
-		MaxDuration = 246
-	}
-);
-
-sneedio.AddMusicBattle("wh2_dlc14_brt_chevaliers_de_lyonesse", "Winning",
-	{
-		FileName = "music/winning/36 Medieval II Total War (winning) 3m 10s.mp3",
-		MaxDuration = 190
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
-		MaxDuration = 272
-	}
-);
-
-------------
-
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Deployment",
-	{
-		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-		MaxDuration = 210
-	},
-	{
-		FileName = "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-		MaxDuration = 182
-	},
-	{
-		FileName = "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-		MaxDuration = 177
-	},
-	{
-		FileName = "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-		MaxDuration = 162
-	}
-);
-
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "FirstEngagement",
-	{
-		FileName = "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/06 Guillotine.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/07 Honor.mp3",
-		MaxDuration = 81
-	},
-	{
-		FileName = "music/first_engage/17 The Fallen (alternative).mp3",
-		MaxDuration = 158
-	},
-	{
-		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-		MaxDuration = 210
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Balanced",
-	{
-		FileName = "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-		MaxDuration = 248
-	},
-	{
-	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-	 	MaxDuration = 210
-	},
-	{
-		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-		MaxDuration = 237
-	},
-	{
-		FileName = "music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
-		MaxDuration = 185
-	},
-	{
-		FileName = "music/balanced/37 Fight While Mounted 1.mp3",
-		MaxDuration = 180
-	},
-	{
-		FileName = "music/balanced/43 Fight 2.mp3",
-		MaxDuration = 117
-	},
-	{
-		FileName = "music/balanced/58 Ambushed By Rhodok.mp3",
-		MaxDuration = 120
-	},
-	{
-		FileName = "music/balanced/57 Ambushed By Swadian.mp3",
-		MaxDuration = 103
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Losing",
-	{
-		FileName = "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-		MaxDuration = 207
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Winning",
-	{
-		FileName = "music/first_engage/07 Honor.mp3",
-		MaxDuration = 81
-	}
-);
-
-----------------------
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia", "Deployment",
-	{
-		FileName = "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-		MaxDuration = 210
-	},
-	{
-		FileName = "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-		MaxDuration = 182
-	},
-	{
-		FileName = "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-		MaxDuration = 177
-	},
-	{
-		FileName = "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-		MaxDuration = 162
-	}
-);
-
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia", "FirstEngagement",
-	{
-		FileName = "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/06 Guillotine.mp3",
-		MaxDuration = 222
-	},
-	{
-		FileName = "music/first_engage/07 Honor.mp3",
-		MaxDuration = 81
-	},
-	{
-		FileName = "music/first_engage/17 The Fallen (alternative).mp3",
-		MaxDuration = 158
-	},
-	{
-		FileName = "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-		MaxDuration = 210
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia", "Balanced",
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-		MaxDuration = 135
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-		MaxDuration = 135
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-		MaxDuration = 188
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-		MaxDuration = 188
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
-		MaxDuration = 138
-	},
-
-	{
-		FileName = "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-		MaxDuration = 248
-	},
-	{
-	 	FileName = "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-	 	MaxDuration = 210
-	},
-	{
-		FileName = "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-		MaxDuration = 237
-	},
-	{
-		FileName = "music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
-		MaxDuration = 185
-	},
-	{
-		FileName = "music/balanced/37 Fight While Mounted 1.mp3",
-		MaxDuration = 180
-	},
-	{
-		FileName = "music/balanced/43 Fight 2.mp3",
-		MaxDuration = 117
-	},
-	{
-		FileName = "music/balanced/58 Ambushed By Rhodok.mp3",
-		MaxDuration = 120
-	},
-	{
-		FileName = "music/balanced/57 Ambushed By Swadian.mp3",
-		MaxDuration = 103
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia", "Losing",
-	{
-		FileName = "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-		MaxDuration = 207
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
-		MaxDuration = 110
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
-		MaxDuration = 246
-	}
-);
-
-sneedio.AddMusicBattle("wh_main_brt_bretonnia", "Winning",
-	{
-		FileName = "music/first_engage/07 Honor.mp3",
-		MaxDuration = 81
-	},
-	{
-		FileName = "music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
-		MaxDuration = 272
-	}
-);
 
 --sneedio.Debug();
 
@@ -2917,9 +2628,8 @@ local SneedioBattleMain = function()
 				end
             end);
     end);
-
 	sneedio._RegisterSneedioTickBattleFuns();
-	sneedio.Debug();
+	--sneedio.Debug();
 	print("battle has sneeded!");
 end
 
