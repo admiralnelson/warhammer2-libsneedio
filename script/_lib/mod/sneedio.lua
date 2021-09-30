@@ -3,8 +3,6 @@ if(_G.sneedio ~= nil) then
 end
 
 local math = math;
-local PError = PrintError or print;
-local PWarn = PrintWarning or print;
 local print2 = print2;
 local real_timer = real_timer;
 local core = core;
@@ -32,6 +30,9 @@ local print = function (x)
 	out("chuckio: "..tostring(x));
 	if(print2) then print2(tostring(x).."\n"); end
 end;
+
+local PError = PrintError or print;
+local PWarn = PrintWarning or print;
 
 local PrintError = function (x)
 	if(PError) then PError(tostring(x).."\a\a\n"); else print("ERROR "..x); end
