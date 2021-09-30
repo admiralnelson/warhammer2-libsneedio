@@ -2618,41 +2618,5 @@ if BM ~= nil then SneedioBattleMain(); end
 if CM ~= nil then SneedioCampaignMain(); end
 if CM == nil and BM == nil then SneedioFrontEndMain(); end
 
-local TILEA_TEST = true;
-if(TILEA_TEST and CM) then
-	CM:create_force_with_general(
-		"wh_main_teb_tilea",
-		"til_greatswords",
-		"wh_main_tilea_miragliano",
-		0,
-		0,
-		"general",
-		"teb_borgio_the_besieger",
-		"997016",
-		"997017",
-		"",
-		"",
-		true,
-		function ()
-			print("debug: ok");
-		end
-	);
-end
-
-sneedio.RegisterCallbackSpeedEventOnBattle("test", "Normal", function()
-	print("game is being played");
-end);
-
-sneedio.RegisterCallbackSpeedEventOnBattle("test", "SlowMo", function()
-	print("game is on slowmo");
-end);
-
-sneedio.RegisterCallbackSpeedEventOnBattle("test", "Paused", function()
-	print("game is paused");
-end);
-
-sneedio.RegisterCallbackSpeedEventOnBattle("test", "FastForward", function()
-	print("game is on fastforward");
-end);
 
 return _G.sneedio;
