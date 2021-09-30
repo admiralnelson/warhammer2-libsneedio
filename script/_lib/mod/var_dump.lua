@@ -1,9 +1,13 @@
-local MOCK_UP = false;
-if(not MOCK_UP) then
-	print = out;
-end
+local print2 = print2;
+local out = out;
 
-local function string(o)
+local print = function (x)
+	if(not SNEEDIO_DEBUG) then return; end
+	out("chuckio: "..tostring(x));
+	if(print2) then print2(tostring(x).."\n"); end
+end;
+
+local function string_(o)
     return '"' .. tostring(o) .. '"'
 end
 
@@ -15,13 +19,13 @@ local function recurse(o, indent)
         local first = true
         for k,v in pairs(o) do
             if first == false then s = s .. ', \n' end
-            if type(k) ~= 'number' then k = string(k) end
+            if type(k) ~= 'number' then k = string_(k) end
             s = s .. indent2 .. '[' .. k .. '] = ' .. recurse(v, indent2)
             first = false
         end
         return s .. '\n' .. indent .. '}'
     else
-        return string(o)
+        return string_(o)
     end
 end
 
