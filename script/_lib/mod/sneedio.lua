@@ -127,9 +127,8 @@ var_dump(real_timer);
 
 TM = {
 	_ListOfCallbacks = {},
-	_ListOfCallbacksOnce = {},
 	_bInited = false,
-	OnceCallback = function (callback, delay)
+	OnceCallback = function (callback, delay, name)
 		if(type(callback) ~= "function" ) then
 			PrintError("callback is not a function");
 			error("callback err");
@@ -143,9 +142,12 @@ TM = {
 			delay = 0;
 			return;
 		end
-		PrintError("not implemented yet");
-		error("FIX ME: TODO NOT IMPLEMENTED");
+
+		name = name .. "_ONCE";
+		TM._ListOfCallbacks[name] = callback;
+		real_timer.register_singleshot(name, delay)
 	end,
+
 	RepeatCallback = function (callback, delay, name)
 		if(type(callback) ~= "function") then
 			PrintError("callback is not a function");
@@ -170,9 +172,18 @@ TM = {
 		real_timer.register_repeating(name, delay);
 	end,
 
+	RemoveCallbackOnce = function (name)
+		if type(name) ~= "string" then return end
+		name = name .. "_ONCE";
+
+		TM._ListOfCallbacks[name] = nil
+		real_timer.unregister(name);
+		--type hint
+		name = "";
+	end,
+
 	RemoveCallback = function (name)
 		if type(name) ~= "string" then return end
-		if not TM._ListOfCallbacks[name] then return end
 
 		TM._ListOfCallbacks[name] = nil
 		real_timer.unregister(name);
@@ -2396,7 +2407,7 @@ _G.sneedio = sneedio;
 
 --sneedio.Debug();
 
-print(sneedio.GetPlayerFaction());
+--print(sneedio.GetPlayerFaction());
 
 out("hello world");
 
@@ -2456,8 +2467,8 @@ local SneedioFrontEndMain = function ()
 end
 
 -- give em delay so our client/modder script can add voices
-if BM ~= nil then BM:callback(function () SneedioBattleMain(); end , SYSTEM_TICK * 5); end
-if CM ~= nil then CM:callback(function () SneedioCampaignMain(); end, 0.5); end
+if BM ~= nil then TM.OnceCallback(function () SneedioBattleMain(); end, SYSTEM_TICK * 5, "battle once"); end
+if CM ~= nil then TM.OnceCallback(function () SneedioCampaignMain(); end, SYSTEM_TICK * 5, "campaign once"); end
 if CM == nil and BM == nil then SneedioFrontEndMain(); end
 
 
