@@ -1,3 +1,7 @@
+if(_G.sneedio ~= nil) then
+	return _G.sneedio;
+end
+
 local math = math;
 local PError = PrintError or print;
 local PWarn = PrintWarning or print;
@@ -73,11 +77,7 @@ local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
 
 --#region init stuff soon to be removed into their own libs
 
-local base64 = require("base64");
 local var_dump = require("var_dump");
-if(base64) then
-	print("base64 is working");
-end
 if(var_dump) then
 	print("var_dump is working");
 end
@@ -99,12 +99,6 @@ local DLL_FILENAMES = {
 	"libmodplug-1",
 	"libFLAC-8"
 };
-
-print("line 30 ok");
-
-if(_G.sneedio) then
-	return _G.sneedio;
-end
 
 _G.sneedio = {};
 
@@ -2400,159 +2394,6 @@ _G.sneedio = sneedio;
 
 --return sneedio;
 
--- let's register our audio first
-
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_0", {
-	["Select"] = {
-		"woman_yell_1.ogg",
-	},
-	["Affirmative"] = {
-		"woman_yell_2.ogg"
-	}
-});
-
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_repanse_de_lyonesse_1", {
-	["Select"] = {
-		"woman_yell_1.ogg",
-	},
-	["Affirmative"] = {
-		"woman_yell_2.ogg"
-	}
-});
-
-
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_0", {
-	["Select"] = {
-		"man_grunt_1.ogg",
-		"man_grunt_2.ogg",
-		"man_grunt_5.ogg",
-		"man_grunt_13.ogg",
-		"man_grunt_3.ogg",
-	},
-	["Affirmative"] = {
-		"man_grunt_1.ogg",
-		"man_grunt_5.ogg",
-		"man_grunt_3.ogg",
-	},
-	["Ambiences"] = {
-		["Idle"] = {
-			{
-				Cooldown = 10,
-				FileName = "man_insult_13.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_7.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_3.ogg",
-			}
-		},
-		["Attack"] = {
-			{
-				Cooldown = 10,
-				FileName = "man_yell_11.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_yell_15.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_3.ogg",
-			}
-		}
-	}
-});
-
-sneedio.RegisterVoice("wh2_dlc14_brt_cha_henri_le_massif_3", {
-	["Select"] = {
-		"man_grunt_1.ogg",
-		"man_grunt_2.ogg",
-		"man_grunt_5.ogg",
-		"man_grunt_13.ogg",
-		"man_grunt_3.ogg",
-	},
-	["Affirmative"] = {
-		"man_grunt_1.ogg",
-		"man_grunt_5.ogg",
-		"man_grunt_3.ogg",
-	},
-	["Ambiences"] = {
-		["Idle"] = {
-			{
-				Cooldown = 10,
-				FileName = "man_insult_13.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_7.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_3.ogg",
-			}
-		},
-		["Attack"] = {
-			{
-				Cooldown = 10,
-				FileName = "man_yell_11.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_yell_15.ogg",
-			},
-			{
-				Cooldown = 10,
-				FileName = "man_insult_3.ogg",
-			}
-		}
-	}
-});
-
-sneedio.RegisterVoice("teb_borgio_the_besieger", {
-	["Select"] = {
-		"voice_over/borgio/interactive/select/audio (1).wav",
-		"voice_over/borgio/interactive/select/audio (2).wav",
-		"voice_over/borgio/interactive/select/audio (3).wav",
-		"voice_over/borgio/interactive/select/audio (10).wav",
-	},
-	["Affirmative"] = {
-		"voice_over/borgio/interactive/move/audio (4).wav",
-		"voice_over/borgio/interactive/move/audio (5).wav",
-		"voice_over/borgio/interactive/move/audio (7).wav",
-		"voice_over/borgio/interactive/move/audio (11).wav",
-		"voice_over/borgio/interactive/move/audio (12).wav",
-	},
-	["Hostile"] = {
-		"voice_over/borgio/interactive/reject/audio (9).wav",
-		"voice_over/borgio/interactive/reject/audio (13).wav",
-	},
-	["Abilities"] = {
-		"voice_over/borgio/interactive/attack/audio (6).wav",
-		"voice_over/borgio/interactive/attack/audio (8).wav",
-		"voice_over/borgio/interactive/attack/audio.wav",
-	},
-	["Diplomacy"] = {
-		["Why talk to you? The Grand Theogonist should declare you traitors and heretics! "] = "voice_over/borgio/diplomacy/Why talk to you The Grand Theogonist should declare you traitors and heretics.wav",
-		["Surely an agreement will be reached, for are we all not sons of Sigmar? "] = "voice_over/borgio/diplomacy/Surely an agreement will be reached, for are we all not sons of Sigmar.wav",
-		["Greetings my countrymen, do you come in peace on this fine Marktag? "] = "voice_over/borgio/diplomacy/Greetings my countrymen, do you come in peace on this fine Marktag.wav",
-		["It is good to see fellow sons of the Empire this day! "] = "voice_over/borgio/diplomacy/It is good to see fellow sons of the Empire this day.wav",
-		["You dare come at me making demands? Call yourself men of the Empire?! "] = "voice_over/borgio/diplomacy/You dare come at me making demands Call yourself men of the Empire.wav",
-		["Welcome, my countrymen! "] = "voice_over/borgio/diplomacy/Welcome, my countrymen.wav",
-		["You have a proposal? We are willing to hear it. "] = "voice_over/borgio/diplomacy/You have a proposal We are willing to hear it.wav",
-		["I am ready to parley, I hope your words are wise. "] = "voice_over/borgio/diplomacy/I am ready to parley, I hope your words are wise.",
-		["Greetings, stranger… "] = "voice_over/borgio/diplomacy/Greetings, stranger.wav",
-		["Deliver your message… "] = "voice_over/borgio/diplomacy/Deliver your message.wav",
-		["Greetings - we may not be the Empire, but our realm has riches and strength in equal measure. "] = "voice_over/borgio/diplomacy/Greetings - we may not be the Empire, but our realm has riches and strength in equal measure.wav",
-	},
-	["Ambiences"] = {}
-});
-
-
-
-
 --sneedio.Debug();
 
 print(sneedio.GetPlayerFaction());
@@ -2614,8 +2455,9 @@ local SneedioFrontEndMain = function ()
 	sneedio._InitFrontEnd();
 end
 
-if BM ~= nil then SneedioBattleMain(); end
-if CM ~= nil then SneedioCampaignMain(); end
+-- give em delay so our client/modder script can add voices
+if BM ~= nil then BM:callback(function () SneedioBattleMain(); end , SYSTEM_TICK * 5); end
+if CM ~= nil then CM:callback(function () SneedioCampaignMain(); end, 0.5); end
 if CM == nil and BM == nil then SneedioFrontEndMain(); end
 
 
