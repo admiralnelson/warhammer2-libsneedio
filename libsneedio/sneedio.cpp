@@ -227,8 +227,8 @@ int L_UpdateListenerPosition(lua_State* L) //6 params.
 	}
 	lua_pop(L, 1);
 
-	std::cout << "pos " << " x " << keyValueTablePosition["x"] << " y " << keyValueTablePosition["y"] << " z " << keyValueTablePosition["z"] << "\n";
-	std::cout << "tar " << " x " << keyValueTableTarget["x"] << " y " << keyValueTableTarget["y"] << " z " << keyValueTableTarget["z"] << "\n";
+	//std::cout << "pos " << " x " << keyValueTablePosition["x"] << " y " << keyValueTablePosition["y"] << " z " << keyValueTablePosition["z"] << "\n";
+	//std::cout << "tar " << " x " << keyValueTableTarget["x"] << " y " << keyValueTableTarget["y"] << " z " << keyValueTableTarget["z"] << "\n";
 	float xPos = keyValueTablePosition["x"];
 	float yPos = keyValueTablePosition["y"];
 	float zPos = keyValueTablePosition["z"];
