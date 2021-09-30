@@ -59,6 +59,9 @@ local TRANSITION_TICK = 100;
 local SYSTEM_TICK = 100;
 local BATTLE_EVENT_MONITOR_TICK = 3*1000;
 local BATTLE_MORALE_MONITOR_TICK = 5*1000;
+-- ambient tick in ms, potentially expensive operation as it iterates units in AMBIENT_TRIGGER_CAMERA_DISTANCE
+local AMBIENT_TICK = 5*1000;
+local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
 
 --#region init stuff soon to be removed into their own libs
 
@@ -66,7 +69,8 @@ local base64 = require("base64");
 if(base64) then
 	PrintWarning("base64 is working");
 end
-local json = require("json") or require("libsneedio_json");
+--local json = require("json") or require("libsneedio_json");
+local json = require("libsneedio_json");
 if(json)then
 	PrintWarning("json has loaded");
 end
@@ -535,7 +539,12 @@ sneedio.MuteGameEngineMusic = function (bMute)
 	end
 end
 
+sneedio.IsPaused = function()
+	return sneedio._bPaused;
+end
+
 sneedio.Pause = function (bPause)
+	sneedio._bPaused = bPause;
 	libSneedio.Pause(tostring(bPause));
 end
 
@@ -577,6 +586,10 @@ sneedio.AddMusicCampaign = function (factionId, ...)
 end
 
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
+	if(not sneedio._bAllowModToAddMusic) then
+		PrintWarning("AddMusicBattle: sneedio._bAllowModToAddMusic was set to false. Mod music is not allowed");
+		return;
+	end
 	local fileNamesArr = {...};
 	if(Situation == nil or Situation == "") then
 		PrintError("AddMusicBattle: Situation was empty!");
@@ -659,11 +672,11 @@ sneedio.GetPlayerFactionPlaylistForCampaign = function ()
 	if(CM == nil)then return; end
 	local factionKey = sneedio.GetPlayerFaction();
 	if(sneedio._MusicPlaylist[factionKey] == nil)then
-		print("faction "..factionKey.." has no playlist registered");
+		PrintWarning("faction "..factionKey.." has no playlist registered");
 		return;
 	end
 	if(sneedio._MusicPlaylist[factionKey]["CampaignMap"] == nil)then
-		print("faction "..factionKey.." has no campaign map music playlist");
+		PrintWarning("faction "..factionKey.." has no campaign map music playlist");
 		return;
 	end
 	return sneedio._MusicPlaylist[factionKey]["CampaignMap"];
@@ -855,7 +868,7 @@ sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Cal
 end
 
 sneedio.IsUnitSelected = function(unit)
-	if(not is_unit(unit)) then 
+	if(not is_unit(unit)) then
 		print("not a unit");
 		return false;
 	end;
@@ -939,9 +952,18 @@ sneedio._LoadUserConfig = function ()
 
 	var_dump(userConfig);
 	sneedio._FrontEndMusic = userConfig["FrontEndMusic"];
-
+	sneedio._bAllowModToAddMusic = userConfig["OverrideAllModMusic"] or false;
 	local BatteMusic = userConfig["BattleMusic"];
+	local CampaignMusic = userConfig["FactionMusic"];
 
+	ForEach(CampaignMusic, function (campaignMusicArr, faction)
+		sneedio._MusicPlaylist[faction] = {};
+		sneedio._MusicPlaylist[faction]["CampaignMap"] = {};
+		ForEach(campaignMusicArr, function (m)
+			m.CurrentDuration = 0;
+			table.insert(sneedio._MusicPlaylist[faction]["CampaignMap"], m);
+		end);
+	end);
 
 	ForEach(BatteMusic, function (battleMusicTypes, faction)
 		print("_LoadUserConfig: processing "..faction);
@@ -1433,7 +1455,7 @@ sneedio._MonitorRoutingUnits = function ()
 	local EnemyRouting = 0;
 	local TotalEnemyUnits = 0;
 	ForEachUnitsEnemy(function (Unit, Armies)
-		if(Unit:is_routing()) then 
+		if(Unit:is_routing()) then
 			EnemyRouting = EnemyRouting + 1;
 		end
 		TotalEnemyUnits = TotalEnemyUnits + 1;
@@ -1444,7 +1466,7 @@ sneedio._MonitorRoutingUnits = function ()
 	local PlayerRouting = 0;
 	local TotalPlayerUnits = 0;
 	ForEachUnitsPlayer(function (Unit, Armies)
-		if(Unit:is_routing()) then 
+		if(Unit:is_routing()) then
 			PlayerRouting = PlayerRouting + 1;
 		end
 		TotalPlayerUnits = TotalPlayerUnits + 1;
@@ -1562,7 +1584,7 @@ sneedio._PlayMusic = function (musicData)
 		table.remove(sneedio._Last2PlayedMusic, 1);
 	end
 	table.insert(sneedio._Last2PlayedMusic, musicData);
-	print("now playing "..musicData.FileName.." duration is "..tostring(musicData.MaxDuration));
+	PrintWarning("now playing "..musicData.FileName.." duration is "..tostring(musicData.MaxDuration));
 	-- start mute transition
 	sneedio._TransitionMusicFlag = 1;
 	print("flag is set "..tostring(sneedio._TransitionMusicFlag));
@@ -1573,11 +1595,8 @@ end
 -- if game was fast forward, the timer will get FASTER!
 
 sneedio._MusicTimeTracker = function ()
-	if(sneedio.IsBattlePaused()) then
-		sneedio.Pause(true);
+	if(sneedio.IsPaused()) then
 		return;
-	else
-		sneedio.Pause(false);
 	end
 	if(sneedio._CurrentPlayedMusic) then
 		if(sneedio.IsCurrentMusicFinished()) then
@@ -1648,16 +1667,18 @@ sneedio._ProcessMusicEventBattle = function ()
 end
 
 sneedio._ValidateMusicData = function ()
+	local hasMissingTypes = false;
 	ForEach(sneedio._MusicPlaylist, function (musicData, factionKey)
 		if(factionKey == "faction_none") then return; end
+		print("_ValidateMusicData processing "..factionKey);
 		if(CM) then
 			local battleMusicData = musicData["CampaignMap"];
 			if(battleMusicData == nil or #battleMusicData == 0) then
 				PrintError(factionKey.." has empty music list");
+				return;
 			end
 		end
 		if(BM) then
-			local hasMissingTypes = false;
 			local missingTypes = {
 				["Deployment"] = true,
 				["FirstEngagement"] = true,
@@ -1666,6 +1687,10 @@ sneedio._ValidateMusicData = function ()
 				["Winning"] = true;
 			};
 			local battleMusicData = musicData["Battle"];
+			if(battleMusicData == nil) then
+				PrintError(factionKey.." has no battle music at all");
+				return;
+			end
 			ForEach(battleMusicData, function (music, musicType)
 				missingTypes[musicType] = #music == 0;
 			end);
@@ -1683,6 +1708,7 @@ sneedio._ValidateMusicData = function ()
 		end
 	end);
 	var_dump(sneedio._MusicPlaylist);
+	return hasMissingTypes;
 end
 
 ---------------------------Sound effects methods----------------------------------
@@ -1832,8 +1858,7 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 	ForEach(sneedio._MapUnitInstanceNameToActualUnits, function (TheActualUnit)
 		if(TheActualUnit == nil) then return; end
 		local Distance = cameraPos:distance(TheActualUnit:position());
-		local randomDelay = 9*10; --todo, improve this algo!
-		if(Distance < 40) then
+		if(Distance < AMBIENT_TRIGGER_CAMERA_DISTANCE) then
 			--print("line 318 -- process ambient sound");
 			if(TheActualUnit:is_idle()) then
 				print("line 326 -- process ambient sound");
@@ -1858,45 +1883,6 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 			end
 		end
 	end);
-
-end
-
-sneedio._ProcessAmbienceQueues = function()
-	local Timestamp = sneedio.GetBattleTicks();
-	ForEach(sneedio._AmbienceQueues, function (unitInstanceName, queues)
-		-- print("processed "..unitInstanceName);
-		if(queues and #queues > 0) then
-			local top = queues[1];
-			local camPos = BM:camera():position();
-			print("pop ambiencequeue "..top.InstancedName.." current tick "..tostring(sneedio.GetBattleTicks()));
-			sneedio._PlayVoiceBattle(top.InstancedName, camPos, top.Unit:position(), true);
-			table.remove(queues, 1);
-		end
-	end);
-end
-
-sneedio._QueueAmbienceVoiceToPlay = function(unitInstanceName, delayInSecs, theUnit)
-	local Timestamp = sneedio.GetBattleTicks();
-	local Queue = {
-		InstancedName = unitInstanceName,
-		PlayAfterTicks = Timestamp + delayInSecs*1000,
-		Unit = theUnit
-	};
-	-- table.insert(sneedio._AmbienceQueues, Queue);
-	if(sneedio._AmbienceQueues[unitInstanceName] == nil) then
-		sneedio._AmbienceQueues[unitInstanceName] = {};
-		print("queued new ambience voice "..unitInstanceName.." delayInSecs "..tostring(delayInSecs).." will play at ticks "..tostring(Queue.PlayAfterTicks).." current ticks "..tostring(Timestamp));
-		table.insert(sneedio._AmbienceQueues[unitInstanceName], Queue);
-	elseif(#sneedio._AmbienceQueues[unitInstanceName] < 1) then
-		print("queued new ambience voice "..unitInstanceName.." delayInSecs "..tostring(delayInSecs).." will play at ticks "..tostring(Queue.PlayAfterTicks).." current ticks "..tostring(Timestamp));
-		-- local prev = sneedio._AmbienceQueues[unitInstanceName][#sneedio._AmbienceQueues];
-		-- if(Queue.PlayAfterTicks - prev.PlayAfterTicks < 2*1000)then
-			-- Queue.PlayAfterTicks = Queue.PlayAfterTicks + math.random(2,5)*1000;
-		-- end
-		table.insert(sneedio._AmbienceQueues[unitInstanceName], Queue);
-	else
-		print("queue is overloaded. ");
-	end
 
 end
 
@@ -1976,9 +1962,8 @@ sneedio._BattleOnTick = function()
 	end
 
 	sneedio._ProcessSelectedUnitRightClickBattle();
-	sneedio._ProcessAmbienceQueues();
 
-	sneedio._BattleCurrentTicks = sneedio._BattleCurrentTicks + 100;
+	sneedio._BattleCurrentTicks = sneedio._BattleCurrentTicks + SYSTEM_TICK;
 end
 
 sneedio._ProcessSpeedEvents = function(eventToProcess)
@@ -2101,7 +2086,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
 	TM.RepeatCallback(function ()
 		sneedio._ProcessAmbientUnitSoundBattle();
-	end, 5*1000,
+	end, AMBIENT_TICK,
 	"sneedio_process_ambient_event");
 
 	core:add_listener(
@@ -2222,12 +2207,13 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 	"sneedio_monitor_player+enemies_rallying_units_and_general");
 
 	TM.RepeatCallback(function ()
+		sneedio._bPaused = sneedio.IsBattlePaused();
 		if(BM and not sneedio.IsBattlePaused()) then
 			local camera = BM:camera();
 			sneedio.UpdateCameraPosition(camera:position(), camera:target());
 			sneedio._BattleOnTick();
 		end
-	end, SYSTEM_TICK, 
+	end, SYSTEM_TICK,
 	"sneedio_monitor_battle_camera_position_and_run_tick_funs");
 
 end
@@ -2325,8 +2311,6 @@ sneedio._MapUnitInstanceNameToActualUnits = {
 	["null"] = nil,
 };
 
-sneedio._AmbienceQueues = {};
-
 sneedio._ListOfRegisteredVoices = {
 	["null"] = {
 		["Select"] = {},
@@ -2415,6 +2399,10 @@ sneedio._MusicPlaylist = {
 		},
 	},
 };
+
+sneedio._bAllowModToAddMusic = true;
+
+sneedio._bPaused = false;
 
 --#endregion music vars
 
@@ -2628,6 +2616,7 @@ local SneedioBattleMain = function()
 				end
             end);
     end);
+	sneedio._ValidateMusicData();
 	sneedio._RegisterSneedioTickBattleFuns();
 	--sneedio.Debug();
 	print("battle has sneeded!");
