@@ -1,14 +1,15 @@
-#Libsneedio
+# Libsneedio
+===================
 
-##What is it? 
+## What is it? 
 it's a music and audio library to enable custom music and audio for your dudes.  
 
-##how to build?
+## how to build?
 run make.bat+install.bat  
 or apply patches to external folder, then open the solution to build the binaries  
 don't forget to pack the script and install them in your game.  
 
-##for average normal user  
+## for average normal user  
 go to release page, download the zip, extract it into your total warhammer 2 folder.  
 BEFORE LAUNCHING, make sure to make any adjustment in `user-sneedio.json` file.  
 Here's an example of `user-sneedio.json` file to add music to Gigachad Louen:  
@@ -180,12 +181,12 @@ to smooth out the transition. So if your music is 180 seconds long (that with 10
 You can also set your own frontend music here, pretty neat.  
 when in the launcher, check sneedio.pack  
 
-##how does it work?  
+## how does it work?  
 when sneedio.lua loaded, it tries to execute `require` (or `require2`) function to load the entry point dll `(libsneedio.dll)`  
 after that sneedio.lua will control what music and audio should be played.  
 other dlls such as SDL.dll are used as codecs, removing one of this may cause incompatibilty which certain audio file (such as .ogg)  
 
-##modders? 
+## modders? 
 Yes, my script is not really documented, but you can see how I use it on sketch folder.  
 You can use my library to:  
  - Play audio when a unit is selected  
@@ -196,14 +197,14 @@ You can use my library to:
  - Play audio diplomacy audio in the campaign map  
 don't worry, documentation is a must and I'll make it soon.  
 
-##bug report?   
+## bug report?   
 You can report it by creating new issue with the log file (and with video if possible). If you want full debug output, you can edit the debug  
 parameter in the sneedio.lua script `SNEEDIO_DEBUG = true;` or set your system enviroment `SNEEDIO_DEBUG` to `1`.  
 
-##contributing  
+## contributing  
 YES PLEASE! I suck at programming and I really appreaciate your help.  
 
-##brought to you by: 
+## brought to you by: 
 twg™  
 /g/  
 
