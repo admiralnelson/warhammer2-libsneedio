@@ -1,5 +1,4 @@
 # Libsneedio
-===================
 
 ## What is it? 
 it's a music and audio library to enable custom music and audio for your dudes.  
@@ -175,7 +174,7 @@ Here's an example of `user-sneedio.json` file to add music to Gigachad Louen:
   "AlwaysMuteWarscapeMusic": false
 }
 ```
-make sure the files do exist in specified `FileName` otherwise you may  hear nothing or there could be a playback bug in the playlist.  
+make sure the files do exist in specified `FileName` otherwise you may  hear nothing or there could be a playback bug in the playlist. `FileName` points to relative directory (hint: if you put my_music.mp3 next to Warhammer2.exe, you can simply specify the path `"my_music.mp3"`)
 `MaxDuration` is how long your music should play, it's in second, it's recommended that your music has silent padding at the end, 
 to smooth out the transition. So if your music is 180 seconds long (that with 10 seconds silent padding at the end), you set the `MaxDuration` to 175
 You can also set your own frontend music here, pretty neat.  
