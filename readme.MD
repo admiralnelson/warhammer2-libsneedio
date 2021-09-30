@@ -184,7 +184,7 @@ when in the launcher, check sneedio.pack
 ## how does it work?  
 when sneedio.lua loaded, it tries to execute `require` (or `require2`) function to load the entry point dll `(libsneedio.dll)`  
 after that sneedio.lua will control what music and audio should be played.  
-other dlls such as SDL.dll are used as codecs, removing one of this may cause incompatibilty which certain audio file (such as .ogg)  
+other dlls such as SDL.dll are used as codecs, removing one of these may cause incompatibilty with certain audio file (such as .ogg)  
 
 ## modders? 
 Yes, my script is not really documented, but you can see how I use it on sketch folder.  
