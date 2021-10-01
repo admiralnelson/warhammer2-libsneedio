@@ -16,10 +16,6 @@ local is_uicomponent = is_uicomponent;
 local out = out;
 local cm = cm;
 
-if(_G.sneedio) then
-	return _G.sneedio;
-end
-
 _G.SNEEDIO_DEBUG = false or os.getenv("SNEEDIO_DEBUG");
 
 -- breaks ForEach loop
@@ -2400,6 +2396,15 @@ sneedio._FrontEndMusic = {
 
 sneedio._bNotInFrontEnd = true;
 
+sneedio.TM = TM;
+sneedio.MUSIC_TICK = MUSIC_TICK;
+sneedio.TRANSITION_TICK = TRANSITION_TICK;
+sneedio.SYSTEM_TICK = SYSTEM_TICK;
+sneedio.BATTLE_EVENT_MONITOR_TICK = BATTLE_EVENT_MONITOR_TICK ;
+sneedio.BATTLE_MORALE_MONITOR_TICK = BATTLE_MORALE_MONITOR_TICK;
+sneedio.AMBIENT_TICK = AMBIENT_TICK;
+sneedio.AMBIENT_TRIGGER_CAMERA_DISTANCE = AMBIENT_TRIGGER_CAMERA_DISTANCE;
+
 print("all ok");
 
 _G.sneedio = sneedio;
@@ -2415,7 +2420,7 @@ out("hello world");
 --var_dump(sneedio);
 --var_dump(libSneedio);
 
-local SneedioBattleMain = function()
+sneedio._SneedioBattleMain = function()
 	local ListOfUnits = {};
     ForEachUnitsAll(function(CurrentUnit, CurrentArmy)
 		table.insert(ListOfUnits, CurrentUnit);
@@ -2456,21 +2461,14 @@ local SneedioBattleMain = function()
 	print("battle has sneeded!");
 end
 
-local SneedioCampaignMain = function ()
+sneedio._SneedioCampaignMain = function ()
 	sneedio._InitCampaign();
-	var_dump(sneedio);
 	print("campaign has sneeded!");
 end
 
-local SneedioFrontEndMain = function ()
+sneedio._SneedioFrontEndMain = function ()
 	PrintWarning("called in FRONT END\n");
 	sneedio._InitFrontEnd();
 end
-
--- give em delay so our client/modder script can add voices
-if BM ~= nil then TM.OnceCallback(function () SneedioBattleMain(); end, SYSTEM_TICK * 5, "battle once"); end
-if CM ~= nil then TM.OnceCallback(function () SneedioCampaignMain(); end, SYSTEM_TICK * 5, "campaign once"); end
-if CM == nil and BM == nil then SneedioFrontEndMain(); end
-
 
 return _G.sneedio;
