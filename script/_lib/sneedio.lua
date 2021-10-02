@@ -60,6 +60,10 @@ local MOCK_UP = true;
 local PATH = "/script/bin/";
 local OUTPUTPATH = "";
 
+
+-- for mct
+local SNEEDIO_MOD_IDENTIFIER = "admiralnelson sneedio control panel";
+
 -- music tick in ms, executed in timer
 local MUSIC_TICK = 900;
 -- fadein and out transition tick in ms, executed in timer
@@ -522,6 +526,14 @@ sneedio.MuteGameEngineMusic = function (bMute)
 	end
 end
 
+sneedio.IsVoiceStopped = function ()
+	return sneedio._StopVoice;
+end
+
+sneedio.StopVoice = function (stop)
+	sneedio._StopVoice = stop;
+end
+
 sneedio.IsPaused = function()
 	return sneedio._bPaused;
 end
@@ -759,6 +771,8 @@ sneedio.PlayCustomAudio2D = function (identifier , volume)
 end
 
 sneedio.PlayCustomAudioCampaign = function (identifier, atPosition, maxDistance, volume)
+	if(sneedio.IsVoiceStopped()) then return; end
+
 	if(not CM) then
 		PrintError("error not in campaign mode");
 		return;
@@ -772,6 +786,8 @@ sneedio.PlayCustomAudioCampaign = function (identifier, atPosition, maxDistance,
 end
 
 sneedio.PlayCustomAudioBattle = function(identifier, atPosition, maxDistance, volume, listener)
+	if(sneedio.IsVoiceStopped()) then return; end
+
 	if(not BM) then
 		PrintError("not in battle mode");
 		return;
@@ -1358,6 +1374,7 @@ end
 
 
 sneedio._PlayVoiceCharacterOnCampaign = function(unitHandle, playAtPos)
+	if(sneedio.IsVoiceStopped()) then return; end
 	playAtPos = playAtPos or sneedio._GetCameraPositionCampaign();
 	local MaxDistance = 390;
 	local Volume = 0.8;
@@ -1725,6 +1742,7 @@ end
 ---------------Battle Events--------------------
 
 sneedio._PlayVoiceBattle = function(unitTypeInstanced, cameraPos, playAtPos, bIsAmbient)
+	if(sneedio.IsVoiceStopped()) then return; end
 	bIsAmbient = bIsAmbient or false;
 	print("about to play audio");
 	print("unit is "..unitTypeInstanced);
@@ -1866,7 +1884,6 @@ sneedio._ProcessAmbientUnitSoundBattle = function()
 			end
 		end
 	end);
-
 end
 
 sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
@@ -2387,6 +2404,8 @@ sneedio._bAllowModToAddMusic = true;
 
 sneedio._bPaused = false;
 
+sneedio._StopVoice = false;
+
 --#endregion music vars
 
 sneedio._FrontEndMusic = {
@@ -2404,6 +2423,8 @@ sneedio.BATTLE_EVENT_MONITOR_TICK = BATTLE_EVENT_MONITOR_TICK ;
 sneedio.BATTLE_MORALE_MONITOR_TICK = BATTLE_MORALE_MONITOR_TICK;
 sneedio.AMBIENT_TICK = AMBIENT_TICK;
 sneedio.AMBIENT_TRIGGER_CAMERA_DISTANCE = AMBIENT_TRIGGER_CAMERA_DISTANCE;
+sneedio.SNEEDIO_MOD_IDENTIFIER = SNEEDIO_MOD_IDENTIFIER;
+sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 
 print("all ok");
 
