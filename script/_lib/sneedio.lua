@@ -57,7 +57,7 @@ local MOUSE_MOVE_UNIT = "86";
 local MOUSE_MOVE_UNIT_1 = "86";
 
 local MOCK_UP = true;
-local PATH = "/script/bin/";
+local PATH = "audio/";
 local OUTPUTPATH = "";
 
 
@@ -319,6 +319,7 @@ local InArray = function (array, item)
 	return false;
 end
 
+
 local FilterArray = function (array, pred)
 	local results = {};
 	for _, v in ipairs(array) do
@@ -460,9 +461,74 @@ local CharacterPositionInCampaign = function (characterScriptInterfaceObject)
 	};
 end
 
+local IsFileExist = function (path)
+    local f=io.open(path,"r");
+	if(f~=nil)then
+		io.close(f);
+		return true;
+	else
+		return false;
+	end
+end
+
+local IsAudioHaveBeenExtracted = function (audioHiveFolder, audio)
+    local res = true;
+    ForEach(audio, function (_, filename)
+        local path = PATH..audioHiveFolder.."/"..filename;
+        res = res and IsFileExist(path);
+        if(res) then
+            PrintWarning("file found "..path.."\n");
+        else
+            PrintError("file not found "..path.."\n")
+        end
+    end);
+    return res;
+end
 
 --#endregion helper functions
 
+--- extract audio from base64 table
+-- the is a key value map like this
+-- {
+--    ["audio.mp3"] = "BLsdsdBASE64STRINGaskd",
+--    ["audio2_attack.ogg"] = "BLsdsdBASE64STRINGaskd",
+-- }
+-- where the key is the filename and the value is valid base64 string
+-- @param hiveFolder: string, your audio will be stored under audio/%hiveFolder%
+-- @param audios: a key map table, look above for the format
+-- @param force: boolean, true will extract the audio anyway (could be performance hit if executed frequently)
+sneedio.ExtractAudio = function (hiveFolder, audios, force)
+	force = force or false;
+	if(hiveFolder == nil or
+	   #hiveFolder == 0) then
+		PrintError("hive folder cannot be empty or null");
+		return false;
+	end
+
+	if(not force and IsAudioHaveBeenExtracted(hiveFolder, audios)) then
+		PrintWarning("audio have been extracted before");
+		return false;
+	end
+
+    print("extracting to hive folder "..hiveFolder.."...");
+    if(not IsFileExist("audio"))then
+        if(sneedio.MakeDir(PATH) or sneedio.MakeDir(PATH..hiveFolder.."/")) then
+            print("dir create success\n");
+        else
+            print("failed to make dir");
+        end
+    end
+
+    ForEach(audios, function (b64str, filename)
+        local rawAudio = base64.decode(b64str);
+        local path = PATH..hiveFolder.."/"..filename;
+        local out = io.open(path, "wb");
+        out:write(rawAudio);
+        out:close();
+        PrintWarning("wrote "..path.."\n");
+    end);
+    return true;
+end
 
 --- create directory recursively
 -- @param path: String, path
