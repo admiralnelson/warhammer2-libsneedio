@@ -11,6 +11,7 @@ extern "C" {
     #include "lauxlib.h"
 }
 #include <iostream>
+#include <ShlObj_core.h>
 #pragma comment( lib, "lua" ) 
 
 
@@ -516,6 +517,37 @@ int L_AlwaysMuteWarscapeMusic(lua_State* L)
 	return 0;
 }
 
+BOOL DirectoryExists(LPSTR szPath)
+{
+	DWORD dwAttrib = GetFileAttributesA(szPath);
+
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+void CreateDirectoryRecursively(std::string path)
+{
+	size_t pos = 0;
+	do
+	{
+		pos = path.find_first_of("\\/", pos + 1);
+		CreateDirectoryA(path.substr(0, pos).c_str(), NULL);
+	} while (pos != std::string::npos);
+}
+
+int L_MakeDir(lua_State* L)
+{
+	std::string path = luaL_checkstring(L, 1);
+	if (DirectoryExists(path.data()))
+	{
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	CreateDirectoryRecursively(path);
+	lua_pushboolean(L, true);
+	return 1;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -541,6 +573,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetWarscapeMusicVolume", L_GetWarscapeMusicVolume},
 	{"SetWarscapeMusicVolume", L_SetWarscapeMusicVolume},
 	{"AlwaysMuteWarscapeMusic", L_AlwaysMuteWarscapeMusic},
+	{"MakeDir", L_MakeDir},
 	{NULL,NULL}  // last entry; list terminator
 };
 
