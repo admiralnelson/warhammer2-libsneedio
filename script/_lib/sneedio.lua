@@ -86,6 +86,10 @@ local json = require("libsneedio_json");
 if(json)then
 	print("json has loaded");
 end
+local base64 = require("libsneedio_base64");
+if(base64)then
+	print("base64 has loaded");
+end
 
 local DLL_FILENAMES = {
 	"libsneedio",
@@ -459,6 +463,16 @@ end
 
 --#endregion helper functions
 
+
+--- create directory recursively
+-- @param path: String, path
+-- @return boolean True if succeeded
+sneedio.MakeDir = function (path)
+	return libSneedio.MakeDir(path);
+end
+
+--- Mute Warscape music engine
+-- @param bMute: Boolean, true mutes
 -- FIX ME, there must be better way....
 sneedio.MuteGameEngineMusic = function (bMute)
 	if(BM) then
@@ -526,31 +540,47 @@ sneedio.MuteGameEngineMusic = function (bMute)
 	end
 end
 
+--- check if voice is disabled or not
+-- @return boolean True if voice is disabled
 sneedio.IsVoiceStopped = function ()
 	return sneedio._StopVoice;
 end
 
+--- check if voice is disabled or not
+-- @param stop: Boolean, true mutes voices (and disable the related script functions)
 sneedio.StopVoice = function (stop)
 	sneedio._StopVoice = stop;
 end
 
+--- check if music is paused
+-- @return boolean True if music is paused
 sneedio.IsPaused = function()
 	return sneedio._bPaused;
 end
 
+--- pause the music
+-- @param bPause True if music is paused
 sneedio.Pause = function (bPause)
 	sneedio._bPaused = bPause;
 	libSneedio.Pause(tostring(bPause));
 end
 
+--- mutes sound effects
+-- @param bPause True if sound effects are muted
 sneedio.MuteSoundFX = function (bPause)
 	libSneedio.MuteSoundFX(tostring(bPause));
 end
 
+--- mutes music
+-- @param bPause True if music is paused
 sneedio.MuteMusic = function (bPause)
 	libSneedio.MuteMusic(tostring(bPause));
 end
 
+--- updates libsneedio camera position
+--- we use this function to sync game camera position to libsneedio engine
+-- @param cameraPos vector userdata (is_vector)
+-- @param cameraTarget vector userdata (is_vector)
 sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
 	cameraPos = CAVectorToSneedVector(cameraPos);
 	cameraTarget = CAVectorToSneedVector(cameraTarget);
@@ -559,14 +589,55 @@ sneedio.UpdateCameraPosition = function(cameraPos, cameraTarget)
 	libSneedio.UpdateListenerPosition(cameraPos, cameraTarget);
 end
 
+--- prints out to SNED terminal or .txt file for normal execution (sneedio debug must be turned on)
 sneedio.Debug = function()
 	var_dump(sneedio);
 end
 
+--- load music playlist to be processed by sneedio and uploaded to libsneedio
+-- warning: does not check for playlist validity!
+-- note: the format should look like this
+-- {
+-- 	["CampaignMap"] = {
+-- 		{
+-- 			FileName = "medieval.mp3",
+-- 			MaxDuration = 30,
+-- 		},
+-- 	},
+-- 	["Battle"] = {
+-- 		["Deployment"] = {
+-- 			{
+-- 				FileName = "None.mp3",
+-- 				MaxDuration = 50
+-- 			},
+-- 		},
+-- 		["FirstEngagement"] = {
+-- 			{
+-- 				FileName = "Music A.mp3",
+-- 				MaxDuration = 60
+-- 			}
+-- 		},
+-- 		["Balanced"] = {},
+-- 		["Losing"] = {},
+-- 		["Winning"] = {},
+-- 		["LastStand"] = {},
+-- 	},
+-- }
+-- @param factionid: string, faction key in faction tables
+-- @param MusicPlaylist: lua table, see note above
 sneedio.LoadMusic = function (factionId, MusicPlaylist)
 	sneedio._MusicPlaylist[factionId] = MusicPlaylist;
 end
 
+--- add campaign music for faction
+--  if faction does not exist, it will create one.
+--  music table in variadic argument must looks like this:
+-- {
+-- 	FileName = "medieval.mp3",
+-- 	MaxDuration = 30,
+-- },
+-- @param factionid: string, faction key in faction tables
+-- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicCampaign = function (factionId, ...)
 	if(sneedio._MusicPlaylist[factionId] == nil) then
 		return;
@@ -580,6 +651,18 @@ sneedio.AddMusicCampaign = function (factionId, ...)
 	end);
 end
 
+--- add battle music for faction
+--- if faction does not exist, it will create one.
+--- music table in variadic argument must looks like this:
+--[[
+	{
+		FileName = "medieval.mp3",
+		MaxDuration = 30,
+	},
+]]
+-- @param factionid: string, faction key in faction tables
+-- @param Situation: string, situation must be either: Deployment, FirstEngagement, Balanced, Losing, Winning, LastStand
+-- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
 	if(not sneedio._bAllowModToAddMusic) then
 		PrintWarning("AddMusicBattle: sneedio._bAllowModToAddMusic was set to false. Mod music is not allowed");
@@ -619,24 +702,32 @@ sneedio.AddMusicBattle = function (factionId, Situation, ...)
 	end);
 end
 
--- loaded in battle only
 --#region battle procedures only
+-- loaded in battle only
 
+--- calculates the player rout ratio using cached value
+-- @return real value ranging [0..1]
 sneedio.GetPlayerSideRoutRatioQuick = function ()
 	if(sneedio._CountPlayerUnits == 0) then return 1; end
 	return sneedio._CountPlayerRoutedUnits / sneedio._CountPlayerUnits;
 end
 
+--- calculates the enemy rout ratio using cached value
+-- @return real value ranging [0..1]
 sneedio.GetEnemySideRoutRatioQuick = function ()
 	if(sneedio._CountEnemyUnits == 0) then return 1; end
 	return sneedio._CountEnemyRoutedUnits / sneedio._CountEnemyUnits;
 end
 
+--- calculates the player rout ratio
+-- @return real value ranging [0..1]
 sneedio.GetPlayerSideRoutRatio = function ()
 	sneedio._MonitorRoutingUnits();
 	return sneedio.GetPlayerSideRoutRatioQuick();
 end
 
+--- calculates the enemy rout ratio
+-- @return real value ranging [0..1]
 sneedio.GetEnemySideRoutRatio = function ()
 	sneedio._MonitorRoutingUnits();
 	return sneedio.GetEnemySideRoutRatioQuick();
@@ -644,25 +735,32 @@ end
 
 --#endregion battle procedures only
 
+--- is the current music played 1/2 way through?
+-- @return boolean true if yes
 sneedio.IsCurrentMusicHalfWaythrough = function ()
 	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
 	if(MaxDur <= 0) then return true; end
 	return (sneedio._CurrentPlayedMusic.CurrentDuration / MaxDur) >= 0.5;
 end
 
+--- is the current music played 1/4 way through?
+-- @return boolean true if yes
 sneedio.IsCurrentMusicQuarterWaythrough = function ()
 	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
 	if(MaxDur <= 0) then return true; end
 	return (sneedio._CurrentPlayedMusic.CurrentDuration / MaxDur) >= 0.25;
 end
 
-
+--- is the current music played 1/4 way through?
+-- @return boolean true if yes
 sneedio.IsCurrentMusicFinished = function ()
 	local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
 	if(MaxDur <= 0) then return true; end
 	return sneedio._CurrentPlayedMusic.CurrentDuration >= MaxDur;
 end
 
+--- gets playlist associated with player faction in campaign
+-- @return a playlist tables (array)
 sneedio.GetPlayerFactionPlaylistForCampaign = function ()
 	if(CM == nil)then return; end
 	local factionKey = sneedio.GetPlayerFaction();
@@ -677,6 +775,8 @@ sneedio.GetPlayerFactionPlaylistForCampaign = function ()
 	return sneedio._MusicPlaylist[factionKey]["CampaignMap"];
 end
 
+--- gets playlist associated with player faction in battle
+-- @return a playlist tables (array)
 sneedio.GetPlayerFactionPlaylistForBattle = function (Situation)
 	if(Situation == nil) then
 		PrintError("situation was null!");
@@ -703,6 +803,8 @@ sneedio.GetPlayerFactionPlaylistForBattle = function (Situation)
 	return sneedio._MusicPlaylist[factionKey]["Battle"][Situation];
 end
 
+--- get player faction key
+-- @return faction key string
 sneedio.GetPlayerFaction = function ()
 	if(BM) then
 		return BM:get_player_army():faction_key();
@@ -713,11 +815,15 @@ sneedio.GetPlayerFaction = function ()
 	end
 end
 
+--- get music situation in battle
+-- @return a string either Deployment, FirstEngagement, Balanced, Losing, Winning, or LastStand
 sneedio.GetBattleSituation = function ()
 	if(BM == nil)then return; end
 	return sneedio._CurrentSituation;
 end
 
+--- randomly get next music in the playlist based on the current situation (applies in the campaign too)
+-- @return a table containing music data
 sneedio.GetNextMusicData = function ()
 	local Playlist = {};
 	if(BM) then
@@ -739,6 +845,10 @@ end
 
 --#region audio/voice operations
 
+--- upload arbitary audio file to libsneedio
+--- could be useful for playing UI sound effects or maybe even for custom advisor voice over?
+-- @param identifier: string, name to associate the audio
+-- @param fileName: string, path to the audio file
 sneedio.LoadCustomAudio = function(identifier, fileName)
 	if(sneedio.IsIdentifierValid(identifier))then
 		print("audio already loaded for "..identifier);
@@ -753,10 +863,16 @@ sneedio.LoadCustomAudio = function(identifier, fileName)
 	end
 end
 
+--- check if custom audio identifier is already been used or not
+-- @param identifier: string, identifier associated to a custom audio
+-- @return true if it's valid
 sneedio.IsIdentifierValid = function(identifier)
 	return sneedio._ListOfCustomAudio[identifier] ~= nil;
 end
 
+--- play custom audio in 2D space
+-- @param identifier: string, name to associate the audio (see LoadCustomAudio to upload arbitary audio file)
+-- @param volume: the loudness real number ranging [0..1]
 sneedio.PlayCustomAudio2D = function (identifier , volume)
 	local pos = nil;
 	if(BM)then
@@ -770,6 +886,11 @@ sneedio.PlayCustomAudio2D = function (identifier , volume)
 	end
 end
 
+--- play custom audio in campaign
+-- @param identifier: string, name to associate the audio (see LoadCustomAudio to upload arbitary audio file)
+-- @param atPosition: userdata vector (is_vector), position where the audio will be played
+-- @param maxDistance: number, distance from the listener
+-- @param volume: the loudness real number ranging [0..1]
 sneedio.PlayCustomAudioCampaign = function (identifier, atPosition, maxDistance, volume)
 	if(sneedio.IsVoiceStopped()) then return; end
 
@@ -785,6 +906,12 @@ sneedio.PlayCustomAudioCampaign = function (identifier, atPosition, maxDistance,
 	sneedio.UpdateCameraPosition(cameraPos, target);
 end
 
+--- play custom audio in campaign
+-- @param identifier: string, name to associate the audio (see LoadCustomAudio to upload arbitary audio file)
+-- @param atPosition: userdata vector (is_vector), position where the audio will be played
+-- @param maxDistance: number, distance from the listener
+-- @param volume: the loudness real number ranging [0..1]
+-- @param listener (optional): userdata vector (is_vector), the listener position (optional, listener is the camera)
 sneedio.PlayCustomAudioBattle = function(identifier, atPosition, maxDistance, volume, listener)
 	if(sneedio.IsVoiceStopped()) then return; end
 
@@ -826,10 +953,48 @@ sneedio.PlayCustomAudioBattle = function(identifier, atPosition, maxDistance, vo
 	libSneedio.UpdateListenerPosition(CAVectorToSneedVector(listener), CAVectorToSneedVector(lookat));
 end
 
+--- register voices to associated unit
+-- with format like this
+-- {
+-- 	["Select"] = {},
+-- 	["Affirmative"] = {},
+-- 	["Hostile"] = {},
+-- 	["Abilities"] = {},
+-- 	["Diplomacy"] = {
+-- 		["Diplomacy_str_x"] = "",
+-- 		["Diplomacy_str_y"] = "",
+-- 	},
+-- 	["Ambiences"] = {
+-- 		["CampaignMap"] = {
+-- 			["Any"] = { {Cooldown = 0, FileName = ""} },
+-- 			["Desert"] = {Cooldown = 0, FileName = ""},
+-- 			["OldWorld"] = {Cooldown = 0, FileName = ""},
+-- 			["HighElves"] = {Cooldown = 0, FileName = ""},
+-- 			["Lustria"] = {Cooldown = 0, FileName = ""},
+-- 			["Snow"] = {Cooldown = 0, FileName = ""},
+-- 			["Chaos"] = {Cooldown = 0, FileName = ""}
+-- 		},
+-- 		["Idle"] = {Cooldown = 0, FileName = ""},
+-- 		["Attack"] = {Cooldown = 0, FileName = ""},
+-- 		["Wavering"] = {Cooldown = 0, FileName = ""},
+-- 		["Winning"] = {Cooldown = 0, FileName = ""},
+-- 		["Rampage"] = {Cooldown = 0, FileName = ""},
+-- 		["EnslaveOption"] = {Cooldown = 0, FileName = ""},
+-- 		["KillOption"] = {Cooldown = 0, FileName = ""},
+-- 		["RansomOption"] = {Cooldown = 0, FileName = ""},
+-- 	},
+-- },
+-- note: Cooldown is in second!
+-- @param unittype: string, a main unit key associated with the unit
+-- @param fileName: a table, see the format above
 sneedio.RegisterVoice = function(unittype, fileNames)
+	PrintWarning("Registering voice "..unittype);
+	var_dump(fileNames);
 	sneedio._ListOfRegisteredVoices[unittype] = fileNames;
 end
 
+--- get registered voices from a unit
+-- @return a voice table (see RegisterVoice note to see how the table looks like)
 sneedio.GetListOfVoicesFromUnit = function(unitType, voiceType)
 	if(sneedio._ListOfRegisteredVoices[unitType] == nil) then return nil; end
 	if(sneedio._ListOfRegisteredVoices[unitType][voiceType] == nil) then return nil; end
@@ -839,6 +1004,9 @@ end
 --#endregion audio/voices operations
 
 --#region battle helper
+
+--- get player main general unit
+-- @return general unit userdata (is_unit), it's possible to return null
 sneedio.GetPlayerGeneralOnBattle = function ()
 	if(BM and sneedio._PlayerGeneral == nil)then
 		local general = nil;
@@ -855,6 +1023,10 @@ sneedio.GetPlayerGeneralOnBattle = function ()
 	end
 end
 
+--- register a callback for each speed event (including pause)
+-- @param UniqueName: string to identify the callback
+-- @param EventName: string either Paused, SlowMo, Normal, or FastForward
+-- @param Callback: void function
 sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Callback)
 	PrintWarning("RegisterCallbackSpeedEventOnBattle: registered event "..
 	             UniqueName.." for event "..EventName);
@@ -866,6 +1038,9 @@ sneedio.RegisterCallbackSpeedEventOnBattle = function(UniqueName, EventName, Cal
 	-- var_dump(sneedio._ListOfCallbacksForBattleEvent);
 end
 
+--- check if unit is selected (battle only)
+-- @param unit: userdata unit (is_unit)
+-- @return boolean true if selected
 sneedio.IsUnitSelected = function(unit)
 	if(not is_unit(unit)) then
 		print("not a unit");
@@ -875,6 +1050,8 @@ sneedio.IsUnitSelected = function(unit)
 	return sneedio._MapUnitToSelected[unitTypeInstanced];
 end
 
+--- is battle paused
+-- @return boolean true if paused
 sneedio.IsBattlePaused = function()
 	if (BM == nil) then return false; end
 	local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
@@ -885,6 +1062,8 @@ sneedio.IsBattlePaused = function()
 	end
 end
 
+--- is battle in slow mode
+-- @return boolean true if in slow mode
 sneedio.IsBattleInSlowMo = function()
 	if (BM == nil) then return false; end
 	local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
@@ -895,6 +1074,8 @@ sneedio.IsBattleInSlowMo = function()
 	end
 end
 
+--- is battle in normal mode (1x speed)
+-- @return boolean true if in in normal mode (1x speed)
 sneedio.IsBattleInNormalPlay = function()
 	if (BM == nil) then return false; end
 	local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
@@ -905,6 +1086,8 @@ sneedio.IsBattleInNormalPlay = function()
 	end
 end
 
+--- is battle in fast forward mode (2x speed and up)
+-- @return boolean true if in fast forward mode (2x speed and up)
 sneedio.IsBattleInFastForward = function()
 	if (BM == nil) then return false; end
 	local parent = find_uicomponent(core:get_ui_root(), "radar_holder", "speed_buttons");
@@ -915,6 +1098,8 @@ sneedio.IsBattleInFastForward = function()
 	end
 end
 
+--- get current speed mode
+-- @return string either None (if called outside battle mode), Paused, SlowMo, Normal, or FastForward
 sneedio.GetBattleSpeedMode = function()
 	if(BM == nil) then return "None"; end
 	if(sneedio.IsBattlePaused()) then return "Paused"; end
@@ -924,10 +1109,14 @@ sneedio.GetBattleSpeedMode = function()
 	return "None";
 end
 
+--- get current battle ticks
+-- @return battle ticks in ms
 sneedio.GetBattleTicks = function()
 	return sneedio._BattleCurrentTicks;
 end
 
+--- set libsneedio music channel volume
+-- @param amount real number range [0..1]
 sneedio.SetMusicVolume = function (amount)
 	libSneedio.SetMusicVolume(tostring(amount));
 end
