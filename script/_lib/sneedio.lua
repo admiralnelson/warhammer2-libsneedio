@@ -1,5 +1,8 @@
-if(_G.sneedio ~= nil) then
-	return _G.sneedio;
+------
+-- Main sneedio module
+local var_dump = require("var_dump");
+if(var_dump) then
+	print("var_dump is working");
 end
 
 local math = math;
@@ -15,6 +18,9 @@ local is_unit = is_unit;
 local is_uicomponent = is_uicomponent;
 local out = out;
 local cm = cm;
+local BM = bm or nil;
+local CM = cm or nil;
+local TM = nil;
 
 _G.SNEEDIO_DEBUG = false or os.getenv("SNEEDIO_DEBUG");
 
@@ -40,6 +46,21 @@ local PrintWarning = function (x)
 	--print("WARN "..x);
 end
 
+var_dump(real_timer);
+
+PrintWarning("called from ===========================");
+print(debug.traceback());
+PrintWarning("=======================================");
+
+if(real_timer.register_repeating == nil) then
+	PrintError("REALTIMER WAS NULL, try again after campaign module is loaded");
+	return;
+end
+
+if(_G.sneedio ~= nil) then
+	PrintWarning("sneedio already loaded");
+	return _G.sneedio;
+end
 
 
 print("location of load");
@@ -78,10 +99,7 @@ local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
 
 --#region init stuff soon to be removed into their own libs
 
-local var_dump = require("var_dump");
-if(var_dump) then
-	print("var_dump is working");
-end
+
 local json = require("libsneedio_json");
 if(json)then
 	print("json has loaded");
@@ -118,13 +136,6 @@ end
 
 --#endregion init stuff soon to be removed into their own libs
 
-local BM = nil;
-if core:is_battle() then
-    BM = get_bm();
-end
-
-local CM = cm or nil;
-local TM = nil;
 
 var_dump(real_timer);
 
@@ -198,7 +209,12 @@ TM = {
 	end,
 
 	Init = function ()
-		if(TM._bInited) then return end;
+		if(core == nil) then
+			PrintError("CORE OBJECT WAS NIL. FAILING");
+			PrintError(debug.traceback());
+			return false;
+		end
+		if(TM._bInited) then return true; end
 		PrintWarning("starting timer custom timer");
 		core:add_listener(
 			"sneedio_timer_handler",
@@ -213,10 +229,10 @@ TM = {
 			end,
 		true);
 		TM._bInited = true;
+		return true;
 	end
 };
 TM.Init();
-
 
 if(TM == nil or TM == false)then
 	PrintError("time manager is fucking NULL or FALSE");
@@ -1242,6 +1258,7 @@ end
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
+	TM.Init();
 	sneedio._LoadUserConfig();
 
 	if(TM == nil) then
@@ -1293,6 +1310,7 @@ end
 
 sneedio._InitCampaign = function ()
 	if(CM == nil) then return false; end
+	TM.Init();
 
 	sneedio._LoadUserConfig();
 	sneedio._ValidateMusicData();
@@ -2474,7 +2492,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 end
 
 sneedio._InitBattle = function(units)
-
+	TM.Init();
 	-- for select voice
 	ForEach(units, function (unit)
 		local UnitVoices = sneedio.GetListOfVoicesFromUnit(unit:type(), "Select");
@@ -2683,7 +2701,6 @@ sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 
 print("all ok");
 
-_G.sneedio = sneedio;
 
 --return sneedio;
 
@@ -2697,6 +2714,14 @@ out("hello world");
 --var_dump(libSneedio);
 
 sneedio._SneedioBattleMain = function()
+	if(core == nil) then
+		PrintError("SNEEDIO FATAL. Core object was NULL, aborting. Called from ");
+		PrintError(debug.traceback());
+		return;
+	end
+	-- fill bm variable!
+	BM = get_bm();
+
 	local ListOfUnits = {};
     ForEachUnitsAll(function(CurrentUnit, CurrentArmy)
 		table.insert(ListOfUnits, CurrentUnit);
@@ -2738,13 +2763,39 @@ sneedio._SneedioBattleMain = function()
 end
 
 sneedio._SneedioCampaignMain = function ()
+	if(core == nil) then
+		PrintError("SNEEDIO FATAL. Core object was NULL, aborting. Called from ");
+		PrintError(debug.traceback());
+		return;
+	end
 	sneedio._InitCampaign();
 	print("campaign has sneeded!");
 end
 
 sneedio._SneedioFrontEndMain = function ()
+	if(core == nil) then
+		PrintError("SNEEDIO FATAL. Core object was NULL, aborting. Called from ");
+		PrintError(debug.traceback());
+		return;
+	end
 	PrintWarning("called in FRONT END\n");
 	sneedio._InitFrontEnd();
 end
+
+sneedio.ForceStartTimer = function ()
+	if(math == nil or
+	   real_timer == nil or
+	   core == nil or
+	   find_uicomponent == nil or
+	   is_vector == nil or
+	   is_uicomponent == nil) then
+		PrintWarning("some variable not set properly! failing");
+	end
+	return TM.Init();
+end
+
+_G.sneedio = sneedio;
+
+print("off we go....");
 
 return _G.sneedio;
