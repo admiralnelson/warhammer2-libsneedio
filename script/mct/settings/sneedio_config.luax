@@ -1,0 +1,74 @@
+return;
+local core = core;
+core:add_listener(
+    "sneedio_config_main",
+    "MctInitialized",
+    true,
+    function (ctx)
+        local core = core;
+        local mct = mct;
+        local print2 = print2;
+        local out = out;
+        local json = require("libsneedio_json");
+        local sneedio = sneedio or require("sneedio");
+
+        local print = function (x)
+            if(not sneedio.SNEEDIO_DEBUG) then return; end
+            out("chuckio: "..tostring(x));
+            if(print2) then print2(tostring(x).."\n"); end
+        end;
+
+        local PError = PrintError or print;
+        local PWarn = PrintWarning or print;
+
+        local PrintError = function (x)
+            if(PError) then PError(tostring(x).."\a\a\n"); else print("ERROR "..x); end
+            --print("ERROR "..x);
+        end
+
+        local PrintWarning = function (x)
+            if(PWarn) then PWarn(tostring(x).."\n"); else print("WARN "..x); end
+            --print("WARN "..x);
+        end
+
+        local M = mct:register_mod(sneedio.SNEEDIO_MOD_IDENTIFIER);
+
+        PrintWarning("mct control panel is online "..sneedio.SNEEDIO_MOD_IDENTIFIER);
+
+        local SaveConfig = function (configs)
+            if(configs.Volume) then
+                sneedio.SetMusicVolume(configs.Volume);
+            end
+            if(configs.Mute) then
+                sneedio.SetMusicVolume(0);
+            end
+            if(configs.DisableSneedio) then
+
+            end
+        end
+
+        local InitControl = function ()
+            M:set_title("Sneedio control panel");
+            M:set_author("");
+            M:set_description("Controls how sneedio plays the audio and music");
+
+
+        end
+
+        local InitCallbacks = function ()
+            core:add_listener(
+                "sneedio_save_config",
+                "MctOptionSettingFinalized",
+                true,
+                function (context)
+                    local M = context:mct();
+                    local mod = M:get_mod_by_key(sneedio.SNEEDIO_MOD_IDENTIFIER);
+                    local configs = {
+                        Volume = mod:get_option_by_key()
+                    };
+                end,
+            true);
+        end
+    end,
+    true
+);
