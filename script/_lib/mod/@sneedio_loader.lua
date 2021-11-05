@@ -132,9 +132,9 @@ local libSneedio =  require2("libsneedio", "luaopen_libsneedio") --require(DLL_F
 if(libSneedio) then
 	print("lib loaded ok");
 	var_dump(libSneedio);
-	local test = libSneedio();
-	var_dump(test);
-	StartDebugger();
+	libSneedio = libSneedio();
+	--var_dump(libSneedio);
+	--StartDebugger();
 else
 	PrintError("unable to load libsneedio!");
 end
