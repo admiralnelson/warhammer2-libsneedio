@@ -453,6 +453,12 @@ int L_SetMusicVolume(lua_State* L)
 	return 0;
 }
 
+int L_GetMusicVolume(lua_State* L)
+{
+	lua_pushnumber(L, SneedioMusic::Get().GetVolume());
+	return 1;
+}
+
 int L_KillMe(lua_State* L)
 {
 	audeo::quit();
@@ -475,6 +481,8 @@ static bool bAlwaysMute = false;
 
 int GetWarscapeMusicVolume()
 {
+	return 0;
+
 	uintptr_t BaseAddress = (uintptr_t)GetModuleHandleA("Warhammer2.exe");
 	uintptr_t PtrToMusicVolumeVal = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0x47c});
 
@@ -483,6 +491,7 @@ int GetWarscapeMusicVolume()
 
 void SetWarscapeMusicVolume(int val)
 {
+	return; 
 	uintptr_t BaseAddress = (uintptr_t)GetModuleHandleA("Warhammer2.exe");
 	uintptr_t PtrToMusicVolumeVal = FindDMAAddy(BaseAddress + 0x036F4938, std::vector<UINT>{0x47c});
 	*(int*)PtrToMusicVolumeVal = val;
@@ -569,6 +578,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"MuteSoundFX", L_MuteSoundFX},
 	{"MuteMusic", L_MuteMusic},
 	{"SetMusicVolume", L_SetMusicVolume},
+	{"GetMusicVolume", L_GetMusicVolume},
 	{"IsMusicValid", L_IsMusicFileValid},
 	{"GetWarscapeMusicVolume", L_GetWarscapeMusicVolume},
 	{"SetWarscapeMusicVolume", L_SetWarscapeMusicVolume},

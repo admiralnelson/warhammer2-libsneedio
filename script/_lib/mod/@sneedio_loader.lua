@@ -27,6 +27,9 @@ _G.SNEEDIO_DEBUG = false or os.getenv("SNEEDIO_DEBUG");
 -- breaks ForEach loop
 local YIELD_BREAK = "_____BREAK_____";
 
+-- sneedio mod identifier
+local SNEEDIO_MCT_CONTROL_PANEL_ID = "sneedio control panel identifier";
+
 local print = function (x)
 	if(not SNEEDIO_DEBUG) then return; end
 	out("chuckio: "..tostring(x));
@@ -82,8 +85,6 @@ local PATH = "audio/";
 local OUTPUTPATH = "";
 
 
--- for mct
-local SNEEDIO_MOD_IDENTIFIER = "admiralnelson sneedio control panel";
 
 -- music tick in ms, executed in timer
 local MUSIC_TICK = 900;
@@ -125,11 +126,15 @@ local DLL_FILENAMES = {
 
 _G.sneedio = {};
 
-
-local libSneedio =  require(DLL_FILENAMES[1]);-- require2("libsneedio", "luaopen_libsneedio") --require(DLL_FILENAMES[1]);
+					-- require(DLL_FILENAMES[1]);
+local libSneedio =  require2("libsneedio", "luaopen_libsneedio") --require(DLL_FILENAMES[1]);
 
 if(libSneedio) then
 	print("lib loaded ok");
+	var_dump(libSneedio);
+	local test = libSneedio();
+	var_dump(test);
+	StartDebugger();
 else
 	PrintError("unable to load libsneedio!");
 end
@@ -260,8 +265,27 @@ local ForEach = function (array, pred)
 	end
 end
 
+local RandomString;
+RandomString = function (length)
+	local charset = {}
+	-- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
+	for i = 48,  57 do table.insert(charset, string.char(i)) end
+	for i = 65,  90 do table.insert(charset, string.char(i)) end
+	for i = 97, 122 do table.insert(charset, string.char(i)) end
+
+  	math.randomseed(os.time())
+
+  	if length > 0 then
+    	return RandomString(length - 1) .. charset[math.random(1, #charset)]
+  	else
+	    return ""
+  	end
+
+end
+
 -- timeout in ms
-local DelayedCall = function(pred, timeout)
+local DelayedCall = function(pred, timeout, name)
+	name = name or RandomString(5);
 	if(BM) then
 		BM:callback(pred, timeout/1000);
 		return;
@@ -270,7 +294,7 @@ local DelayedCall = function(pred, timeout)
 		CM:callback(pred, timeout/1000);
 		return;
 	end
-	TM.OnceCallback(pred, timeout);
+	TM.OnceCallback(pred, timeout, name);
 end
 
 local Split = function (str, delim, maxNb)
@@ -499,6 +523,61 @@ local IsAudioHaveBeenExtracted = function (audioHiveFolder, audio)
         end
     end);
     return res;
+end
+
+local MessageBox = function (id, message, callbackOk, callbackCancel)
+	local msgBox = require("libsneedio_alertbox");
+	DelayedCall(function ()
+		msgBox(id, message, callbackOk, callbackCancel);
+	end, 100);
+end
+
+local SetupControlPanel = function ()
+	local CheckMudeControlId = "check mute";
+	local SliderMusicVolumeControlId = "slider music volume";
+	local SECTION_NAME = "General";
+	core:add_listener(
+		"sneedio_mct_open",
+		"MctPanelOpened",
+		true,
+		function (ctx)
+			local MCT = ctx:mct();
+			local M = MCT:get_mod_by_key(SNEEDIO_MCT_CONTROL_PANEL_ID);
+			local controls = {};
+			M:add_new_section(SECTION_NAME);
+
+			local CheckMute = M:add_new_option(CheckMudeControlId, "checkbox");
+			CheckMute:set_text("Mute Sneedio Audio");
+			CheckMute:set_tooltip_text("Mute all audio from sneedio audio");
+			CheckMute:set_default_value(sneedio.IsPaused());
+
+			local SliderMusicVolume = M:add_new_option(SliderMusicVolumeControlId, "slider");
+			SliderMusicVolume:set_text("Music Volume");
+			CheckMute:set_tooltip_text("Adjust music volume channel from sneedio");
+			SliderMusicVolume:slider_set_min_max(0, 100);
+			SliderMusicVolume:slider_set_step_size(1);
+			SliderMusicVolume:set_default_value(sneedio.GetMusicVolume() * 100);
+
+			controls = {CheckMute, SliderMusicVolume};
+			ForEach(controls, function (control)
+				control:set_assigned_section(SECTION_NAME);
+			end);
+		end,
+	true);
+
+	core:add_listener(
+		"sneedio_mct_save",
+		"MctFinalized",
+		true,
+		function(context)
+			local mct = context:mct()
+        	local mod = mct:get_mod_by_key("my_mod")
+
+        	local option = mod:get_option_by_key("my_option")
+        	local setting = option:get_finalized_setting()
+			MessageBox("sneedio_save", "Sneedio\n\nData is saved");
+		end,
+    true);
 end
 
 --#endregion helper functions
@@ -1203,6 +1282,12 @@ sneedio.SetMusicVolume = function (amount)
 	libSneedio.SetMusicVolume(tostring(amount));
 end
 
+--- get libsneedio music channel volume
+-- @return amount real number range [0..1]
+sneedio.GetMusicVolume = function ()
+	return libSneedio.GetMusicVolume();
+end
+
 
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
@@ -1282,6 +1367,8 @@ sneedio._InitFrontEnd = function ()
 	TM.RepeatCallback(function ()
 		sneedio._ProcessSmoothMusicTransition();
 	end, TRANSITION_TICK, "sneedio_process_music_transition");
+
+	SetupControlPanel();
 end
 
 --#endregion frontend procedures
@@ -1459,6 +1546,8 @@ sneedio._InitCampaign = function ()
 	end, SYSTEM_TICK, "sneedio_monitor_right_click");
 
 	sneedio._RegisterAllCharactersVoiceCampaign();
+
+	SetupControlPanel();
 end
 
 sneedio._GetCameraPositionCampaign = function ()
@@ -2696,7 +2785,6 @@ sneedio.BATTLE_EVENT_MONITOR_TICK = BATTLE_EVENT_MONITOR_TICK ;
 sneedio.BATTLE_MORALE_MONITOR_TICK = BATTLE_MORALE_MONITOR_TICK;
 sneedio.AMBIENT_TICK = AMBIENT_TICK;
 sneedio.AMBIENT_TRIGGER_CAMERA_DISTANCE = AMBIENT_TRIGGER_CAMERA_DISTANCE;
-sneedio.SNEEDIO_MOD_IDENTIFIER = SNEEDIO_MOD_IDENTIFIER;
 sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 
 print("all ok");
