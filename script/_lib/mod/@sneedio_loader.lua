@@ -575,11 +575,11 @@ local SetupControlPanel = function ()
 		true,
 		function(context)
 			local mct = context:mct()
-        	local mod = mct:get_mod_by_key("my_mod")
-
-        	local option = mod:get_option_by_key("my_option")
-        	local setting = option:get_finalized_setting()
-			MessageBox("sneedio_save", "Sneedio\n\nData is saved");
+        	local mod = mct:get_mod_by_key(SNEEDIO_MCT_CONTROL_PANEL_ID)
+			var_dump(mod);
+        	local volume = mod:get_option_by_key(SliderMusicVolumeControlId):get_finalized_setting();
+			PrintWarning("volume is set to"..volume);
+			MessageBox("sneedio_save", "Sneedio\n\nData is saved\n\nVolume "..volume);
 		end,
     true);
 end
