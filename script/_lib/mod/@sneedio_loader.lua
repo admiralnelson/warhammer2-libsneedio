@@ -49,6 +49,10 @@ local PrintWarning = function (x)
 	--print("WARN "..x);
 end
 
+if _G.SNEEDIO_DEBUG then
+	print("Sneedio debug is on");
+end
+
 var_dump(real_timer);
 
 PrintWarning("called from ===========================");
@@ -994,6 +998,9 @@ sneedio.GetNextMusicData = function ()
 	else
 		return sneedio._FrontEndMusic;
 	end
+	if(Playlist == nil)then
+		return nil;
+	end
 	--print("battle play list");
 	local rand = math.random(#Playlist);
 	local result = Playlist[rand];
@@ -1305,24 +1312,30 @@ sneedio._LoadUserConfig = function ()
 		return;
 	end
 
-	var_dump(userConfig);
+	--var_dump(userConfig);
 	sneedio._FrontEndMusic = userConfig["FrontEndMusic"];
 	sneedio._bAllowModToAddMusic = userConfig["OverrideAllModMusic"] or false;
 	local BatteMusic = userConfig["BattleMusic"];
 	local CampaignMusic = userConfig["FactionMusic"];
 
 	ForEach(CampaignMusic, function (campaignMusicArr, faction)
-		sneedio._MusicPlaylist[faction] = {};
+		print("_LoadUserConfig: processing campaign music "..faction);
+		if(sneedio._MusicPlaylist[faction] == nil) then
+			sneedio._MusicPlaylist[faction] = {};
+		end
 		sneedio._MusicPlaylist[faction]["CampaignMap"] = {};
 		ForEach(campaignMusicArr, function (m)
 			m.CurrentDuration = 0;
 			table.insert(sneedio._MusicPlaylist[faction]["CampaignMap"], m);
 		end);
+		print("_LoadUserConfig: campaign music "..faction.." loaded "..#sneedio._MusicPlaylist[faction]["CampaignMap"].." music");
 	end);
 
 	ForEach(BatteMusic, function (battleMusicTypes, faction)
 		print("_LoadUserConfig: processing "..faction);
-		sneedio._MusicPlaylist[faction] = {};
+		if(sneedio._MusicPlaylist[faction] == nil) then
+			sneedio._MusicPlaylist[faction] = {};
+		end
 		sneedio._MusicPlaylist[faction]["Battle"] = {};
 		ForEach(battleMusicTypes, function (music, type)
 			if(sneedio._MusicPlaylist[faction]["Battle"][type] == nil) then
@@ -1337,6 +1350,8 @@ sneedio._LoadUserConfig = function ()
 	end);
 
 	if(userConfig["AlwaysMuteWarscapeMusic"]) then libSneedio.AlwaysMuteWarscapeMusic(); end
+
+	var_dump(sneedio._MusicPlaylist);
 	print("audio loaded");
 end
 
