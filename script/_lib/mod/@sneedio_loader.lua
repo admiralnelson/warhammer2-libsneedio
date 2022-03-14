@@ -806,7 +806,8 @@ end
 -- 		["FirstEngagement"] = {
 -- 			{
 -- 				FileName = "Music A.mp3",
--- 				MaxDuration = 60
+-- 				MaxDuration = 60,
+--              StartPos = 10
 -- 			}
 -- 		},
 -- 		["Balanced"] = {},
@@ -815,6 +816,7 @@ end
 -- 		["LastStand"] = {},
 -- 	},
 -- }
+-- StartPos attribute is optional. If not specified, the music will start from the beginning.
 -- @param factionid: string, faction key in faction tables
 -- @param MusicPlaylist: lua table, see note above
 sneedio.LoadMusic = function (factionId, MusicPlaylist)
@@ -827,7 +829,9 @@ end
 -- {
 -- 	FileName = "medieval.mp3",
 -- 	MaxDuration = 30,
+--  StartPos = 10,
 -- },
+-- StartPos attribute is optional. If not specified, the music will start from the beginning.
 -- @param factionid: string, faction key in faction tables
 -- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicCampaign = function (factionId, ...)
@@ -886,11 +890,13 @@ sneedio.AddMusicBattle = function (factionId, Situation, ...)
 
         local fileName = filename;
         fileName.CurrentDuration = 0;
+        local startsAt = fileName.StartPos or 0;
         table.insert(sneedio._MusicPlaylist[factionId]["Battle"][Situation], fileName);
         print("added music for faction "..factionId..
               " situation "..Situation.." filename "..
               fileName.FileName.." max duration "..
-              tostring(fileName.MaxDuration));
+              tostring(fileName.MaxDuration)..
+              "starts at "..tostring(startsAt));
     end);
 end
 

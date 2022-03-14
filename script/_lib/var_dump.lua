@@ -1,6 +1,7 @@
 local inspect = require("libsneedio_inspect");
 local print2 = print2;
 local out = out;
+local MAX_DEPTH = 10;
 
 local function var_dump(...)
     local args = {...}
@@ -8,7 +9,7 @@ local function var_dump(...)
         var_dump(args)
     else
         if(type(args[1]) == "table" or type(args[1] == "userdata")) then
-            print2(inspect(args[1], {depth = 2}))
+            print2(inspect(args[1], {depth = MAX_DEPTH}))
         else
             print2(tostring(args[1]))
         end
