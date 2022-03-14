@@ -1,407 +1,649 @@
 {
-  "FrontEndMusic": {
-    "FileName": "Empire Earth Main Theme.mp3",
-    "MaxDuration": 302
-  },
-  "FactionMusic": {
-    "wh_main_brt_bretonnia": [
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Bard's Tale.mp3",
-        "MaxDuration": 170
+   "FrontEndMusic":{
+      "CurrentDuration":67,
+      "FileName":"music/balanced/27. Of Our Bones, The Hills.mp3",
+      "Situation":"",
+      "StartPos":55,
+      "MaxDuration":450
+   },
+   "AlwaysMuteWarscapeMusic":false,
+   "MusicVolume":18,
+   "FactionMusic":{
+      "wh_main_brt_carcassonne":[
+         {
+            "MaxDuration":170,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Bard's Tale.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":140,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Castle Dance.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":120,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Dove in the Sky.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":200,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Echo in Eternity.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":170,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Knight's Fall.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":110,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Where my Heart is.mp3",
+            "CurrentDuration":0
+         }
+      ],
+      "wh_main_brt_bretonnia":[
+         {
+            "MaxDuration":170,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Bard's Tale.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":140,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Castle Dance.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":120,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Dove in the Sky.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":200,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Echo in Eternity.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":170,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Knight's Fall.mp3",
+            "CurrentDuration":0
+         },
+         {
+            "MaxDuration":110,
+            "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Where my Heart is.mp3",
+            "CurrentDuration":0
+         }
+      ]
+   },
+   "OverrideAllModMusic":false,
+   "BattleMusic":{
+      "wh_main_emp_empire_mp_custom_battles_only":{
+         "Balanced":[
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":138,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":248,
+               "FileName":"music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":237,
+               "FileName":"music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":185,
+               "FileName":"music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":180,
+               "FileName":"music/balanced/37 Fight While Mounted 1.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":117,
+               "FileName":"music/balanced/43 Fight 2.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":120,
+               "FileName":"music/balanced/58 Ambushed By Rhodok.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":103,
+               "FileName":"music/balanced/57 Ambushed By Swadian.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Losing":[
+            {
+               "MaxDuration":207,
+               "FileName":"music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":110,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":246,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "FirstEngagement":[
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/06 Guillotine.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":158,
+               "FileName":"music/first_engage/17 The Fallen (alternative).mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Deployment":[
+            {
+               "MaxDuration":210,
+               "FileName":"music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":182,
+               "FileName":"music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":177,
+               "FileName":"music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":162,
+               "FileName":"music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Winning":[
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":272,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
+               "CurrentDuration":0
+            }
+         ]
       },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Castle Dance.mp3",
-        "MaxDuration": 140
+      "wh_main_brt_bretonnia_mp_custom_battles_only":{
+         "Balanced":[
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":138,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":248,
+               "FileName":"music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":237,
+               "FileName":"music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":185,
+               "FileName":"music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":180,
+               "FileName":"music/balanced/37 Fight While Mounted 1.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":117,
+               "FileName":"music/balanced/43 Fight 2.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":120,
+               "FileName":"music/balanced/58 Ambushed By Rhodok.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":103,
+               "FileName":"music/balanced/57 Ambushed By Swadian.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Losing":[
+            {
+               "MaxDuration":207,
+               "FileName":"music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":110,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":246,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "FirstEngagement":[
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/06 Guillotine.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":158,
+               "FileName":"music/first_engage/17 The Fallen (alternative).mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Deployment":[
+            {
+               "MaxDuration":210,
+               "FileName":"music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":182,
+               "FileName":"music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":177,
+               "FileName":"music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":162,
+               "FileName":"music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Winning":[
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":272,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
+               "CurrentDuration":0
+            }
+         ]
       },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Dove in the Sky.mp3",
-        "MaxDuration": 120
+      "wh2_dlc14_brt_chevaliers_de_lyonesse":{
+         "Balanced":[
+            {
+               "MaxDuration":445,
+               "CurrentDuration":0,
+               "FileName":"music/balanced/27. Of Our Bones, The Hills.mp3",
+               "StartPos":55
+            },
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":138,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":248,
+               "FileName":"music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":208,
+               "FileName":"music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":237,
+               "FileName":"music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Losing":[
+            {
+               "MaxDuration":207,
+               "FileName":"music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":110,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":246,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "FirstEngagement":[
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/06 Guillotine.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":158,
+               "FileName":"music/first_engage/17 The Fallen (alternative).mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Deployment":[
+            {
+               "MaxDuration":210,
+               "FileName":"music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":182,
+               "FileName":"music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":177,
+               "FileName":"music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":162,
+               "FileName":"music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Winning":[
+            {
+               "MaxDuration":190,
+               "FileName":"music/winning/36 Medieval II Total War (winning) 3m 10s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":272,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
+               "CurrentDuration":0
+            }
+         ]
       },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Echo in Eternity.mp3",
-        "MaxDuration": 200
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Knight's Fall.mp3",
-        "MaxDuration": 170
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Where my Heart is.mp3",
-        "MaxDuration": 110
+      "wh_main_brt_bretonnia":{
+         "Balanced":[
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":135,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":188,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":138,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":248,
+               "FileName":"music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":237,
+               "FileName":"music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":185,
+               "FileName":"music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":180,
+               "FileName":"music/balanced/37 Fight While Mounted 1.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":117,
+               "FileName":"music/balanced/43 Fight 2.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":120,
+               "FileName":"music/balanced/58 Ambushed By Rhodok.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":103,
+               "FileName":"music/balanced/57 Ambushed By Swadian.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Losing":[
+            {
+               "MaxDuration":207,
+               "FileName":"music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":110,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":246,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "FirstEngagement":[
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":222,
+               "FileName":"music/first_engage/06 Guillotine.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":158,
+               "FileName":"music/first_engage/17 The Fallen (alternative).mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":210,
+               "FileName":"music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Deployment":[
+            {
+               "MaxDuration":210,
+               "FileName":"music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":182,
+               "FileName":"music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":177,
+               "FileName":"music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":162,
+               "FileName":"music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
+               "CurrentDuration":0
+            }
+         ],
+         "Winning":[
+            {
+               "MaxDuration":81,
+               "FileName":"music/first_engage/07 Honor.mp3",
+               "CurrentDuration":0
+            },
+            {
+               "MaxDuration":272,
+               "FileName":"music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
+               "CurrentDuration":0
+            }
+         ]
       }
-    ],
-    "wh_main_brt_carcassonne": [
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Bard's Tale.mp3",
-        "MaxDuration": 170
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Castle Dance.mp3",
-        "MaxDuration": 140
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Dove in the Sky.mp3",
-        "MaxDuration": 120
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Echo in Eternity.mp3",
-        "MaxDuration": 200
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Knight's Fall.mp3",
-        "MaxDuration": 170
-      },
-      {
-        "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Where my Heart is.mp3",
-        "MaxDuration": 110
-      }
-    ]
-  },
-  "BattleMusic": {
-    "wh2_dlc14_brt_chevaliers_de_lyonesse": {
-      "Deployment": [
-        {
-          "FileName": "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-          "MaxDuration": 182
-        },
-        {
-          "FileName": "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-          "MaxDuration": 177
-        },
-        {
-          "FileName": "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-          "MaxDuration": 162
-        }
-      ],
-      "FirstEngagement": [
-        {
-          "FileName": "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/first_engage/06 Guillotine.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/07 Honor.mp3",
-          "MaxDuration": 81
-        },
-        {
-          "FileName": "music/first_engage/17 The Fallen (alternative).mp3",
-          "MaxDuration": 158
-        }
-      ],
-      "Balanced": [
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
-          "MaxDuration": 138
-        },
-
-        {
-          "FileName": "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-          "MaxDuration": 248
-        },
-        {
-          "FileName": "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-          "MaxDuration": 208
-        },
-        {
-          "FileName": "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-          "MaxDuration": 237
-        }
-      ],
-      "Losing": [
-        {
-          "FileName": "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-          "MaxDuration": 207
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
-          "MaxDuration": 110
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
-          "MaxDuration": 246
-        }
-      ],
-      "Winning": [
-        {
-          "FileName": "music/winning/36 Medieval II Total War (winning) 3m 10s.mp3",
-          "MaxDuration": 190
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
-          "MaxDuration": 272
-        }
-      ]
-    },
-    "wh_main_brt_bretonnia": {
-      "Deployment": [
-        {
-          "FileName": "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-          "MaxDuration": 182
-        },
-        {
-          "FileName": "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-          "MaxDuration": 177
-        },
-        {
-          "FileName": "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-          "MaxDuration": 162
-        }
-      ],
-      "FirstEngagement": [
-        {
-          "FileName": "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/06 Guillotine.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/07 Honor.mp3",
-          "MaxDuration": 81
-        },
-        {
-          "FileName": "music/first_engage/17 The Fallen (alternative).mp3",
-          "MaxDuration": 158
-        },
-        {
-          "FileName": "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-          "MaxDuration": 210
-        }
-      ],
-      "Balanced": [
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
-          "MaxDuration": 138
-        },
-
-        {
-          "FileName": "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-          "MaxDuration": 248
-        },
-        {
-          "FileName": "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-          "MaxDuration": 237
-        },
-        {
-          "FileName": "music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
-          "MaxDuration": 185
-        },
-        {
-          "FileName": "music/balanced/37 Fight While Mounted 1.mp3",
-          "MaxDuration": 180
-        },
-        {
-          "FileName": "music/balanced/43 Fight 2.mp3",
-          "MaxDuration": 117
-        },
-        {
-          "FileName": "music/balanced/58 Ambushed By Rhodok.mp3",
-          "MaxDuration": 120
-        },
-        {
-          "FileName": "music/balanced/57 Ambushed By Swadian.mp3",
-          "MaxDuration": 103
-        }
-      ],
-      "Losing": [
-        {
-          "FileName": "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-          "MaxDuration": 207
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
-          "MaxDuration": 110
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
-          "MaxDuration": 246
-        }
-      ],
-      "Winning": [
-        {
-          "FileName": "music/first_engage/07 Honor.mp3",
-          "MaxDuration": 81
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
-          "MaxDuration": 272
-        }
-      ]
-    },
-    "wh_main_brt_bretonnia_mp_custom_battles_only": {
-      "Deployment": [
-        {
-          "FileName": "music/deploy/15 Medieval II Total War 3 m 29 s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/deploy/23 Medieval II Total War 3 m 01 s.mp3",
-          "MaxDuration": 182
-        },
-        {
-          "FileName": "music/deploy/24 Medieval II Total War (Battle Deployment) 2 m 57s.mp3",
-          "MaxDuration": 177
-        },
-        {
-          "FileName": "music/deploy/30 Medieval II Total War (Battle Deployement) 2m 41s.mp3",
-          "MaxDuration": 162
-        }
-      ],
-      "FirstEngagement": [
-        {
-          "FileName": "music/first_engage/35 Medieval II Total War (First Engagement) 3m 41s.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/06 Guillotine.mp3",
-          "MaxDuration": 222
-        },
-        {
-          "FileName": "music/first_engage/07 Honor.mp3",
-          "MaxDuration": 81
-        },
-        {
-          "FileName": "music/first_engage/17 The Fallen (alternative).mp3",
-          "MaxDuration": 158
-        },
-        {
-          "FileName": "music/first_engage/36 Medieval II Total War (First Engagement) 3m 29s.mp3",
-          "MaxDuration": 210
-        }
-      ],
-      "Balanced": [
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - The Die is Cast.mp3",
-          "MaxDuration": 135
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Crusade.mp3",
-          "MaxDuration": 188
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - March of Honor.mp3",
-          "MaxDuration": 138
-        },
-
-        {
-          "FileName": "music/balanced/34 Medieval II Total War (Balanced) 4m 08s.mp3",
-          "MaxDuration": 248
-        },
-        {
-          "FileName": "music/balanced/46 Medieval II Total War (Balanced) 3m 29s.mp3",
-          "MaxDuration": 210
-        },
-        {
-          "FileName": "music/balanced/47 Medieval II Total War (Balanced) 3m 57s.mp3",
-          "MaxDuration": 237
-        },
-        {
-          "FileName": "music/balanced/36 Medieval II Total War (winning) 3m 10s.mp3",
-          "MaxDuration": 185
-        },
-        {
-          "FileName": "music/balanced/37 Fight While Mounted 1.mp3",
-          "MaxDuration": 180
-        },
-        {
-          "FileName": "music/balanced/43 Fight 2.mp3",
-          "MaxDuration": 117
-        },
-        {
-          "FileName": "music/balanced/58 Ambushed By Rhodok.mp3",
-          "MaxDuration": 120
-        },
-        {
-          "FileName": "music/balanced/57 Ambushed By Swadian.mp3",
-          "MaxDuration": 103
-        }
-      ],
-      "Losing": [
-        {
-          "FileName": "music/losing/44 Medieval II Total War (losing) 3m 26s.mp3",
-          "MaxDuration": 207
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Vulture's Lair.mp3",
-          "MaxDuration": 110
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Last Fortress.mp3",
-          "MaxDuration": 246
-        }
-      ],
-      "Winning": [
-        {
-          "FileName": "music/first_engage/07 Honor.mp3",
-          "MaxDuration": 81
-        },
-        {
-          "FileName": "music/knightsofhonour/Knights of Honor Soundtrack - Pride or Pain.mp3",
-          "MaxDuration": 272
-        }
-      ]
-    }
-  },
-  "OverrideAllModMusic": false,
-  "AlwaysMuteWarscapeMusic": false
+   }
 }

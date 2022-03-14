@@ -2127,10 +2127,10 @@ sneedio._UpdateMusicSituation = function ()
     local EnemyRouts = sneedio.GetEnemySideRoutRatioQuick();
     print("EnemyRouts" .. tostring(EnemyRouts));
 
-    if (IsBetween(0, 0.29, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts))then
+    if (IsBetween(0, 0.25, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts))then
         print("changed to balanced");
         sneedio._CurrentSituation = "Balanced";
-    elseif (IsBetween(0.3, 0.69, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
+    elseif (IsBetween(0.28, 0.69, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
         print("changed to losing");
         sneedio._CurrentSituation = "Losing";
     elseif (IsBetween(0.7, 1, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
