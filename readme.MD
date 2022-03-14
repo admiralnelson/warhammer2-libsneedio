@@ -1,6 +1,6 @@
 # Libsneedio
 
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fadmiralnelson%2Fwarhammer2-libsneedio&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitor&edge_flat=true)](about:blank)
+[![Hits](http://counter.websiteout.net/compte.php?S='+https://github.com/admiralnelson/warhammer2-libsneedio+'&C=7&D=10&N=0&M=1)](about:blank)
 
 ## What is it? 
 it's a music and audio library to enable custom music and audio for your dudes.  
