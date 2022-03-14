@@ -108,6 +108,7 @@ local AMBIENT_TICK = 5*1000;
 local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
 -- music padding
 local MUSIC_ENDS_IN_SECONDS = 3;
+local MUSIC_FADE_IN_SECONDS = 1;
 
 --#region init stuff soon to be removed into their own libs
 
@@ -700,6 +701,18 @@ end
 sneedio.MakeDir = function (path)
     return libSneedio.MakeDir(path);
 end
+
+-- maps numeric values from a to b to a new range c to d
+-- @param {number} value, input value
+-- @param {number} a, input range start
+-- @param {number} b, input range end
+-- @param {number} c, output range start
+-- @param {number} d, output range end
+sneedio.MapValueToNewRange = function(value, a, b, c, d)
+    local newValue = (value - a) / (b - a) * (d - c) + c;
+    return newValue;
+end
+
 
 --- Mute Warscape music engine
 -- @param bMute: Boolean, true mutes
@@ -1359,6 +1372,7 @@ end
 --- set libsneedio music channel volume
 -- @param amount real number range [0..1]
 sneedio.SetMusicVolume = function (amount)
+    sneedio._CurrentMusicVolume = amount;
     sneedio._CurrentUserConfig.MusicVolume = amount * 100;
     sneedio._MaximumMusicVolume = amount;
     libSneedio.SetMusicVolume(tostring(amount));
@@ -1968,9 +1982,8 @@ sneedio._MonitorRoutingUnits = function ()
 
     -- check player general state
     if(General:is_valid_target())then
-        if(General:is_routing() or General:is_wavering() or General:is_shattered())then
+        if(General:is_shattered())then
             sneedio._CurrentSituation = "Losing";
-            sneedio._ProcessMusicPhaseChangesBattle();
         end
     end
 
@@ -2042,15 +2055,16 @@ sneedio._ProcessSmoothMusicTransition = function ()
         print("set flag to 0");
     end
     -- unmute it
+    local delta = sneedio.MapValueToNewRange(sneedio._CurrentUserConfig.MusicVolume, 0, 100, 0.01, 0.05);
     if(sneedio._TransitionMusicFlag == 2 and sneedio._CurrentMusicVolume <= sneedio._MaximumMusicVolume) then
         print("processing flag = 2 until not mute");
-        sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume + 0.05;
+        sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume + delta;--0.05;
         sneedio._SetMusicVolume(sneedio._CurrentMusicVolume);
     end
     -- mute it
     if(sneedio._TransitionMusicFlag == 1) then
         print("processing flag = 1 until equal to mute");
-        sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume - 0.05;
+        sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume - delta; --0.05;
         sneedio._SetMusicVolume(sneedio._CurrentMusicVolume);
     end
 end
@@ -2099,8 +2113,8 @@ sneedio._MusicTimeTracker = function ()
         if(sneedio.IsCurrentMusicFinished()) then
             sneedio._CurrentPlayedMusic.CurrentDuration = 0;
         end
-        sneedio._CurrentPlayedMusic.CurrentDuration = sneedio._CurrentPlayedMusic.CurrentDuration + 1;
-        --PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+        sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
+        PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
     end
 end
 
@@ -2113,13 +2127,13 @@ sneedio._UpdateMusicSituation = function ()
     local EnemyRouts = sneedio.GetEnemySideRoutRatioQuick();
     print("EnemyRouts" .. tostring(EnemyRouts));
 
-    if (IsBetween(0, 0.4, PlayerRouts) and IsBetween(0, 0.4, EnemyRouts))then
+    if (IsBetween(0, 0.29, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts))then
         print("changed to balanced");
         sneedio._CurrentSituation = "Balanced";
-    elseif (IsBetween(0.5, 0.7, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
+    elseif (IsBetween(0.3, 0.69, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
         print("changed to losing");
         sneedio._CurrentSituation = "Losing";
-    elseif (IsBetween(0.7, 1, PlayerRouts) and IsBetween(0, 0.6, EnemyRouts)) then
+    elseif (IsBetween(0.7, 1, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
         print("changed to last stand");
         sneedio._CurrentSituation = "LastStand";
     elseif (IsBetween(0, 0.3, PlayerRouts) and IsBetween(0.8, 1, EnemyRouts)) then
@@ -2133,7 +2147,8 @@ end
 -- FirstEngagement Balanced Losing LastStand Winning -> Complete.
 -- FirstEngagement Balanced -> Losing (when general wounded).
 sneedio._ProcessMusicPhaseChangesBattle = function ()
-    print("important phase changes!")
+    print("important phase changes!");
+    print(debug.traceback())
     sneedio._PlayMusic(sneedio.GetNextMusicData());
 end
 
@@ -2149,13 +2164,6 @@ sneedio._ProcessMusicEventBattle = function ()
         print("current situation: "..sneedio._CurrentSituation);
         local playlist = sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentSituation];
         var_dump(playlist);
-        local idx = GetArrayIndexByPred(playlist, function (el)
-            return el.FileName == sneedio._CurrentPlayedMusic.FileName;
-        end);
-        -- print("index "..tostring(idx));
-        -- print("current situation: "..sneedio._CurrentSituation);
-        -- var_dump(sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentPlayedMusic.Situation][idx]);
-        sneedio._MusicPlaylist[sneedio.GetPlayerFaction()].Battle[sneedio._CurrentSituation][idx].CurrentDuration = 0;
         sneedio._PlayMusic(sneedio.GetNextMusicData());
     end
     if(sneedio.IsCurrentMusicQuarterWaythrough()) then
@@ -2452,12 +2460,6 @@ end
 
 sneedio._BattleOnTick = function()
     sneedio._UpdateCamera();
-    sneedio._bHasSpeedChanged = sneedio._CurrentSpeed ~= sneedio.GetBattleSpeedMode();
-    sneedio._CurrentSpeed = sneedio.GetBattleSpeedMode();
-    if(sneedio._bHasSpeedChanged) then
-        sneedio._ProcessSpeedEvents(sneedio._CurrentSpeed);
-    end
-
     sneedio._ProcessSelectedUnitRightClickBattle();
 
     sneedio._BattleCurrentTicks = sneedio._BattleCurrentTicks + SYSTEM_TICK;
@@ -2660,7 +2662,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
         sneedio._BattlePhaseStatus = "Complete";
         sneedio._CurrentSituation = "Complete";
         sneedio._ProcessMusicPhaseChangesBattle();
-
+        sneedio.Pause(true);
         sneedio._FadeToMuteMusic(); -- for testing only!
     end);
 
@@ -2695,9 +2697,6 @@ sneedio._RegisterSneedioTickBattleFuns = function()
     end, TRANSITION_TICK,
     "sneedio_monitor_music_transition");
 
-    -- get current music volume from config...
-    sneedio._CurrentMusicVolume = 1.0;
-
     TM.RepeatCallback(function ()
         sneedio._MonitorRoutingUnits()
     end, BATTLE_MORALE_MONITOR_TICK, --expensive operations
@@ -2705,6 +2704,11 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
     TM.RepeatCallback(function ()
         sneedio._bPaused = sneedio.IsBattlePaused();
+        sneedio._bHasSpeedChanged = sneedio._CurrentSpeed ~= sneedio.GetBattleSpeedMode();
+        sneedio._CurrentSpeed = sneedio.GetBattleSpeedMode();
+        if(sneedio._bHasSpeedChanged) then
+            sneedio._ProcessSpeedEvents(sneedio._CurrentSpeed);
+        end
         if(BM and not sneedio.IsBattlePaused()) then
             local camera = BM:camera();
             sneedio.UpdateCameraPosition(camera:position(), camera:target());

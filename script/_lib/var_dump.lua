@@ -1,5 +1,5 @@
 local inspect = require("libsneedio_inspect");
-local print2 = print2;
+local print2 = print2 or print;
 local out = out;
 local MAX_DEPTH = 10;
 

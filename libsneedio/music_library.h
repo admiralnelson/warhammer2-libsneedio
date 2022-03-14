@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <map>
+#include <thread>
+#include <atomic>
 #include "audeo/audeo.hpp"
 
 class SneedioMusic
@@ -20,17 +22,24 @@ public:
 
 	float GetVolume();
 
+	int GetPosition();
+
 	void Mute(bool bMute = true);
 private:
 	audeo::Sound CurrentMusic;
 	audeo::SoundSource SoundSource;
 
+	std::atomic<int> CurrentPlaybackTime = 0;
 	float MusicVolume = 1;
+	std::thread TimerThread;
 	bool bMute;
+	bool bPaused;
+	bool bKeepThreadAlive;
 
 	SneedioMusic();
 
 public:
 	SneedioMusic(SneedioMusic const&) = delete;
 	void operator=(SneedioMusic const&) = delete;
+	~SneedioMusic();
 };

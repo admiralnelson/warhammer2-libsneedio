@@ -35,7 +35,6 @@ static bool bIsSneedioReady = false;
 
 bool InitSneedio()
 {
-	if (bIsSneedioReady) return true;
 	audeo::InitInfo info;
 	// Reserve some extra channels instead of the default (16). This amount can
 	// later be raised by calling audeo::allocate_effect_channels(count).
@@ -565,11 +564,19 @@ int L_SetMusicPosition(lua_State* L)
 	return 1;
 }
 
+int L_GetMusicPosition(lua_State* L)
+{
+	int ret = SneedioMusic::Get().GetPosition();
+	lua_pushnumber(L, ret);
+	return 1;
+}
+
 int L_GetInfinity(lua_State* L)
 {
 	lua_pushnumber(L, INFINITY);
 	return 1;
 }
+
 
 /*
 ** ===============================================================
@@ -599,6 +606,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"AlwaysMuteWarscapeMusic", L_AlwaysMuteWarscapeMusic},
 	{"MakeDir", L_MakeDir},
 	{"SetMusicPosition", L_SetMusicPosition},
+	{"GetMusicPosition", L_GetMusicPosition},
 	{"GetInfinity", L_GetInfinity},
 	{NULL,NULL}  // last entry; list terminator
 };

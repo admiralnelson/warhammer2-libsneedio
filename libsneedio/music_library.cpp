@@ -23,9 +23,11 @@ bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats, float Fad
 	}
 	catch (const audeo::exception& exception)
 	{
+		CurrentPlaybackTime = 0;
 		std::cout << "unable to load audio: " << exception.what() << std::endl;
 		return false;
 	}
+	CurrentPlaybackTime = 0;
 	return true;
 }
 
@@ -45,6 +47,7 @@ bool SneedioMusic::IsFileValid(const std::string& FileName)
 
 void SneedioMusic::Pause(bool bIsPaused)
 {
+	bPaused = bIsPaused;
 	if (bIsPaused)
 	{
 		audeo::pause_sound(CurrentMusic);
@@ -64,6 +67,7 @@ void SneedioMusic::SetVolume(float Strength)
 
 bool SneedioMusic::SeekToPosition(float secs)
 {
+	CurrentPlaybackTime = secs;
 	if (Mix_SetMusicPosition(secs) > 0)
 	{
 		std::cout << "failed to set music position to " << secs << std::endl;
@@ -77,12 +81,35 @@ float SneedioMusic::GetVolume()
 	return MusicVolume;
 }
 
+int SneedioMusic::GetPosition()
+{
+	return CurrentPlaybackTime;
+}
+
 void SneedioMusic::Mute(bool mute)
 {
 	bMute = mute;
 	SetVolume(MusicVolume);
 }
 
-SneedioMusic::SneedioMusic() : bMute(false)
+SneedioMusic::SneedioMusic() : bMute(false), bKeepThreadAlive(true)
 {
+	TimerThread = std::thread([this] {
+		while (bKeepThreadAlive) {
+			if (!bKeepThreadAlive) return;
+			auto delta = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
+			if (!bPaused)
+			{
+				CurrentPlaybackTime++;
+			}
+			std::this_thread::sleep_until(delta);
+		}
+	});
+
+}
+
+SneedioMusic::~SneedioMusic()
+{
+	bKeepThreadAlive = false;
+	audeo::quit();
 }
