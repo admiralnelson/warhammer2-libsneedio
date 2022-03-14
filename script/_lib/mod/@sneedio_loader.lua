@@ -33,7 +33,7 @@ local YIELD_BREAK = "_____BREAK_____";
 local SNEEDIO_USER_CONFIG_JSON = "user-sneedio.json";
 
 -- sneedio mod identifier
-local SNEEDIO_MCT_CONTROL_PANEL_ID = "sneedio control panel identifier";
+local SNEEDIO_MCT_CONTROL_PANEL_ID = "Sneedio";
 
 local print = function (x)
     if(not SNEEDIO_DEBUG) then return; end
@@ -106,6 +106,8 @@ local BATTLE_MORALE_MONITOR_TICK = 5*1000;
 -- ambient tick in ms, potentially expensive operation as it iterates units in AMBIENT_TRIGGER_CAMERA_DISTANCE
 local AMBIENT_TICK = 5*1000;
 local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
+-- music padding
+local MUSIC_ENDS_IN_SECONDS = 3;
 
 --#region init stuff soon to be removed into their own libs
 
@@ -304,7 +306,7 @@ local ForEach = function (array, pred)
     end
 end
 
-local RandomString;
+local RandomString = nil;
 RandomString = function (length)
     local charset = {}
     -- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
@@ -571,36 +573,18 @@ local MessageBox = function (id, message, callbackOk, callbackCancel)
     end, 100);
 end
 
+sneedio.CONTROLPANEL = {};
+sneedio.CONTROLPANEL.SNEEDIO_MCT_CONTROL_PANEL_ID = SNEEDIO_MCT_CONTROL_PANEL_ID;
+sneedio.CONTROLPANEL.CheckMuteControlId = "MusicMute";
+sneedio.CONTROLPANEL.SliderMusicVolumeControlId =  "MusicVolume";
+sneedio.CONTROLPANEL.SECTION_NAME = "General";
+
 local SetupControlPanel = function ()
-    local CheckMudeControlId = "check mute";
-    local SliderMusicVolumeControlId = "slider music volume";
-    local SECTION_NAME = "General";
     core:add_listener(
         "sneedio_mct_open",
         "MctPanelOpened",
         true,
         function (ctx)
-            local MCT = ctx:mct();
-            local M = MCT:get_mod_by_key(SNEEDIO_MCT_CONTROL_PANEL_ID);
-            local controls = {};
-            M:add_new_section(SECTION_NAME);
-
-            local CheckMute = M:add_new_option(CheckMudeControlId, "checkbox");
-            CheckMute:set_text("Mute Sneedio Audio");
-            CheckMute:set_tooltip_text("Mute all audio from sneedio audio");
-            CheckMute:set_default_value(sneedio.IsPaused());
-
-            local SliderMusicVolume = M:add_new_option(SliderMusicVolumeControlId, "slider");
-            SliderMusicVolume:set_text("Music Volume");
-            CheckMute:set_tooltip_text("Adjust music volume channel from sneedio");
-            SliderMusicVolume:slider_set_min_max(0, 100);
-            SliderMusicVolume:slider_set_step_size(1);
-            SliderMusicVolume:set_default_value(sneedio.GetMusicVolume() * 100);
-
-            controls = {CheckMute, SliderMusicVolume};
-            ForEach(controls, function (control)
-                control:set_assigned_section(SECTION_NAME);
-            end);
         end,
     true);
 
@@ -610,9 +594,8 @@ local SetupControlPanel = function ()
         true,
         function(context)
             local mct = context:mct()
-            local mod = mct:get_mod_by_key(SNEEDIO_MCT_CONTROL_PANEL_ID)
-            var_dump(mod);
-            local volume = mod:get_option_by_key(SliderMusicVolumeControlId):get_finalized_setting();
+            local mod = mct:get_mod_by_key(sneedio.CONTROLPANEL.SNEEDIO_MCT_CONTROL_PANEL_ID)
+            local volume = mod:get_option_by_key(sneedio.CONTROLPANEL.SliderMusicVolumeControlId):get_finalized_setting();
             sneedio.SetMusicVolume(volume / 100);
             PrintWarning("volume is set to"..volume);
             sneedio.WriteConfigFile();
@@ -638,6 +621,29 @@ sneedio.WriteFile = WriteFile;
 -- @param {function} callbackOk (optional)
 -- @param {function} callbackCancel (optional)
 sneedio.MessageBox = MessageBox;
+
+--- loops utils
+-- @param {table} array/sets/kv
+-- @param {function} predicate
+sneedio.ForEach = ForEach;
+
+--- breaks sneedio ForEach loops
+--  return this value to break ForEach inside loop predicate
+sneedio.YIELD_BREAK = YIELD_BREAK;
+
+--- concatenate arrays
+-- @param {table} array1, array2, array3, ...
+sneedio.ConcatArray = ConcatArray;
+
+--- filter arrays
+-- @param {table} array
+-- @param {function} predicate
+sneedio.FilterArray = FilterArray;
+
+--- logging
+sneedio.PrintError = PrintError;
+sneedio.PrintWarning = PrintWarning;
+sneedio.print = print;
 
 --- save sneedio user config file
 sneedio.WriteConfigFile = function ()
@@ -983,12 +989,12 @@ sneedio.IsCurrentMusicQuarterWaythrough = function ()
     return (sneedio._CurrentPlayedMusic.CurrentDuration / MaxDur) >= 0.25;
 end
 
---- is the current music played 1/4 way through?
+--- is the current music finished?
 -- @return boolean true if yes
 sneedio.IsCurrentMusicFinished = function ()
     local MaxDur = sneedio._CurrentPlayedMusic.MaxDuration;
     if(MaxDur <= 0) then return true; end
-    return sneedio._CurrentPlayedMusic.CurrentDuration >= MaxDur;
+    return sneedio._CurrentPlayedMusic.CurrentDuration >= MaxDur - MUSIC_ENDS_IN_SECONDS;
 end
 
 --- gets playlist associated with player faction in campaign
@@ -1402,6 +1408,9 @@ sneedio._LoadUserConfig = function ()
 
     if(userConfig.MusicVolume ~= nil and type(userConfig.MusicVolume) == "number") then
         sneedio.SetMusicVolume(userConfig.MusicVolume / 100);
+    end
+    if(userConfig.MusicEndsPadding ~= nil and type(userConfig.MusicEndsPadding) == "number") then
+        sneedio._MusicEndsPadding = userConfig.MusicEndsPadding;
     end
 
     --var_dump(userConfig);
@@ -2853,6 +2862,8 @@ sneedio._CurrentMusicVolume = 1;
 sneedio._TransitionMusicFlag = 0;
 -- this is controlled by sneedio._FadeToMuteMusic, will affect sneedio._ProcessSmoothMusicTransition
 sneedio._bFlagMute = false;
+-- padding when the music is ending
+sneedio._MusicEndsPadding = MUSIC_ENDS_IN_SECONDS;
 
 -- this is controlled by sneedio._PlayMusic sneedio._ProcessSmoothMusicTransition
 sneedio._TransitionMusicQueue = {};
