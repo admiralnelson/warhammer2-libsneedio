@@ -1,3 +1,4 @@
+math.huge = 1/0;
 --
 -- json.lua
 --

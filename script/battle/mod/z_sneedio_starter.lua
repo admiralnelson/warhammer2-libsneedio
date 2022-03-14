@@ -2,6 +2,7 @@ local sneedio = sneedio;
 local core = core;
 local get_bm = get_bm;
 
+local BM = get_bm;
 
 -- give em delay so our client/modder script can add voices
 if BM ~= nil then sneedio.TM.OnceCallback(

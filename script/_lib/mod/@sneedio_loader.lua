@@ -1,3 +1,4 @@
+local VERSION = "a0.0.1";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -27,6 +28,9 @@ _G.SNEEDIO_DEBUG = false or os.getenv("SNEEDIO_DEBUG");
 
 -- breaks ForEach loop
 local YIELD_BREAK = "_____BREAK_____";
+
+-- sneedio config file
+local SNEEDIO_USER_CONFIG_JSON = "user-sneedio.json";
 
 -- sneedio mod identifier
 local SNEEDIO_MCT_CONTROL_PANEL_ID = "sneedio control panel identifier";
@@ -131,9 +135,6 @@ local DLL_FILENAMES = {
 
 _G.sneedio = {};
 
-                    -- require(DLL_FILENAMES[1]);
-
-
 local libSneedio =  nil;
 
 try {
@@ -158,7 +159,8 @@ try {
 
         end
     }
- }
+}
+
 
 if(libSneedio) then
     print("lib loaded ok");
@@ -281,6 +283,12 @@ local ReadFile = function (file)
     local content = f:read("*all")
     f:close()
     return content
+end
+
+local WriteFile = function (file, content)
+    local f = assert(io.open(file, "wb"));
+    f:write(content);
+    f:close();
 end
 
 -- foreach array or kv map
@@ -605,13 +613,37 @@ local SetupControlPanel = function ()
             local mod = mct:get_mod_by_key(SNEEDIO_MCT_CONTROL_PANEL_ID)
             var_dump(mod);
             local volume = mod:get_option_by_key(SliderMusicVolumeControlId):get_finalized_setting();
+            sneedio.SetMusicVolume(volume / 100);
             PrintWarning("volume is set to"..volume);
-            MessageBox("sneedio_save", "Sneedio\n\nData is saved\n\nVolume "..volume);
+            sneedio.WriteConfigFile();
+            MessageBox("sneedio_save", "Volume was set to "..volume);
         end,
     true);
 end
 
 --#endregion helper functions
+
+--- check if file exists
+-- @param {string} path
+sneedio.IsFileExist = IsFileExist;
+
+--- write to file
+-- @param {string} path
+-- @param {string} content
+sneedio.WriteFile = WriteFile;
+
+--- display messagebox
+-- @param {string} id
+-- @param {string} message
+-- @param {function} callbackOk (optional)
+-- @param {function} callbackCancel (optional)
+sneedio.MessageBox = MessageBox;
+
+--- save sneedio user config file
+sneedio.WriteConfigFile = function ()
+    local jsonString = json.encode(sneedio._CurrentUserConfig);
+    WriteFile(SNEEDIO_USER_CONFIG_JSON, jsonString);
+end
 
 --- extract audio from base64 table
 -- the is a key value map like this
@@ -854,8 +886,10 @@ end
     {
         FileName = "medieval.mp3",
         MaxDuration = 30,
+        StartPos = 10,
     },
 ]]
+-- StartPos attribute is optional. If not specified, the music will start from the beginning.
 -- @param factionid: string, faction key in faction tables
 -- @param Situation: string, situation must be either: Deployment, FirstEngagement, Balanced, Losing, Winning, LastStand
 -- @param ...: music to be added (variadic arguments)
@@ -1319,7 +1353,10 @@ end
 --- set libsneedio music channel volume
 -- @param amount real number range [0..1]
 sneedio.SetMusicVolume = function (amount)
+    sneedio._CurrentUserConfig.MusicVolume = amount * 100;
+    sneedio._MaximumMusicVolume = amount;
     libSneedio.SetMusicVolume(tostring(amount));
+    print("set music volume to "..amount*100);
 end
 
 --- get libsneedio music channel volume
@@ -1332,21 +1369,43 @@ end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
+--- private volume method controlled by music system
+-- @param amount real number range [0..1]
+sneedio._SetMusicVolume = function (amount)
+    libSneedio.SetMusicVolume(tostring(amount));
+end
+
+--- load user configs from file
 sneedio._LoadUserConfig = function ()
-    local userConfigJson = ReadFile("user-sneedio.json");
+    local userConfigJson = ReadFile(SNEEDIO_USER_CONFIG_JSON);
     if(not userConfigJson) then
         PrintWarning("user-sneedio.json doesn't exist. Not loading user config.");
         return;
     end
 
-    local result, userConfig = pcall(json.decode, userConfigJson);
-    if(not result) then
-        PrintError("Fail to parse config file. Not loading user config.");
+    local userConfig = nil;
+    try {
+        function ()
+            userConfig = json.decode(userConfigJson);
+            sneedio._CurrentUserConfig = userConfig;
+        end,
+        catch{
+            function (err)
+                PrintWarning("user-sneedio.json is not valid json. Not loading user config.");
+                PrintError(err);
+            end
+        }
+    }
+    if userConfig == nil then
         return;
     end
 
+    if(userConfig.MusicVolume ~= nil and type(userConfig.MusicVolume) == "number") then
+        sneedio.SetMusicVolume(userConfig.MusicVolume / 100);
+    end
+
     --var_dump(userConfig);
-    sneedio._FrontEndMusic = userConfig["FrontEndMusic"];
+    sneedio._FrontEndMusic = userConfig["FrontEndMusic"] or {};
     sneedio._bAllowModToAddMusic = userConfig["OverrideAllModMusic"] or false;
     local BatteMusic = userConfig["BattleMusic"];
     local CampaignMusic = userConfig["FactionMusic"];
@@ -1388,17 +1447,31 @@ sneedio._LoadUserConfig = function ()
     print("audio loaded");
 end
 
+-- called during frontend
+sneedio._FirstTimeSetup = function ()
+    if(not sneedio.IsFileExist(".sneedio-system.json"))then
+        local sneedioConfig = {
+            version = sneedio.VERSION,
+        };
+        sneedio.WriteFile(".sneedio-system.json", json.encode(sneedioConfig));
+        sneedio.MessageBox("Sneedio", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.");
+        return true;
+    end
+    return false;
+end
+
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
     TM.Init();
-    sneedio._LoadUserConfig();
 
     if(TM == nil) then
         PrintError("current game is not frontend, operation failed");
         return;
     end
 
+    sneedio._FirstTimeSetup();
+    sneedio._LoadUserConfig();
     sneedio._bNotInFrontEnd = false;
 
     if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
@@ -1963,13 +2036,13 @@ sneedio._ProcessSmoothMusicTransition = function ()
     if(sneedio._TransitionMusicFlag == 2 and sneedio._CurrentMusicVolume <= sneedio._MaximumMusicVolume) then
         print("processing flag = 2 until not mute");
         sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume + 0.05;
-        sneedio.SetMusicVolume(sneedio._CurrentMusicVolume);
+        sneedio._SetMusicVolume(sneedio._CurrentMusicVolume);
     end
     -- mute it
     if(sneedio._TransitionMusicFlag == 1) then
         print("processing flag = 1 until equal to mute");
         sneedio._CurrentMusicVolume = sneedio._CurrentMusicVolume - 0.05;
-        sneedio.SetMusicVolume(sneedio._CurrentMusicVolume);
+        sneedio._SetMusicVolume(sneedio._CurrentMusicVolume);
     end
 end
 
@@ -2823,13 +2896,16 @@ sneedio._StopVoice = false;
 
 --#endregion music vars
 
+-- holds current sneedio config json
+sneedio._CurrentUserConfig = {};
+
 sneedio._FrontEndMusic = {
     FileName = "",
     MaxDuration = 0
 };
 
 sneedio._bNotInFrontEnd = true;
-
+sneedio.VERSION = VERSION;
 sneedio.TM = TM;
 sneedio.MUSIC_TICK = MUSIC_TICK;
 sneedio.TRANSITION_TICK = TRANSITION_TICK;
@@ -2840,7 +2916,13 @@ sneedio.AMBIENT_TICK = AMBIENT_TICK;
 sneedio.AMBIENT_TRIGGER_CAMERA_DISTANCE = AMBIENT_TRIGGER_CAMERA_DISTANCE;
 sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 
-print("all ok");
+-- if libsneedio is not loaded, then call MessageBox with a message "failed to load libsneedio"
+if not libSneedio then
+    MessageBox("sneedio_msgbox", "failed to load libsneedio, please check your mod installation");
+    return;
+else
+    print("all ok");
+end
 
 
 --return sneedio;
@@ -2941,6 +3023,10 @@ print("off we go....");
 
 if(sneedio.InitSneedio()) then
     print("sneedio init ok");
+    math.huge = libSneedio.GetInfinity();
+    PrintError("libsneedio.GetInfinity is "..tostring(libSneedio.GetInfinity()));
+    PrintError("math.huge is "..tostring(math.huge));
+    PrintError("math.pi is "..tostring(math.pi));
 end
 
 return _G.sneedio;

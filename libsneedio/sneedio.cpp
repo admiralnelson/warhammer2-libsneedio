@@ -565,6 +565,12 @@ int L_SetMusicPosition(lua_State* L)
 	return 1;
 }
 
+int L_GetInfinity(lua_State* L)
+{
+	lua_pushnumber(L, INFINITY);
+	return 1;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -593,6 +599,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"AlwaysMuteWarscapeMusic", L_AlwaysMuteWarscapeMusic},
 	{"MakeDir", L_MakeDir},
 	{"SetMusicPosition", L_SetMusicPosition},
+	{"GetInfinity", L_GetInfinity},
 	{NULL,NULL}  // last entry; list terminator
 };
 
