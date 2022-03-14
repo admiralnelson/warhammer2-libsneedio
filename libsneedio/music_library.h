@@ -16,6 +16,8 @@ public:
 
 	void SetVolume(float Strength);
 
+	bool SeekToPosition(float secs);
+
 	float GetVolume();
 
 	void Mute(bool bMute = true);

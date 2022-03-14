@@ -62,6 +62,16 @@ void SneedioMusic::SetVolume(float Strength)
 	MusicVolume = Strength;
 }
 
+bool SneedioMusic::SeekToPosition(float secs)
+{
+	if (Mix_SetMusicPosition(secs) > 0)
+	{
+		std::cout << "failed to set music position to " << secs << std::endl;
+		return false;
+	}
+	return true;
+}
+
 float SneedioMusic::GetVolume()
 {
 	return MusicVolume;

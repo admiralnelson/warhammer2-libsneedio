@@ -557,6 +557,14 @@ int L_MakeDir(lua_State* L)
 	return 1;
 }
 
+int L_SetMusicPosition(lua_State* L)
+{
+	float secs = luaL_checknumber(L, 1);
+	bool ret = SneedioMusic::Get().SeekToPosition(secs);
+	lua_pushboolean(L, ret);
+	return 1;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -584,6 +592,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"SetWarscapeMusicVolume", L_SetWarscapeMusicVolume},
 	{"AlwaysMuteWarscapeMusic", L_AlwaysMuteWarscapeMusic},
 	{"MakeDir", L_MakeDir},
+	{"SetMusicPosition", L_SetMusicPosition},
 	{NULL,NULL}  // last entry; list terminator
 };
 

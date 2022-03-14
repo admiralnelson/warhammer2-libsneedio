@@ -1929,7 +1929,12 @@ sneedio._ProcessSmoothMusicTransition = function ()
             print("unknown music data");
             return;
         end
-        if( libSneedio.PlayMusic(musicData.FileName)) then
+        if(libSneedio.PlayMusic(musicData.FileName)) then
+            if(musicData.StartPos and musicData.StartPos < musicData.MaxDuration )then
+                if(libSneedio.SetMusicPosition(musicData.StartPos)) then
+                    print("set music position to "..tostring(musicData.StartPos));
+                end
+            end
             print("music played...");
             if(BM) then
                 BM:set_volume(0, 0);
