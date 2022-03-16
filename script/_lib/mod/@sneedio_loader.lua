@@ -805,19 +805,19 @@ end
 -- @param bPause True if music is paused
 sneedio.Pause = function (bPause)
     sneedio._bPaused = bPause;
-    libSneedio.Pause(tostring(bPause));
+    libSneedio.Pause(bPause);
 end
 
 --- mutes sound effects
 -- @param bPause True if sound effects are muted
 sneedio.MuteSoundFX = function (bPause)
-    libSneedio.MuteSoundFX(tostring(bPause));
+    libSneedio.MuteSoundFX(bPause);
 end
 
 --- mutes music
 -- @param bPause True if music is paused
 sneedio.MuteMusic = function (bPause)
-    libSneedio.MuteMusic(tostring(bPause));
+    libSneedio.MuteMusic(bPause);
 end
 
 --- updates libsneedio camera position
@@ -1375,7 +1375,7 @@ sneedio.SetMusicVolume = function (amount)
     sneedio._CurrentMusicVolume = amount;
     sneedio._CurrentUserConfig.MusicVolume = amount * 100;
     sneedio._MaximumMusicVolume = amount;
-    libSneedio.SetMusicVolume(tostring(amount));
+    libSneedio.SetMusicVolume(amount);
     print("set music volume to "..amount*100);
 end
 

@@ -35,7 +35,7 @@ private:
 	bool bMute;
 	bool bPaused;
 	bool bKeepThreadAlive;
-
+	bool bSyncThread;
 	SneedioMusic();
 
 public:

@@ -92,11 +92,14 @@ void SneedioMusic::Mute(bool mute)
 	SetVolume(MusicVolume);
 }
 
-SneedioMusic::SneedioMusic() : bMute(false), bKeepThreadAlive(true)
+SneedioMusic::SneedioMusic() : 
+	bMute(false), 
+	bKeepThreadAlive(true), 
+	bSyncThread(false), 
+	bPaused(false)
 {
 	TimerThread = std::thread([this] {
 		while (bKeepThreadAlive) {
-			if (!bKeepThreadAlive) return;
 			auto delta = std::chrono::steady_clock::now() + std::chrono::milliseconds(1000);
 			if (!bPaused)
 			{
@@ -104,12 +107,13 @@ SneedioMusic::SneedioMusic() : bMute(false), bKeepThreadAlive(true)
 			}
 			std::this_thread::sleep_until(delta);
 		}
+		std::cout << "sneedio: timer thread was quitted." << std::endl;
 	});
-
 }
 
 SneedioMusic::~SneedioMusic()
 {
 	bKeepThreadAlive = false;
+	TimerThread.join();
 	audeo::quit();
 }

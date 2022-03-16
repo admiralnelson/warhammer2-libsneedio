@@ -36,7 +36,7 @@ bool SneedioFX::PlayVoiceBattle(const std::string& UnitClassName, int AudioIndex
 		audeo::Sound sound = audeo::play_sound(UnitToSoundSourceBattle[UnitClassName][AudioIndex], 0, 250);
 		audeo::set_position(sound, Position);
 		audeo::set_distance_range_max(sound, MaxDistance);
-		float mute = (bMute) ? 1 : 0;
+		float mute = (bMute) ? 0 : 1;
 		audeo::set_volume(sound, Volume * mute);
 		
 		UnitToSoundBattle[UnitClassName] = sound;
@@ -90,7 +90,6 @@ void SneedioFX::Pause(bool bIsPaused)
 			audeo::resume_sound(sound.second);
 		}
 	}
-
 }
 
 void SneedioFX::SetSoundEffectVolume(float Strength)

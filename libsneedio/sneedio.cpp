@@ -417,19 +417,17 @@ int L_PlayMusic(lua_State* L)
 
 int L_Pause(lua_State* L)
 {
-	// i have to do this. bool, int, float, reals just somehow can't be pushed into this lib
-	// will have to figured out why is that.
-	std::string Paused = luaL_checkstring(L, 1);
-	SneedioFX::Get().Pause(Paused == "true");
-	SneedioMusic::Get().Pause(Paused == "true");
+	bool pause = lua_toboolean(L, 1);
+	SneedioFX::Get().Pause(pause);
+	SneedioMusic::Get().Pause(pause);
 	
 	return 0;
 }
 
 int L_MuteSoundFX(lua_State* L)
 {
-	std::string Paused = luaL_checkstring(L, 1);
-	SneedioFX::Get().Mute(Paused == "true");
+	bool mute = lua_toboolean(L, 1);
+	SneedioFX::Get().Mute(mute);
 
 
 	return 0;
@@ -437,16 +435,15 @@ int L_MuteSoundFX(lua_State* L)
 
 int L_MuteMusic(lua_State* L)
 {
-	std::string Muted = luaL_checkstring(L, 1);
-	SneedioMusic::Get().Mute(Muted == "true");
+	bool mute = lua_toboolean(L, 1);
+	SneedioMusic::Get().Mute(mute);
 
 	return 0;
 }
 
 int L_SetMusicVolume(lua_State* L)
 {
-	std::string volume = luaL_checkstring(L, 1);
-	float v = std::atof(volume.c_str());
+	float v = luaL_checknumber(L, 1);
 	SneedioMusic::Get().SetVolume(v);
 
 	return 0;
@@ -657,6 +654,11 @@ static int L_closeLib(lua_State* L) {
 		SetWarscapeMusicVolume(UserOldVolume);
 	}
 
+	SneedioFX::Get().Mute(false);
+	SneedioFX::Get().Pause(false);
+	SneedioFX::Get().ClearBattle();
+	SneedioMusic::Get().Mute(false);
+	SneedioMusic::Get().Pause(false);
 	audeo::quit();
 
 
