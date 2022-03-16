@@ -1,8 +1,8 @@
- src/SoundEngine.cpp | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ src/SoundEngine.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/SoundEngine.cpp b/src/SoundEngine.cpp
-index 979057d..42a0934 100644
+index 979057d..d3609b5 100644
 --- a/src/SoundEngine.cpp
 +++ b/src/SoundEngine.cpp
 @@ -18,7 +18,7 @@ namespace {
@@ -14,3 +14,12 @@ index 979057d..42a0934 100644
          Mix_Chunk* chunk = nullptr;
          Mix_Music* music;
      };
+@@ -439,7 +439,7 @@ bool set_volume(Sound sound, float volume) {
+     if (source_is_music(data.source)) {
+         Mix_VolumeMusic(static_cast<int>(MIX_MAX_VOLUME * volume));
+     } else {
+-        Mix_Volume(data.channel, static_cast<int>(MIX_MAX_VOLUME * volume));
++        Mix_Volume(-1, static_cast<int>(MIX_MAX_VOLUME * volume));
+     }
+ 
+     return true;

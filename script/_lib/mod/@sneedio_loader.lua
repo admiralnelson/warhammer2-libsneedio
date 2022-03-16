@@ -578,6 +578,7 @@ sneedio.CONTROLPANEL = {};
 sneedio.CONTROLPANEL.SNEEDIO_MCT_CONTROL_PANEL_ID = SNEEDIO_MCT_CONTROL_PANEL_ID;
 sneedio.CONTROLPANEL.CheckMuteControlId = "MusicMute";
 sneedio.CONTROLPANEL.SliderMusicVolumeControlId =  "MusicVolume";
+sneedio.CONTROLPANEL.SliderSoundVolumeControlId =  "SoundVolume";
 sneedio.CONTROLPANEL.SECTION_NAME = "General";
 
 local SetupControlPanel = function ()
@@ -599,8 +600,11 @@ local SetupControlPanel = function ()
             local volume = mod:get_option_by_key(sneedio.CONTROLPANEL.SliderMusicVolumeControlId):get_finalized_setting();
             sneedio.SetMusicVolume(volume / 100);
             PrintWarning("volume is set to"..volume);
+            local soundvolume = mod:get_option_by_key(sneedio.CONTROLPANEL.SliderSoundVolumeControlId):get_finalized_setting();
+            sneedio.SetSoundEffectVolume(soundvolume / 100);
+            PrintWarning("sound volume is set to"..soundvolume);
             sneedio.WriteConfigFile();
-            MessageBox("sneedio_save", "Volume was set to "..volume);
+            MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
     true);
 end
@@ -1379,6 +1383,14 @@ sneedio.SetMusicVolume = function (amount)
     print("set music volume to "..amount*100);
 end
 
+-- set libsneedio sound effect channel volume
+-- @param amount real number range [0..1]
+sneedio.SetSoundEffectVolume = function (amount)
+    sneedio._CurrentUserConfig.SoundEffectVolume = amount * 100;
+    libSneedio.SetSoundEffectVolume(amount);
+    print("set sound effect volume to "..amount*100);
+end
+
 --- get libsneedio music channel volume
 -- @return amount real number range [0..1]
 sneedio.GetMusicVolume = function ()
@@ -1422,6 +1434,9 @@ sneedio._LoadUserConfig = function ()
 
     if(userConfig.MusicVolume ~= nil and type(userConfig.MusicVolume) == "number") then
         sneedio.SetMusicVolume(userConfig.MusicVolume / 100);
+    end
+    if(userConfig.SoundEffectVolume ~= nil and type(userConfig.SoundEffectVolume) == "number") then
+        sneedio.SetSoundEffectVolume(userConfig.SoundEffectVolume / 100);
     end
     if(userConfig.MusicEndsPadding ~= nil and type(userConfig.MusicEndsPadding) == "number") then
         sneedio._MusicEndsPadding = userConfig.MusicEndsPadding;
@@ -2114,7 +2129,7 @@ sneedio._MusicTimeTracker = function ()
             sneedio._CurrentPlayedMusic.CurrentDuration = 0;
         end
         sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
-        PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+        -- PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
     end
 end
 

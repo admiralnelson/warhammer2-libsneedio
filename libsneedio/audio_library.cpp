@@ -24,8 +24,6 @@ bool SneedioFX::LoadVoiceBattle(const std::string& Filename, const std::string& 
 
 bool SneedioFX::PlayVoiceBattle(const std::string& UnitClassName, int AudioIndex, audeo::vec3f Position, float MaxDistance, float Volume)
 {
-	if (Volume < 0) Volume = 0;
-	if (Volume > 1) Volume = 1;
 	if (UnitToSoundSourceBattle.find(UnitClassName) != UnitToSoundSourceBattle.end())
 	{
 		if (AudioIndex < 0 || AudioIndex > UnitToSoundSourceBattle[UnitClassName].size())
@@ -33,14 +31,18 @@ bool SneedioFX::PlayVoiceBattle(const std::string& UnitClassName, int AudioIndex
 			std::cout << "cannot play audio. invalid AudioIndex";
 			return false;
 		}
+		float mute = (bMute) ? 0 : 1;
 		audeo::Sound sound = audeo::play_sound(UnitToSoundSourceBattle[UnitClassName][AudioIndex], 0, 250);
+		/*audeo::set_default_volume(UnitToSoundSourceBattle[UnitClassName][AudioIndex], SoundVolume * mute);
+		audeo::set_default_position(UnitToSoundSourceBattle[UnitClassName][AudioIndex], Position);
+		audeo::set_default_distance_range_max(UnitToSoundSourceBattle[UnitClassName][AudioIndex], MaxDistance);*/
+
+		audeo::set_volume(sound, SoundVolume * mute);
 		audeo::set_position(sound, Position);
 		audeo::set_distance_range_max(sound, MaxDistance);
-		float mute = (bMute) ? 0 : 1;
-		audeo::set_volume(sound, Volume * mute);
-		
+
 		UnitToSoundBattle[UnitClassName] = sound;
-		UnitToVolumeBattle[UnitClassName] = Volume;
+		UnitToVolumeBattle[UnitClassName] = SoundVolume;
 		return true;
 	}
 	else
@@ -94,17 +96,22 @@ void SneedioFX::Pause(bool bIsPaused)
 
 void SneedioFX::SetSoundEffectVolume(float Strength)
 {
-	for (auto& sound : UnitToSoundBattle)
+	if (Strength < 0) Strength = 0;
+	if (Strength > 1) Strength = 1;
+	for (auto& unit : UnitToSoundSourceBattle)
 	{
 		float mute = (bMute) ? 0 : 1;
-		audeo::set_volume(sound.second, Strength * UnitToVolumeBattle[sound.first] * mute);
+		for (auto& index : unit.second)
+		{
+			audeo::set_default_volume(index, mute * Strength);
+		}
 	}
-	SoundVolumeMultiplier = Strength;
+	SoundVolume = Strength;
 }
 
 float SneedioFX::GetSoundEffectVolume()
 {
-	return SoundVolumeMultiplier;
+	return SoundVolume;
 }
 
 void SneedioFX::Mute(bool mute)
@@ -113,7 +120,7 @@ void SneedioFX::Mute(bool mute)
 	SetSoundEffectVolume(GetSoundEffectVolume());
 }
 
-SneedioFX::SneedioFX() : bMute(false)
+SneedioFX::SneedioFX() : bMute(false), SoundVolume(0.7)
 {
 	
 }

@@ -574,6 +574,19 @@ int L_GetInfinity(lua_State* L)
 	return 1;
 }
 
+int L_SetSoundEffectVolume(lua_State* L)
+{
+	float f = luaL_checknumber(L, 1);
+	SneedioFX::Get().SetSoundEffectVolume(f);
+	return 0;
+}
+
+int L_GetSoundEffectVolume(lua_State* L)
+{
+	lua_pushnumber(L, SneedioFX::Get().GetSoundEffectVolume());
+	return 1;
+}
+
 
 /*
 ** ===============================================================
@@ -605,6 +618,8 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"SetMusicPosition", L_SetMusicPosition},
 	{"GetMusicPosition", L_GetMusicPosition},
 	{"GetInfinity", L_GetInfinity},
+	{"SetSoundEffectVolume", L_SetSoundEffectVolume},
+	{"GetSoundEffectVolume", L_GetSoundEffectVolume},
 	{NULL,NULL}  // last entry; list terminator
 };
 

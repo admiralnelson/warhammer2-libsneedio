@@ -1,4 +1,3 @@
-
 local Split = function (str, delim, maxNb)
     -- Eliminate bad cases...
     if string.find(str, delim) == nil then

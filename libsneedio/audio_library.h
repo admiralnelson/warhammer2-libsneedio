@@ -34,7 +34,7 @@ private:
 
 	SneedioFX();
 	audeo::vec3f CameraPosition;
-	float SoundVolumeMultiplier = 1.0f;
+	float SoundVolume = 1.0f;
 	bool bMute;
 public:
 	SneedioFX(SneedioFX const&) = delete;
