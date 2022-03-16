@@ -1,20 +1,26 @@
 local SNEEDIO_MCT_CONTROL_PANEL_ID = "Sneedio";
 local SECTION_NAME = "General";
 local CheckMuteControlId = "MusicMute";
+local CheckSoundMuteControlId = "SoundMute";
 local SliderMusicVolumeControlId = "MusicVolume";
 local SliderSoundVolumeControlId = "SoundVolume";
 
 local M = mct:register_mod(SNEEDIO_MCT_CONTROL_PANEL_ID);
 M:set_title("Sneedio");
+M:set_author(" ")
 M:set_description("Configures sneedio audio, for advanced configuration check user-sneedio.json");
 
-local controls = {};
-M:add_new_section(SECTION_NAME);
+M:add_new_section(SECTION_NAME, "General");
 
 local CheckMute = M:add_new_option(CheckMuteControlId, "checkbox");
 CheckMute:set_text("Mute Sneedio Audio");
-CheckMute:set_tooltip_text("Mute all audio from sneedio audio");
+CheckMute:set_tooltip_text("Mute music from sneedio audio");
 CheckMute:set_default_value(false);
+
+local CheckSoundMute = M:add_new_option(CheckSoundMuteControlId, "checkbox");
+CheckSoundMute:set_text("Mute Sound Effects");
+CheckSoundMute:set_tooltip_text("Mute all sound effects from sneedio");
+CheckSoundMute:set_default_value(false);
 
 local SliderMusicVolume = M:add_new_option(SliderMusicVolumeControlId, "slider");
 SliderMusicVolume:set_text("Music Volume");
@@ -29,6 +35,8 @@ SliderSoundVolume:set_tooltip_text("Adjust sound effect volume channel from snee
 SliderSoundVolume:slider_set_min_max(0, 100);
 SliderSoundVolume:slider_set_step_size(1);
 SliderSoundVolume:set_default_value(100);
+
+local controls = {CheckMute, CheckSoundMute, SliderMusicVolume, SliderSoundVolume};
 
 for index, value in ipairs(controls) do
     value:set_assigned_section(SECTION_NAME);

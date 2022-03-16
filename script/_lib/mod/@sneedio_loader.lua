@@ -577,6 +577,7 @@ end
 sneedio.CONTROLPANEL = {};
 sneedio.CONTROLPANEL.SNEEDIO_MCT_CONTROL_PANEL_ID = SNEEDIO_MCT_CONTROL_PANEL_ID;
 sneedio.CONTROLPANEL.CheckMuteControlId = "MusicMute";
+sneedio.CONTROLPANEL.CheckSoundMuteControlId = "SoundMute";
 sneedio.CONTROLPANEL.SliderMusicVolumeControlId =  "MusicVolume";
 sneedio.CONTROLPANEL.SliderSoundVolumeControlId =  "SoundVolume";
 sneedio.CONTROLPANEL.SECTION_NAME = "General";
@@ -603,6 +604,12 @@ local SetupControlPanel = function ()
             local soundvolume = mod:get_option_by_key(sneedio.CONTROLPANEL.SliderSoundVolumeControlId):get_finalized_setting();
             sneedio.SetSoundEffectVolume(soundvolume / 100);
             PrintWarning("sound volume is set to"..soundvolume);
+            local mute = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckMuteControlId):get_finalized_setting();
+            sneedio.MuteMusic(mute);
+            PrintWarning("music mute is set to"..tostring(mute));
+            local muteSound = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckSoundMuteControlId):get_finalized_setting();
+            sneedio.MuteSoundFX(muteSound);
+            PrintWarning("sound mute is set to"..tostring(muteSound));
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -813,15 +820,17 @@ sneedio.Pause = function (bPause)
 end
 
 --- mutes sound effects
--- @param bPause True if sound effects are muted
-sneedio.MuteSoundFX = function (bPause)
-    libSneedio.MuteSoundFX(bPause);
+-- @param bMute True if sound effects are muted
+sneedio.MuteSoundFX = function (bMute)
+    sneedio._CurrentUserConfig.SoundEffectMute = bMute;
+    libSneedio.MuteSoundFX(bMute);
 end
 
 --- mutes music
--- @param bPause True if music is paused
-sneedio.MuteMusic = function (bPause)
-    libSneedio.MuteMusic(bPause);
+-- @param bMute True if music is paused
+sneedio.MuteMusic = function (bMute)
+    sneedio._CurrentUserConfig.MusicMute = bMute;
+    libSneedio.MuteMusic(bMute);
 end
 
 --- updates libsneedio camera position
@@ -1440,6 +1449,12 @@ sneedio._LoadUserConfig = function ()
     end
     if(userConfig.MusicEndsPadding ~= nil and type(userConfig.MusicEndsPadding) == "number") then
         sneedio._MusicEndsPadding = userConfig.MusicEndsPadding;
+    end
+    if(userConfig.MusicMute ~= nil and type(userConfig.MusicMute) == "boolean") then
+        sneedio.MuteMusic(userConfig.MusicMute);
+    end
+    if(userConfig.SoundEffectMute ~= nil and type(userConfig.SoundEffectMute) == "boolean") then
+        sneedio.MuteSoundFX(userConfig.SoundEffectMute);
     end
 
     --var_dump(userConfig);
