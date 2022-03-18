@@ -1,4 +1,4 @@
-local VERSION = "a0.0.1";
+local VERSION = "a0.0.2";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
