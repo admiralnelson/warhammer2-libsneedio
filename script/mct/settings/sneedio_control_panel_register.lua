@@ -4,6 +4,7 @@ local CheckMuteControlId = "MusicMute";
 local CheckSoundMuteControlId = "SoundMute";
 local SliderMusicVolumeControlId = "MusicVolume";
 local SliderSoundVolumeControlId = "SoundVolume";
+local CheckNoticeNoMusicFoundForFactionControlId = "NoticeNoMusicFoundForFaction";
 
 local M = mct:register_mod(SNEEDIO_MCT_CONTROL_PANEL_ID);
 M:set_title("Sneedio");
@@ -22,19 +23,24 @@ CheckSoundMute:set_text("Mute Sound Effects");
 CheckSoundMute:set_tooltip_text("Mute all sound effects from sneedio");
 CheckSoundMute:set_default_value(false);
 
+local CheckNoticeNoMusicFoundForFaction = M:add_new_option(CheckNoticeNoMusicFoundForFactionControlId, "checkbox");
+CheckNoticeNoMusicFoundForFaction:set_text("Notice No Music Found For Faction");
+CheckNoticeNoMusicFoundForFaction:set_tooltip_text("Shows a message box when no music is found for the current faction");
+CheckNoticeNoMusicFoundForFaction:set_default_value(true);
+
 local SliderMusicVolume = M:add_new_option(SliderMusicVolumeControlId, "slider");
 SliderMusicVolume:set_text("Music Volume");
 SliderMusicVolume:set_tooltip_text("Adjust music volume channel from sneedio");
 SliderMusicVolume:slider_set_min_max(0, 100);
 SliderMusicVolume:slider_set_step_size(1);
-SliderMusicVolume:set_default_value(10);
+SliderMusicVolume:set_default_value(15);
 
 local SliderSoundVolume = M:add_new_option(SliderSoundVolumeControlId, "slider");
 SliderSoundVolume:set_text("Sound Effect Volume");
 SliderSoundVolume:set_tooltip_text("Adjust sound effect volume channel from sneedio");
 SliderSoundVolume:slider_set_min_max(0, 100);
 SliderSoundVolume:slider_set_step_size(1);
-SliderSoundVolume:set_default_value(100);
+SliderSoundVolume:set_default_value(70);
 
 local controls = {CheckMute, CheckSoundMute, SliderMusicVolume, SliderSoundVolume};
 

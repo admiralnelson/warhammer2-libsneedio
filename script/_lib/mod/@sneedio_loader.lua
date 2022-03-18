@@ -282,10 +282,10 @@ end
 --#region helper functions
 
 local ReadFile = function (file)
-    local f = assert(io.open(file, "rb"))
-    local content = f:read("*all")
-    f:close()
-    return content
+    local f = assert(io.open(file, "rb"));
+    local content = f:read("*all");
+    f:close();
+    return content;
 end
 
 local WriteFile = function (file, content)
@@ -570,7 +570,15 @@ end
 local MessageBox = function (id, message, callbackOk, callbackCancel)
     local msgBox = require("libsneedio_alertbox");
     DelayedCall(function ()
-        msgBox(id, message, callbackOk, callbackCancel);
+        msgBox(id, message, callbackOk, callbackCancel,
+        {
+            core = core,
+            bm = BM,
+            cm = CM,
+            is_uicomponent = is_uicomponent,
+            find_uicomponent = find_uicomponent,
+            effect = effect,
+        });
     end, 100);
 end
 
@@ -581,6 +589,7 @@ sneedio.CONTROLPANEL.CheckSoundMuteControlId = "SoundMute";
 sneedio.CONTROLPANEL.SliderMusicVolumeControlId =  "MusicVolume";
 sneedio.CONTROLPANEL.SliderSoundVolumeControlId =  "SoundVolume";
 sneedio.CONTROLPANEL.SECTION_NAME = "General";
+sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundForFactionControlId = "NoticeNoMusicFoundForFaction";
 
 local SetupControlPanel = function ()
     core:add_listener(
@@ -610,6 +619,9 @@ local SetupControlPanel = function ()
             local muteSound = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckSoundMuteControlId):get_finalized_setting();
             sneedio.MuteSoundFX(muteSound);
             PrintWarning("sound mute is set to"..tostring(muteSound));
+            local noticeNoMusicFoundForFaction = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundForFactionControlId):get_finalized_setting();
+            sneedio._CurrentUserConfig.NoticeNoMusicFoundForFaction = noticeNoMusicFoundForFaction;
+            PrintWarning("notice no music found for faction is set to"..tostring(noticeNoMusicFoundForFaction));
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -1075,7 +1087,7 @@ sneedio.GetPlayerFaction = function ()
     elseif(CM) then
         return CM:get_local_faction_name(true); -- warning
     else
-        print("called outside battle or campaign");
+        PrintError("called outside battle or campaign");
     end
 end
 
@@ -1406,6 +1418,10 @@ sneedio.GetMusicVolume = function ()
     return libSneedio.GetMusicVolume();
 end
 
+sneedio.GetCurrentConfig = function ()
+    return sneedio._CurrentUserConfig;
+end
+
 
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
@@ -1418,27 +1434,40 @@ end
 
 --- load user configs from file
 sneedio._LoadUserConfig = function ()
-    local userConfigJson = ReadFile(SNEEDIO_USER_CONFIG_JSON);
-    if(not userConfigJson) then
-        PrintWarning("user-sneedio.json doesn't exist. Not loading user config.");
-        return;
-    end
-
     local userConfig = nil;
     try {
         function ()
+            local userConfigJson = ReadFile(SNEEDIO_USER_CONFIG_JSON);
             userConfig = json.decode(userConfigJson);
             sneedio._CurrentUserConfig = userConfig;
         end,
         catch{
             function (err)
-                PrintWarning("user-sneedio.json is not valid json. Not loading user config.");
+                PrintWarning("user-sneedio.json is not valid json or not found. Not loading user config.");
                 PrintError(err);
             end
         }
     }
     if userConfig == nil then
-        return;
+        -- create default config
+        userConfig = {
+            MusicVolume = 15,
+            SoundEffectVolume = 70,
+            SoundEffectMute = false,
+            MusicMute = false,
+            NoticeNoMusicFoundForFaction = true,
+            AlwaysMuteWarscapeMusic = false,
+            FrontEndMusic = {},
+            BattleMusic = {},
+            FactionMusic = {},
+        }
+        WriteFile(SNEEDIO_USER_CONFIG_JSON, json.encode(userConfig));
+        MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.",
+            function ()
+                sneedio.MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.");
+            end
+        );
+        PrintWarning("created default user-sneedio.json");
     end
 
     if(userConfig.MusicVolume ~= nil and type(userConfig.MusicVolume) == "number") then
@@ -1455,6 +1484,11 @@ sneedio._LoadUserConfig = function ()
     end
     if(userConfig.SoundEffectMute ~= nil and type(userConfig.SoundEffectMute) == "boolean") then
         sneedio.MuteSoundFX(userConfig.SoundEffectMute);
+    end
+    if(userConfig.NoticeNoMusicFoundForFaction ~= nil and type(userConfig.NoticeNoMusicFoundForFaction) == "boolean") then
+        sneedio._NoticeNoMusicFoundForFaction = userConfig.NoticeNoMusicFoundForFaction;
+    else
+        sneedio._CurrentUserConfig.NoticeNoMusicFoundForFaction = true;
     end
 
     --var_dump(userConfig);
@@ -1503,14 +1537,34 @@ end
 -- called during frontend
 sneedio._FirstTimeSetup = function ()
     if(not sneedio.IsFileExist(".sneedio-system.json"))then
-        local sneedioConfig = {
+        local sneedioVersion = {
             version = sneedio.VERSION,
         };
-        sneedio.WriteFile(".sneedio-system.json", json.encode(sneedioConfig));
-        sneedio.MessageBox("Sneedio", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.");
+        sneedio.WriteFile(".sneedio-system.json", json.encode(sneedioVersion));
         return true;
     end
     return false;
+end
+
+sneedio._UpdateSneedioSystemJson = function(data)
+    data.version = sneedio.VERSION;
+    WriteFile(".sneedio-system.json", json.encode(data));
+end
+
+sneedio._GetSneedioSystemJson = function()
+    local data;
+    try {
+        function ()
+            data = json.decode(ReadFile(".sneedio-system.json"));
+        end,
+        catch{
+            function (err)
+                PrintWarning("sneedio-system.json is not valid json. Not loading user config.");
+                PrintError(err);
+            end
+        }
+    }
+    return data;
 end
 
 --#region frontend procedures
@@ -2102,6 +2156,10 @@ end
 sneedio._PlayMusic = function (musicData)
     if(not musicData)then
         print("musicdata is null. aborting");
+        return;
+    end
+    if(not musicData.FileName)then
+        print("musicdata.FileName is null. aborting");
         return;
     end
     print("playing music ".. musicData.FileName);

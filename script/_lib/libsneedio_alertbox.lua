@@ -1,3 +1,10 @@
+local core = _G.core;
+local is_uicomponent = _G.is_uicomponent;
+local find_uicomponent = _G.find_uicomponent;
+local cm = _G.cm;
+local bm = _G.bm;
+local effect = _G.effect;
+
 local Split = function (str, delim, maxNb)
     -- Eliminate bad cases...
     if string.find(str, delim) == nil then
@@ -44,7 +51,14 @@ local FindEl = function (Parent, ElPath)
 	return find_uicomponent(Parent, unpack(args));
 end
 
-local function createConfirmationBox(id, text, on_accept_callback, on_cancel_callback)
+local function createConfirmationBox(id, text, on_accept_callback, on_cancel_callback, libs)
+    core = libs.core or core;
+    is_uicomponent = libs.is_uicomponent or is_uicomponent;
+    find_uicomponent = libs.find_uicomponent or find_uicomponent;
+    cm = libs.cm or cm;
+    bm = libs.bm or bm;
+    effect = libs.effect or effect;
+
 	local confirmation_box = core:get_or_create_component(id, "ui/Common UI/dialogue_box")
 	confirmation_box:SetVisible(true)
 	confirmation_box:RegisterTopMost()
