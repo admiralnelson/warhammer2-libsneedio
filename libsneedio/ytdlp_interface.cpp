@@ -63,3 +63,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
     }
     return false;
 }
+
+SneedioYtDlp::~SneedioYtDlp()
+{
+}
