@@ -3,6 +3,9 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <map>
+#include <shared_mutex>
+#include <atomic>
 typedef std::string Url;
 
 
@@ -18,22 +21,28 @@ struct VerifyFileCompleteParams
 	bool bAreFilesOk;
 };
 typedef std::function<void(VerifyFileCompleteParams const&)> VerifyFileCompleteCallback;
-
+enum class YtpDownloadProgressStatus
+{
+	E_Preparing = 0, E_Downloading, E_Converting
+};
 struct YtDlpDownloadProgressParams
 {
 	std::string Message;
 	Url Url;
 	std::string Title;
-	int Size;
+	YtpDownloadProgressStatus Status;
 	int CurrentSize;
 	int FileNo;
 	int FileNoOutOf;
+	int Percentage;
+	int CurrentSpeedInKBpS;
+	int SizeInKB;
 };
 typedef std::function<void(YtDlpDownloadProgressParams const&)> YtDlpDownloadProgressCallback;
 
 enum class YtDlpDownloadStatus 
 {
-	E_Fail, E_Partial, E_Completed
+	E_Fail = 0, E_Partial, E_Completed
 };
 struct YtDlpDownloadCompleteParams
 {
@@ -57,11 +66,25 @@ public:
 	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
 
 private:
-	void ParseYtDlpProgressFromOutput(std::string const& ytDlpStream);
+	void ParseYtDlpProgressFromOutput(std::string ytDlpStream);
 	void PrintErrorFromHr(HRESULT hr);
+	bool IsYtDlpRunning();
 
+	 const std::map<std::string, int> UnitToConversionKB = {
+		{"KiB", 1},
+		{"MiB", 1024},
+		{"GiB", 1024*1024},
+		{"KiB/s", 1},
+		{"MiB/s", 1024},
+		{"GiB/s", 1024 * 1024}
+	};
+
+	
 	std::thread ThrVerifyFile;
 	std::thread ThrMonitorYtDlp;
+	std::thread ThrYtDlpHeartbeat;
+
+	std::shared_mutex write;
 
 	VerifyFileCompleteCallback callbackVerifyFileComplete;
 	VerifyFileProgressCallback callbackVerifyFileProgress;
@@ -76,11 +99,12 @@ private:
 
 	HANDLE m_hChildStd_OUT_Rd = NULL;
 	HANDLE m_hChildStd_OUT_Wr = NULL;
+	HANDLE handleYtDlp = NULL;
 
 	int TotalQueuedUrls;
 	int TotalProcessedUrls;
 
-	bool bIsYtDlpRunning;
+	std::atomic<bool> bIsYtDlpRunning;
 	bool bIsVerifyFileRunning;
 	bool bEncounteredError;
 

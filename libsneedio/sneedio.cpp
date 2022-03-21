@@ -629,23 +629,29 @@ int L_GetYtDlpDownloadStatus(lua_State* L)
 	if (SneedioYtDlp::Get().IsDownloading())
 	{
 		YtDlpDownloadProgressParams param = SneedioYtDlp::Get().GetDownloadStatus();
-		lua_createtable(L,0, 5);
-		//push Message
-		lua_pushlstring(L, param.Message.c_str(), param.Message.length());
-		lua_setfield(L, -2, "Message");
-		//push Url
-		lua_pushlstring(L, param.Url.c_str(), param.Url.length());
-		lua_setfield(L, -2, "Url");
-		//push Title
-		lua_pushlstring(L, param.Title.c_str(), param.Title.length());
-		lua_setfield(L, -2, "Title");
+		lua_pushstring(L, param.Title.c_str());
+		lua_pushstring(L, param.Url.c_str());
+
+		lua_createtable(L, 0, 6);
+		//push status
+		lua_pushinteger(L, (int)param.Status);
+		lua_setfield(L, -2, "Status");
 		//push FileNo
 		lua_pushinteger(L, param.FileNo);
 		lua_setfield(L, -2, "FileNo");
 		//push FileNoOutOf
 		lua_pushinteger(L, param.FileNoOutOf);
 		lua_setfield(L, -2, "FileNoOutOf");
-		return 1;
+		//push CurrentSpeed
+		lua_pushinteger(L, param.CurrentSpeedInKBpS);
+		lua_setfield(L, -2, "CurrentSpeedInKBpS");
+		//push SizeInKB
+		lua_pushinteger(L, param.SizeInKB);
+		lua_setfield(L, -2, "SizeInKB");
+		//push Percentage
+		lua_pushinteger(L, param.Percentage);
+		lua_setfield(L, -2, "Percentage");
+		return 3;
 	}
 	return 0;
 }

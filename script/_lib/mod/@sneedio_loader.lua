@@ -2207,8 +2207,14 @@ sneedio._MusicTimeTracker = function ()
         sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
         -- PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
     end
-    if(libSneedio.GetYtDlpDownloadStatus) then
-        var_dump(libSneedio.GetYtDlpDownloadStatus());
+end
+
+sneedio._PollDownloadTest = function ()
+    if(libSneedio.GetYtDlpDownloadStatus()) then
+        local title, url, details = libSneedio.GetYtDlpDownloadStatus();
+        var_dump(title);
+        var_dump(url);
+        var_dump(details);
     end
 end
 
