@@ -162,7 +162,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
                 output += chBuf;
                 if (!bSuccess || dwRead == 0) continue;
 
-                std::cout << output << std::endl;
+                std::cout << chBuf;
 
                 if (!bSuccess) break;
             }
@@ -189,7 +189,7 @@ std::string SneedioYtDlp::UrlQueuesToString(std::vector<Url> const& queues)
     std::string ret = " ";
     for (const auto& q: queues)
     {
-        ret += "'" + q + "' ";
+        ret += "" + q + " ";
     }
     return ret;
 }
