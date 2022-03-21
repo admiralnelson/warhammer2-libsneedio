@@ -45,22 +45,30 @@ class SneedioYtDlp
 public:
 	static SneedioYtDlp& Get();
 	SneedioYtDlp();
-	void SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback);
-	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
 	bool VerifyFiles();
 	bool StartYtDlp(std::vector<Url> const &queues);
 	std::string UrlQueuesToString(std::vector<Url> const& queues);
+	std::string GetCurrentDir();
 
 private:
-
+	void SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback);
+	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
 	void ParseYtDlpProgressFromOutput(YtDlpDownloadProgressParams& out);
+	void PrintErrorFromHr(HRESULT hr);
 
 	std::thread ThrVerifyFile;
 	std::thread ThrMonitorYtDlp;
+
 	VerifyFileCompleteCallback callbackVerifyFileComplete;
 	VerifyFileProgressCallback callbackVerifyFileProgress;
 	YtDlpDownloadProgressCallback callbackYtDlpDownloadProgress;
 	YtDlpDownloadCompleteCallback callbackYtDlpDownloadComplete;
+
+	VerifyFileProgressParams currentFileProgressParams;
+	VerifyFileCompleteParams lastFileStatusParam;
+
+	YtDlpDownloadProgressParams currentDownloadProgressParams;
+	YtDlpDownloadCompleteParams lastDownloadStatusParam;
 
 	HANDLE m_hChildStd_OUT_Rd = NULL;
 	HANDLE m_hChildStd_OUT_Wr = NULL;

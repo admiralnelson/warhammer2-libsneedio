@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ytdlp_interface.h"
 #include <iostream>
+#include "comdef.h"
 
 SneedioYtDlp& SneedioYtDlp::Get()
 {
@@ -10,6 +11,31 @@ SneedioYtDlp& SneedioYtDlp::Get()
 
 SneedioYtDlp::SneedioYtDlp() : bIsVerifyFileRunning(false), bIsYtDlpRunning(false)
 {
+    SetupVerifyFiles(
+        [this](VerifyFileProgressParams const &param)
+        {
+            bIsVerifyFileRunning = true;
+            currentFileProgressParams = param;
+        },
+        [this](VerifyFileCompleteParams const &param)
+        {
+            bIsVerifyFileRunning = false;
+            lastFileStatusParam = param;
+        }
+    );
+
+    SetupYtDlp(
+        [this](YtDlpDownloadProgressParams const& param)
+        {
+            bIsYtDlpRunning = true;
+            currentDownloadProgressParams = param;
+        },
+        [this](YtDlpDownloadCompleteParams const& param)
+        {
+            bIsYtDlpRunning = false;
+            lastDownloadStatusParam = param;
+        }
+    );
 }
 
 void SneedioYtDlp::SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback)
@@ -54,7 +80,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
     //./yt-dlp --ignore-errors --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output "%(title)s.%(ext)s" --yes-playlist 'https://www.youtube.com/list=PLdYwhvDpx0FI2cmiSVn5cMufHjYHpo_88'
     //./yt-dlp --ignore-errors --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output "%(title)s.%(ext)s" --yes-playlist 'https://www.youtube.com/watch?v=7iNbnineUCI' 'https://www.youtube.com/watch?v=VoOG7LEyUJ0'
 
-    const std::string ytDlpBin = "yt-dlp/yt-dlp.exe";
+    const std::string ytDlpBin = "\"" + GetCurrentDir() + "\\yt-dlpbin\\yt-dlp.exe\"";
 
     if (bIsVerifyFileRunning)
     {
@@ -67,7 +93,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
         return false;
     }
 
-    STARTUPINFO si;
+    STARTUPINFOA si;
     PROCESS_INFORMATION pi;
     SECURITY_ATTRIBUTES saAttr;
 
@@ -81,7 +107,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
     if (!CreatePipe(&m_hChildStd_OUT_Rd, &m_hChildStd_OUT_Wr, &saAttr, 0))
     {
         // log error
-        std::cout << "error :" << HRESULT_FROM_WIN32(GetLastError()) << std::endl;
+        PrintErrorFromHr(HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -90,7 +116,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
     if (!SetHandleInformation(m_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
     {
         // log error
-        std::cout << "error :" << HRESULT_FROM_WIN32(GetLastError()) << std::endl;
+        PrintErrorFromHr(HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 
@@ -103,10 +129,10 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
     ZeroMemory(&pi, sizeof(pi));
 
     std::string commandLine = ytDlpBin + " --ignore-errors --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
-    std::cout << "SneedioYtDlp: starting yt-dlp using following command line " << ytDlpBin << std::endl;
+    std::cout << "SneedioYtDlp: starting yt-dlp using following command line " << commandLine << std::endl;
     // Start the child process. 
-    if (!CreateProcess(NULL,           // No module name (use command line)
-        (TCHAR*)commandLine.c_str(),    // Command line
+    if (!CreateProcessA(NULL,           // No module name (use command line)
+        (LPSTR)commandLine.c_str(),    // Command line
         NULL,                           // Process handle not inheritable
         NULL,                           // Thread handle not inheritable
         TRUE,                           // Set handle inheritance
@@ -117,7 +143,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
         &pi)                            // Pointer to PROCESS_INFORMATION structure
         )
     {
-        std::cout << "error :" << HRESULT_FROM_WIN32(GetLastError()) << std::endl;
+        PrintErrorFromHr(HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
     else
@@ -140,6 +166,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 
                 if (!bSuccess) break;
             }
+            std::cout << "ThrMonitorYtDlp exited" << std::endl;
             return 0;
         });
     }
@@ -148,6 +175,13 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 
 void SneedioYtDlp::ParseYtDlpProgressFromOutput(YtDlpDownloadProgressParams& out)
 {
+
+}
+
+void SneedioYtDlp::PrintErrorFromHr(HRESULT hr)
+{
+    _com_error err(hr);
+    std::cout << "error : hr code : " << hr << " " << std::endl;
 }
 
 std::string SneedioYtDlp::UrlQueuesToString(std::vector<Url> const& queues)
@@ -158,6 +192,14 @@ std::string SneedioYtDlp::UrlQueuesToString(std::vector<Url> const& queues)
         ret += "'" + q + "' ";
     }
     return ret;
+}
+
+std::string SneedioYtDlp::GetCurrentDir()
+{
+    char buffer[MAX_PATH] = { 0 };
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+    return std::string(buffer).substr(0, pos);
 }
 
 SneedioYtDlp::~SneedioYtDlp()

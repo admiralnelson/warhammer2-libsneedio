@@ -619,8 +619,15 @@ int L_DownloadYoutubeUrls(lua_State* L)
 	}
 
 	std::cout << "url to be passed : " << SneedioYtDlp::Get().UrlQueuesToString(urls) << std::endl;
+	SneedioYtDlp::Get().StartYtDlp(urls);
 
 	return 0;
+}
+
+int L_GetYtDlpDownloadStatus(lua_State* L)
+{
+
+	return 1;
 }
 
 /*
@@ -656,6 +663,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"SetSoundEffectVolume", L_SetSoundEffectVolume},
 	{"GetSoundEffectVolume", L_GetSoundEffectVolume},
 	{"DownloadYoutubeUrls", L_DownloadYoutubeUrls},
+	{"GetYtDlpDownloadStatus", L_GetYtDlpDownloadStatus},
 	{NULL,NULL}  // last entry; list terminator
 };
 
