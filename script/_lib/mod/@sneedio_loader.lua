@@ -1422,6 +1422,9 @@ sneedio.GetCurrentConfig = function ()
     return sneedio._CurrentUserConfig;
 end
 
+sneedio.DownloadYoutubeUrls = function (urls)
+    libSneedio.DownloadYoutubeUrls(urls);
+end
 
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------

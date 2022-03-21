@@ -49,14 +49,21 @@ public:
 	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
 	bool VerifyFiles();
 	bool StartYtDlp(std::vector<Url> const &queues);
+	std::string UrlQueuesToString(std::vector<Url> const& queues);
 
 private:
+
+	void ParseYtDlpProgressFromOutput(YtDlpDownloadProgressParams& out);
+
 	std::thread ThrVerifyFile;
 	std::thread ThrMonitorYtDlp;
 	VerifyFileCompleteCallback callbackVerifyFileComplete;
 	VerifyFileProgressCallback callbackVerifyFileProgress;
 	YtDlpDownloadProgressCallback callbackYtDlpDownloadProgress;
 	YtDlpDownloadCompleteCallback callbackYtDlpDownloadComplete;
+
+	HANDLE m_hChildStd_OUT_Rd = NULL;
+	HANDLE m_hChildStd_OUT_Wr = NULL;
 
 	bool bIsYtDlpRunning;
 	bool bIsVerifyFileRunning;

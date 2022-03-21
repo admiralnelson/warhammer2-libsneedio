@@ -12,6 +12,7 @@ extern "C" {
 }
 #include <iostream>
 #include <ShlObj_core.h>
+#include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
 
 
@@ -587,6 +588,40 @@ int L_GetSoundEffectVolume(lua_State* L)
 	return 1;
 }
 
+int L_DownloadYoutubeUrls(lua_State* L)
+{
+	luaL_checktype(L, 1, LUA_TTABLE);
+	// let alone excessive arguments (idiomatic), or do:
+	lua_settop(L, 1);
+	int a_size = lua_objlen(L, 1); // absolute indexing for arguments
+	std::vector<Url> urls;
+
+	for (int i = 1; i <= a_size; i++) 
+	{
+		lua_pushinteger(L, i);
+		lua_gettable(L, 1); // always give a chance to metamethods
+		// OTOH, metamethods are already broken here with lua_rawlen()
+		// if you are on 5.2, use lua_len()
+
+		if (lua_isnil(L, -1)) { // relative indexing for "locals"
+			a_size = i - 1; // fix actual size (e.g. 4th nil means a_size==3)
+			break;
+		}
+
+		if (!lua_isstring(L, -1)) // optional check
+			return luaL_error(L, "item %d invalid (string required, got %s)",
+				i, luaL_typename(L, -1));
+
+		Url url = lua_tostring(L, -1);
+
+		urls.push_back(url);
+		lua_pop(L, 1);
+	}
+
+	std::cout << "url to be passed : " << SneedioYtDlp::Get().UrlQueuesToString(urls) << std::endl;
+
+	return 0;
+}
 
 /*
 ** ===============================================================
@@ -620,6 +655,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetInfinity", L_GetInfinity},
 	{"SetSoundEffectVolume", L_SetSoundEffectVolume},
 	{"GetSoundEffectVolume", L_GetSoundEffectVolume},
+	{"DownloadYoutubeUrls", L_DownloadYoutubeUrls},
 	{NULL,NULL}  // last entry; list terminator
 };
 
