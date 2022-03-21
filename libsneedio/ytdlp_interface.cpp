@@ -154,7 +154,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
             DWORD dwRead;
             CHAR chBuf[BUFSIZE];
             BOOL bSuccess = FALSE;
-            std::string output = "";
+            std::string output = "yt-dlp.exe: ";
             for (;;)
             {
                 memset(chBuf, 0, sizeof(char) * BUFSIZE);
@@ -162,7 +162,11 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
                 output += chBuf;
                 if (!bSuccess || dwRead == 0) continue;
 
-                std::cout << chBuf;
+                if (strchr(chBuf, '\n'))
+                {
+                    std::cout << output;
+                    output = "yt-dlp.exe: ";
+                }
 
                 if (!bSuccess) break;
             }
