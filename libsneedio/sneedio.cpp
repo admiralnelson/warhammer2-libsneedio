@@ -626,8 +626,28 @@ int L_DownloadYoutubeUrls(lua_State* L)
 
 int L_GetYtDlpDownloadStatus(lua_State* L)
 {
-
-	return 1;
+	if (SneedioYtDlp::Get().IsDownloading())
+	{
+		YtDlpDownloadProgressParams param = SneedioYtDlp::Get().GetDownloadStatus();
+		lua_createtable(L,0, 5);
+		//push Message
+		lua_pushlstring(L, param.Message.c_str(), param.Message.length());
+		lua_setfield(L, -2, "Message");
+		//push Url
+		lua_pushlstring(L, param.Url.c_str(), param.Url.length());
+		lua_setfield(L, -2, "Url");
+		//push Title
+		lua_pushlstring(L, param.Title.c_str(), param.Title.length());
+		lua_setfield(L, -2, "Title");
+		//push FileNo
+		lua_pushinteger(L, param.FileNo);
+		lua_setfield(L, -2, "FileNo");
+		//push FileNoOutOf
+		lua_pushinteger(L, param.FileNoOutOf);
+		lua_setfield(L, -2, "FileNoOutOf");
+		return 1;
+	}
+	return 0;
 }
 
 /*

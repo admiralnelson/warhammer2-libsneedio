@@ -48,6 +48,7 @@ public:
 	static SneedioYtDlp& Get();
 	SneedioYtDlp();
 	bool VerifyFiles();
+	bool IsDownloading();
 	bool StartYtDlp(std::vector<Url> const &queues);
 	std::string UrlQueuesToString(std::vector<Url> const& queues);
 	std::string GetCurrentDir();

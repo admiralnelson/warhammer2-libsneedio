@@ -57,6 +57,11 @@ bool SneedioYtDlp::VerifyFiles()
     return false;
 }
 
+bool SneedioYtDlp::IsDownloading()
+{
+    return bIsYtDlpRunning;
+}
+
 bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 {
     //./yt-dlp --ignore-errors --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output "%(title)s.%(ext)s" --yes-playlist 'https://www.youtube.com/list=PLdYwhvDpx0FI2cmiSVn5cMufHjYHpo_88'
