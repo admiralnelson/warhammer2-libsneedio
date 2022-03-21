@@ -9,7 +9,7 @@ typedef std::string Url;
 struct VerifyFileProgressParams 
 {
 	Url Url;
-	std::string FilePath;
+	std::string Title;
 };
 typedef std::function<void(VerifyFileProgressParams const&)> VerifyFileProgressCallback;
 struct VerifyFileCompleteParams
@@ -19,25 +19,27 @@ struct VerifyFileCompleteParams
 };
 typedef std::function<void(VerifyFileCompleteParams const&)> VerifyFileCompleteCallback;
 
-enum class YtDlpDownloadStatus 
-{
-	Downloading,
-	Converting
-};
-
 struct YtDlpDownloadProgressParams
 {
+	std::string Message;
 	Url Url;
-	std::string FilePath;
+	std::string Title;
 	int Size;
 	int CurrentSize;
-	YtDlpDownloadStatus Status;
+	int FileNo;
+	int FileNoOutOf;
 };
 typedef std::function<void(YtDlpDownloadProgressParams const&)> YtDlpDownloadProgressCallback;
+
+enum class YtDlpDownloadStatus 
+{
+	E_Fail, E_Partial, E_Completed
+};
 struct YtDlpDownloadCompleteParams
 {
 	std::string ErrorMessage;
 	bool bAreDownloadsOk;
+	YtDlpDownloadStatus DownloadStatus;
 };
 typedef std::function<void(YtDlpDownloadCompleteParams const&)> YtDlpDownloadCompleteCallback;
 class SneedioYtDlp
@@ -49,11 +51,12 @@ public:
 	bool StartYtDlp(std::vector<Url> const &queues);
 	std::string UrlQueuesToString(std::vector<Url> const& queues);
 	std::string GetCurrentDir();
-
-private:
+	const YtDlpDownloadProgressParams& GetDownloadStatus();
 	void SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback);
 	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
-	void ParseYtDlpProgressFromOutput(YtDlpDownloadProgressParams& out);
+
+private:
+	void ParseYtDlpProgressFromOutput(std::string const& ytDlpStream);
 	void PrintErrorFromHr(HRESULT hr);
 
 	std::thread ThrVerifyFile;
@@ -73,9 +76,12 @@ private:
 	HANDLE m_hChildStd_OUT_Rd = NULL;
 	HANDLE m_hChildStd_OUT_Wr = NULL;
 
+	int TotalQueuedUrls;
+	int TotalProcessedUrls;
+
 	bool bIsYtDlpRunning;
 	bool bIsVerifyFileRunning;
-
+	bool bEncounteredError;
 
 public:
 	SneedioYtDlp(SneedioYtDlp const&) = delete;
