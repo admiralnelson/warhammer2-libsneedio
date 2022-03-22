@@ -21,7 +21,7 @@ struct VerifyFileCompleteParams
 	bool bAreFilesOk;
 };
 typedef std::function<void(VerifyFileCompleteParams const&)> VerifyFileCompleteCallback;
-enum class YtpDownloadProgressStatus
+enum class YtDlpDownloadProgressStatus
 {
 	E_Preparing = 0, E_Downloading, E_Converting
 };
@@ -30,7 +30,7 @@ struct YtDlpDownloadProgressParams
 	std::string Message;
 	Url Url;
 	std::string Title;
-	YtpDownloadProgressStatus Status;
+	YtDlpDownloadProgressStatus Status;
 	int CurrentSize;
 	int FileNo;
 	int FileNoOutOf;
@@ -42,13 +42,14 @@ typedef std::function<void(YtDlpDownloadProgressParams const&)> YtDlpDownloadPro
 
 enum class YtDlpDownloadStatus 
 {
-	E_Fail = 0, E_Partial, E_Completed
+	E_Running = 0, E_Fail, E_Partial, E_Completed
 };
 struct YtDlpDownloadCompleteParams
 {
 	std::string ErrorMessage;
 	bool bAreDownloadsOk;
 	YtDlpDownloadStatus DownloadStatus;
+	std::vector<Url> ErroredUrls;
 };
 typedef std::function<void(YtDlpDownloadCompleteParams const&)> YtDlpDownloadCompleteCallback;
 class SneedioYtDlp
@@ -62,6 +63,7 @@ public:
 	std::string UrlQueuesToString(std::vector<Url> const& queues);
 	std::string GetCurrentDir();
 	const YtDlpDownloadProgressParams& GetDownloadStatus();
+	const YtDlpDownloadCompleteParams& GetDownloadCompleteStatus();
 	void SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback);
 	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
 

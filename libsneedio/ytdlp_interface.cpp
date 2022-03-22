@@ -79,6 +79,11 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
         return false;
     }
 
+    lastDownloadStatusParam.bAreDownloadsOk = false;
+    lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Running;
+    lastDownloadStatusParam.ErroredUrls.clear();
+    lastDownloadStatusParam.ErrorMessage = "";
+
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
     SECURITY_ATTRIBUTES saAttr;
@@ -114,7 +119,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 
     ZeroMemory(&pi, sizeof(pi));
 
-    std::string commandLine = ytDlpBin + " --newline --ignore-errors --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
+    std::string commandLine = ytDlpBin + " --newline --abort-on-error --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
     std::cout << "SneedioYtDlp: starting yt-dlp using following command line " << commandLine << std::endl;
     // Start the child process. 
     if (!CreateProcessA(NULL,           // No module name (use command line)
@@ -143,6 +148,30 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
             {
                 bIsYtDlpRunning = IsYtDlpRunning();
             }
+            DWORD exitCode;
+            if (GetExitCodeProcess(handleYtDlp, &exitCode))
+            {
+                if (exitCode > 0 && exitCode != STILL_ACTIVE)
+                {
+                    lastDownloadStatusParam.bAreDownloadsOk = false;
+                    lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Fail;
+                    if (lastDownloadStatusParam.ErrorMessage == "") //if no reason was set, assume it crashed
+                    {
+                        lastDownloadStatusParam.ErrorMessage = "yt-dlp.exe process and/or its child died/crashed.";
+                    }
+                }
+                else
+                {
+                    lastDownloadStatusParam.bAreDownloadsOk = true;
+                    lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Completed;
+                }
+            }
+            else
+            {
+                //??
+                PrintErrorFromHr(HRESULT_FROM_WIN32(GetLastError()));
+            }
+            if (callbackYtDlpDownloadComplete) callbackYtDlpDownloadComplete(lastDownloadStatusParam);
             return 0;
         });
 
@@ -171,7 +200,6 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
                 {
                     std::cout << "ThrMonitorYtDlp exited" << std::endl;
                     bIsYtDlpRunning = false;
-                    if (callbackYtDlpDownloadComplete) callbackYtDlpDownloadComplete(lastDownloadStatusParam);
                     break;
                 }
 
@@ -179,7 +207,6 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
                 {
                     std::cout << __FUNCTION__": read stream error" << std::endl;
                     bIsYtDlpRunning = false;
-                    if (callbackYtDlpDownloadComplete) callbackYtDlpDownloadComplete(lastDownloadStatusParam);
                     break;
                 };
             }
@@ -196,12 +223,14 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
     std::lock_guard<std::shared_mutex> lock(write);
     std::cout << "yt-dlp :" << ytDlpStream << std::endl;
 
+    lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Running;
+
     std::regex regVideoId("\\[youtube\\] (.*): Downloading webpage");
     std::smatch matchVideoId;
     static std::string videoId;
     if (std::regex_search(ytDlpStream, matchVideoId, regVideoId))
     {
-        currentDownloadProgressParams.Status = YtpDownloadProgressStatus::E_Preparing;
+        currentDownloadProgressParams.Status = YtDlpDownloadProgressStatus::E_Preparing;
         std::cout << "match video id: " << matchVideoId[1] << std::endl;
         videoId = matchVideoId[1];
         TotalProcessedUrls++;
@@ -219,7 +248,7 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
     std::regex regConvert("\\[ExtractAudio\\] Destination: (.*)\\.mp3");
     if (std::regex_search(ytDlpStream, matchVideoTitle, regConvert))
     {
-        currentDownloadProgressParams.Status = YtpDownloadProgressStatus::E_Converting;
+        currentDownloadProgressParams.Status = YtDlpDownloadProgressStatus::E_Converting;
         std::cout << "match video title: " << matchVideoTitle[1] << std::endl;
         videoTitle = matchVideoTitle[1];
     }
@@ -231,7 +260,7 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
     static int speedInKB = 0;
     if (std::regex_search(ytDlpStream, matchVideoProgress, regProgress))
     {
-        currentDownloadProgressParams.Status = YtpDownloadProgressStatus::E_Downloading;
+        currentDownloadProgressParams.Status = YtDlpDownloadProgressStatus::E_Downloading;
         percentage = (int)(atof(matchVideoProgress[1].str().c_str()));
         if (UnitToConversionKB.find(matchVideoProgress[3]) != UnitToConversionKB.end())
         {
@@ -245,6 +274,17 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
         }
     }
 
+    std::regex regError("ERROR: \\[youtube\\] (.*): (.*)");
+    std::smatch matchErrorOut;
+    if (std::regex_search(ytDlpStream, matchErrorOut, regError))
+    {
+        lastDownloadStatusParam.bAreDownloadsOk = false;
+        lastDownloadStatusParam.ErroredUrls.push_back(matchErrorOut[1]);
+        lastDownloadStatusParam.ErrorMessage = "Cannot download: " + matchErrorOut[1].str() + " " + matchErrorOut[2].str();
+        lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Fail;
+    }
+
+
     currentDownloadProgressParams.Message = ytDlpStream;
     currentDownloadProgressParams.FileNoOutOf = TotalQueuedUrls;
     currentDownloadProgressParams.FileNo = TotalProcessedUrls;
@@ -254,32 +294,9 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
     currentDownloadProgressParams.SizeInKB = sizeInKB;
     currentDownloadProgressParams.Percentage = percentage;
 
-    //todo
-    //if (callbackYtDlpDownloadProgress) callbackYtDlpDownloadProgress(currentDownloadProgressParams);
+    
+    if (callbackYtDlpDownloadProgress) callbackYtDlpDownloadProgress(currentDownloadProgressParams);
 
-    if (TotalProcessedUrls == TotalProcessedUrls && !bEncounteredError)
-    {
-        lastDownloadStatusParam.bAreDownloadsOk = true;
-        lastDownloadStatusParam.ErrorMessage = ytDlpStream;
-        lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Completed;
-        return;
-    }
-
-    if (TotalProcessedUrls == TotalProcessedUrls && bEncounteredError)
-    {
-        lastDownloadStatusParam.bAreDownloadsOk = true;
-        lastDownloadStatusParam.ErrorMessage = ytDlpStream;
-        lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Partial;
-        return;
-    }
-
-    if (TotalProcessedUrls != TotalProcessedUrls && bEncounteredError)
-    {
-        lastDownloadStatusParam.bAreDownloadsOk = true;
-        lastDownloadStatusParam.ErrorMessage = ytDlpStream;
-        lastDownloadStatusParam.DownloadStatus = YtDlpDownloadStatus::E_Fail;
-        return;
-    }
 }
 
 void SneedioYtDlp::PrintErrorFromHr(HRESULT hr)
@@ -315,6 +332,12 @@ const YtDlpDownloadProgressParams& SneedioYtDlp::GetDownloadStatus()
 {
     std::shared_lock<std::shared_mutex> lock(write);
     return currentDownloadProgressParams;
+}
+
+const YtDlpDownloadCompleteParams& SneedioYtDlp::GetDownloadCompleteStatus()
+{
+    std::shared_lock<std::shared_mutex> lock(write);
+    return lastDownloadStatusParam;
 }
 
 SneedioYtDlp::~SneedioYtDlp()

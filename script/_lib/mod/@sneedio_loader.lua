@@ -31,6 +31,10 @@ local YIELD_BREAK = "_____BREAK_____";
 
 -- sneedio config file
 local SNEEDIO_USER_CONFIG_JSON = "user-sneedio.json";
+-- yt-dlp playlist file
+local SNEEDIO_YT_DLP_QUEUE_MOD_JSON = "yt-dlp-queue-for-mod.json";
+-- sneedio system config file
+local SNEEDIO_SYSTEM_CONFIG_JSON = ".sneedio-system.json";
 
 -- sneedio mod identifier
 local SNEEDIO_MCT_CONTROL_PANEL_ID = "Sneedio";
@@ -1430,6 +1434,14 @@ end
 
 sneedio.DownloadYoutubeUrls = function (urls)
     libSneedio.DownloadYoutubeUrls(urls);
+
+    -- local urls = {...};
+    -- ForEach(urls, function (url)
+    --     print("queued youtube url "..url);
+    --     sneedio._MapUrlToActualFiles[url] = "";
+    -- end);
+    -- WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
+    --
 end
 
 --#endregion battle helper
@@ -1543,13 +1555,33 @@ sneedio._LoadUserConfig = function ()
     print("audio loaded");
 end
 
+sneedio._LoadYtDlpUrlToMusicConfig = function ()
+    local ytDlpUrlToMusic = nil;
+    try {
+        function ()
+            local ytDlpUrlToMusicJson = ReadFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON);
+            ytDlpUrlToMusic = json.decode(ytDlpUrlToMusicJson);
+        end,
+        catch{
+            function (err)
+                PrintWarning("yt-dlp-queue.json.json is not valid json or not found. Not loading yt-dlp-queue.json.json.");
+                PrintError(err);
+            end
+        }
+    }
+    if(ytDlpUrlToMusic == nil) then return; end
+    ForEach(ytDlpUrlToMusic, function(file, url)
+        sneedio._MapUrlToActualFiles[url] = file;
+    end);
+end
+
 -- called during frontend
 sneedio._FirstTimeSetup = function ()
-    if(not sneedio.IsFileExist(".sneedio-system.json"))then
+    if(not sneedio.IsFileExist(SNEEDIO_SYSTEM_CONFIG_JSON))then
         local sneedioVersion = {
             version = sneedio.VERSION,
         };
-        sneedio.WriteFile(".sneedio-system.json", json.encode(sneedioVersion));
+        sneedio.WriteFile(SNEEDIO_SYSTEM_CONFIG_JSON, json.encode(sneedioVersion));
         return true;
     end
     return false;
@@ -1557,14 +1589,14 @@ end
 
 sneedio._UpdateSneedioSystemJson = function(data)
     data.version = sneedio.VERSION;
-    WriteFile(".sneedio-system.json", json.encode(data));
+    WriteFile(SNEEDIO_SYSTEM_CONFIG_JSON, json.encode(data));
 end
 
 sneedio._GetSneedioSystemJson = function()
     local data;
     try {
         function ()
-            data = json.decode(ReadFile(".sneedio-system.json"));
+            data = json.decode(ReadFile(SNEEDIO_SYSTEM_CONFIG_JSON));
         end,
         catch{
             function (err)
@@ -1582,6 +1614,11 @@ sneedio._YtDlpDownloadProgressTracker = function ()
         return title, url, details;
     end
 end
+
+sneedio._YtDlpDownloadCompleteStatusTracker = function ()
+    return libSneedio.GetYtDlpDownloadCompleteStatus();
+end
+
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
@@ -1591,9 +1628,9 @@ sneedio._InitFrontEnd = function ()
         PrintError("current game is not frontend, operation failed");
         return;
     end
-
     sneedio._FirstTimeSetup();
     sneedio._LoadUserConfig();
+    sneedio._LoadYtDlpUrlToMusicConfig();
     sneedio._bNotInFrontEnd = false;
 
     if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
@@ -1644,6 +1681,7 @@ sneedio._InitCampaign = function ()
 
     sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
+    sneedio._LoadYtDlpUrlToMusicConfig();
 
     core:add_listener(
         "sneedio_on_unit_select_campaign",
@@ -2594,6 +2632,7 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
     sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
+    sneedio._LoadYtDlpUrlToMusicConfig();
 
     sneedio._BattleOnTick();
     core:add_listener(
@@ -3004,6 +3043,10 @@ sneedio._MusicPlaylist = {
             ["LastStand"] = {},
         },
     },
+};
+
+sneedio._MapUrlToActualFiles = {
+    ["null"] = "",
 };
 
 sneedio._bAllowModToAddMusic = true;

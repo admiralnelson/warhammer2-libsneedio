@@ -656,6 +656,24 @@ int L_GetYtDlpDownloadStatus(lua_State* L)
 	return 0;
 }
 
+int L_GetYtDlpDownloadCompleteStatus(lua_State* L)
+{
+	lua_createtable(L, 0, 3);
+	YtDlpDownloadCompleteParams param = SneedioYtDlp::Get().GetDownloadCompleteStatus();
+	
+	lua_pushinteger(L, (int)param.DownloadStatus);
+	lua_setfield(L, -2, "DownloadStatus");
+
+	lua_pushboolean(L, (bool)param.bAreDownloadsOk);
+	lua_setfield(L, -2, "bAreDownloadsOk");
+
+	lua_pushstring(L, param.ErrorMessage.c_str());
+	lua_setfield(L, -2, "ErrorMessage");
+
+	return 1;
+
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -690,6 +708,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetSoundEffectVolume", L_GetSoundEffectVolume},
 	{"DownloadYoutubeUrls", L_DownloadYoutubeUrls},
 	{"GetYtDlpDownloadStatus", L_GetYtDlpDownloadStatus},
+	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
 	{NULL,NULL}  // last entry; list terminator
 };
 

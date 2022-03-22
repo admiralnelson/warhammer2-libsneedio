@@ -14,7 +14,7 @@ function ()
                 "https://www.youtube.com/watch?v=gKghZxlbTLo",
                 "https://www.youtube.com/watch?v=QTRYte36nx8",
                 "https://www.youtube.com/watch?v=kUwHsJNkQ3E",
-                "https://www.youtube.com/watch?v=SJlRgrF-9H0",
+                "https://www.youtube.com/watch?v=SJlRgrF-9HZ", -- error test
                 "https://www.youtube.com/watch?v=n6u4EsjBlb8",
                 "https://www.youtube.com/watch?v=URmrY_5g8II",
                 "https://www.youtube.com/watch?v=Icq86BRW4WE",
@@ -54,6 +54,14 @@ function ()
                         else
                             sneedio.TM.OnceCallback(function ()
                                 progressBox:Destroy();
+                                local status = sneedio._YtDlpDownloadCompleteStatusTracker();
+                                var_dump(status);
+                                if(status.DownloadStatus == 1) then
+                                    --sneedio.TM.OnceCallback(function ()
+                                        sneedio.MessageBox("ytdlp error", "Sneedio\n\nDownload failed.\n\n"..status.ErrorMessage);
+                                    --end, sneedio.SYSTEM_TICK * 2, "ytdlp_error");
+                                end
+                                sneedio.TM.RemoveCallback("download poll test");
                             end, sneedio.SYSTEM_TICK * 10, "ytdlp_destroy");
                         end
                     end,
