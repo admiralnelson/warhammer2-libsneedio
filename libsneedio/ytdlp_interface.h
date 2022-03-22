@@ -66,6 +66,7 @@ public:
 	const YtDlpDownloadCompleteParams& GetDownloadCompleteStatus();
 	void SetupVerifyFiles(VerifyFileProgressCallback vfProgressCallback, VerifyFileCompleteCallback vfCompleteCallback);
 	void SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallback, YtDlpDownloadCompleteCallback ytCompleteCallback);
+	bool IsUrlAValidYoutubeLink(Url const& Url);
 
 private:
 	void ParseYtDlpProgressFromOutput(std::string ytDlpStream);

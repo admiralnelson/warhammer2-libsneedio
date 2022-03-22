@@ -1433,19 +1433,26 @@ sneedio.GetCurrentConfig = function ()
 end
 
 sneedio.DownloadYoutubeUrls = function (urls)
-    libSneedio.DownloadYoutubeUrls(urls);
+    --libSneedio.DownloadYoutubeUrls(urls);
+    ForEach(urls, function (url)
+        print("queued youtube url "..url);
+         sneedio._MapUrlToActualFiles[url] = "";
+    end);
+    WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
 
-    -- local urls = {...};
-    -- ForEach(urls, function (url)
-    --     print("queued youtube url "..url);
-    --     sneedio._MapUrlToActualFiles[url] = "";
-    -- end);
-    -- WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
-    --
+end
+
+-- a function that checks if an url is valid youtube video link
+-- @param url string
+-- @return boolean true if valid
+sneedio.IsValidYoutubeUrl = function (url)
+    if (url == nil) then return false; end
+    return libSneedio.IsValidYoutubeLink(url);
 end
 
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
+
 
 --- private volume method controlled by music system
 -- @param amount real number range [0..1]
@@ -1564,7 +1571,7 @@ sneedio._LoadYtDlpUrlToMusicConfig = function ()
         end,
         catch{
             function (err)
-                PrintWarning("yt-dlp-queue.json.json is not valid json or not found. Not loading yt-dlp-queue.json.json.");
+                PrintWarning("yt-dlp-queue.json is not valid json or not found. Not loading yt-dlp-queue.json.");
                 PrintError(err);
             end
         }

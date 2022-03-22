@@ -671,7 +671,13 @@ int L_GetYtDlpDownloadCompleteStatus(lua_State* L)
 	lua_setfield(L, -2, "ErrorMessage");
 
 	return 1;
+}
 
+int L_IsValidYoutubeLink(lua_State* L)
+{
+	Url url = luaL_checkstring(L, 1);
+	lua_pushboolean(L, SneedioYtDlp::Get().IsUrlAValidYoutubeLink(url));
+	return 1;
 }
 
 /*
@@ -709,6 +715,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"DownloadYoutubeUrls", L_DownloadYoutubeUrls},
 	{"GetYtDlpDownloadStatus", L_GetYtDlpDownloadStatus},
 	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
+	{"IsValidYoutubeLink", L_IsValidYoutubeLink},
 	{NULL,NULL}  // last entry; list terminator
 };
 

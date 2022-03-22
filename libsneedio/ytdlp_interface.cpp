@@ -42,6 +42,17 @@ void SneedioYtDlp::SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallbac
     callbackYtDlpDownloadComplete = ytCompleteCallback;
 }
 
+bool SneedioYtDlp::IsUrlAValidYoutubeLink(Url const& Url)
+{
+    std::regex regVideoId("^(https?://)?(www\\.)?(youtube\\.com/watch\\?v=|youtu\\.be/)([A-Za-z0-9\\-_]+)");
+    std::smatch _;
+    if (std::regex_search(Url, _, regVideoId))
+    {
+        return true;
+    }
+    return false;
+}
+
 bool SneedioYtDlp::VerifyFiles()
 {
     if (bIsVerifyFileRunning)
