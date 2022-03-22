@@ -44,7 +44,7 @@ void SneedioYtDlp::SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallbac
 
 bool SneedioYtDlp::IsUrlAValidYoutubeLink(Url const& Url)
 {
-    std::regex regVideoId("^(https?://)?(www\\.)?(youtube\\.com/watch\\?v=|youtu\\.be/)([A-Za-z0-9\\-_]+)");
+    std::regex regVideoId("^(https://)?(www\\.)?(youtube\\.com/watch\\?v=)([A-Za-z0-9\\-_]+)");
     std::smatch _;
     if (std::regex_search(Url, _, regVideoId))
     {
@@ -130,7 +130,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 
     ZeroMemory(&pi, sizeof(pi));
 
-    std::string commandLine = ytDlpBin + " --newline --abort-on-error --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
+    std::string commandLine = ytDlpBin + " --newline --abort-on-error --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"yt-dlp-audio/%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
     std::cout << "SneedioYtDlp: starting yt-dlp using following command line " << commandLine << std::endl;
     // Start the child process. 
     if (!CreateProcessA(NULL,           // No module name (use command line)
@@ -247,7 +247,7 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
         TotalProcessedUrls++;
     }
 
-    std::regex regVideoTitle("\\[download\\] Destination: (.*)\\.webm");
+    std::regex regVideoTitle("\\[download\\] Destination: yt-dlp-audio\\\\(.*)\\.webm");
     std::smatch matchVideoTitle;
     static std::string videoTitle;
     if (std::regex_search(ytDlpStream, matchVideoTitle, regVideoTitle))
@@ -256,7 +256,7 @@ void SneedioYtDlp::ParseYtDlpProgressFromOutput(std::string ytDlpStream)
         videoTitle = matchVideoTitle[1];
     }
 
-    std::regex regConvert("\\[ExtractAudio\\] Destination: (.*)\\.mp3");
+    std::regex regConvert("\\[ExtractAudio\\] Destination: yt-dlp-audio\\\\(.*)\\.mp3");
     if (std::regex_search(ytDlpStream, matchVideoTitle, regConvert))
     {
         currentDownloadProgressParams.Status = YtDlpDownloadProgressStatus::E_Converting;

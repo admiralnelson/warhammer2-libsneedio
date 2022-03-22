@@ -23,6 +23,7 @@ local cm = cm;
 local BM = bm or nil;
 local CM = cm or nil;
 local TM = nil;
+local throw = error;
 
 _G.SNEEDIO_DEBUG = false or os.getenv("SNEEDIO_DEBUG");
 
@@ -31,8 +32,10 @@ local YIELD_BREAK = "_____BREAK_____";
 
 -- sneedio config file
 local SNEEDIO_USER_CONFIG_JSON = "user-sneedio.json";
+-- yt-dlp music stash
+local SNEEDIO_YT_DLP_DIRECTORY = "yt-dlp-audio";
 -- yt-dlp playlist file
-local SNEEDIO_YT_DLP_QUEUE_MOD_JSON = "yt-dlp-queue-for-mod.json";
+local SNEEDIO_YT_DLP_QUEUE_MOD_JSON = "yt-dlp-db.json";
 -- sneedio system config file
 local SNEEDIO_SYSTEM_CONFIG_JSON = ".sneedio-system.json";
 
@@ -97,6 +100,14 @@ local MOCK_UP = true;
 local PATH = "audio/";
 local OUTPUTPATH = "";
 
+local DOWNLOAD_STATUS_OK = 0;
+local DOWNLOAD_STATUS_FAIL = 1;
+local DOWNLOAD_STATUS_PARTIAL = 2;
+local DOWNLOAD_STATUS_COMPLETE = 3;
+
+local DOWNLOAD_PROGRESS_PREPARING = 0;
+local DOWNLOAD_PROGRESS_DOWNLOADING = 1;
+local DOWNLOAD_PROGRESS_CONVERTING = 2;
 
 
 -- music tick in ms, executed in timer
@@ -191,6 +202,7 @@ TM = {
     _ListOfCallbacks = {},
     _bInited = false,
     OnceCallback = function (callback, delay, name)
+        if(name == "") then name = nil; end
         if(type(callback) ~= "function" ) then
             PrintError("callback is not a function");
             error("callback err");
@@ -1433,13 +1445,15 @@ sneedio.GetCurrentConfig = function ()
 end
 
 sneedio.DownloadYoutubeUrls = function (urls)
-    --libSneedio.DownloadYoutubeUrls(urls);
     ForEach(urls, function (url)
         print("queued youtube url "..url);
-         sneedio._MapUrlToActualFiles[url] = "";
+        if(not sneedio.IsValidYoutubeUrl(url)) then
+            throw("invalid youtube url "..url, 2);
+            return;
+        end
+        sneedio._MapUrlToActualFiles[url] = sneedio._MapUrlToActualFiles[url] or "";
     end);
     WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
-
 end
 
 -- a function that checks if an url is valid youtube video link
@@ -1453,6 +1467,65 @@ end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
+sneedio._StartDownloadingYoutube = function ()
+    print("preparing");
+    local urls = {};
+    ForEach(sneedio._MapUrlToActualFiles, function (actualFile, url)
+        if(actualFile == "") then
+            table.insert(urls, url);
+        end
+    end);
+    var_dump(urls);
+    var_dump(sneedio._MapUrlToActualFiles);
+    libSneedio.DownloadYoutubeUrls(urls);
+    local progressBox = nil;
+    progressBox = sneedio.MessageBox("ytdlp", "Sneedio\n\nPlease stand by...", nil, nil, true);
+    TM.RepeatCallback(function ()
+        try{
+            function ()
+                local dy_text = find_uicomponent(progressBox, "DY_text");
+                local title, url, details = sneedio._YtDlpDownloadProgressTracker();
+                var_dump(title);
+                var_dump(url);
+                var_dump(details);
+                if(title) then
+                    if(title ~= "") then
+                        local textToDisplay = "Sneedio\n\nProcessing file "..tostring(details.FileNo).." out of "..tostring(details.FileNoOutOf).."\n";
+                        if(details.Status == DOWNLOAD_PROGRESS_PREPARING) then textToDisplay = textToDisplay.."Preparing "; end
+                        if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.."Downloading "; end
+                        if(details.Status == DOWNLOAD_PROGRESS_CONVERTING) then
+                            textToDisplay = textToDisplay.."Converting ";
+                            sneedio._MapUrlToActualFiles["https://www.youtube.com/watch?v="..url] = SNEEDIO_YT_DLP_DIRECTORY.."/"..title..".mp3";
+                        end
+                        textToDisplay = textToDisplay ..  " " .. title .. "\n";
+                        if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.." ("..tostring(details.Percentage).."%)\n"; end
+                        if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.." Speed "..tostring(details.CurrentSpeedInKBpS).." KB/s ".." Size "..tostring(details.SizeInKB).." KB\n"; end
+                        textToDisplay = textToDisplay.."https://youtu.be/"..url;
+                        dy_text:SetStateText(textToDisplay, "whatever");
+                    end
+                else
+                    DelayedCall(function ()
+                        progressBox:Destroy();
+                        local status = sneedio._YtDlpDownloadCompleteStatusTracker();
+                        var_dump(status);
+                        if(status.DownloadStatus == DOWNLOAD_STATUS_FAIL) then
+                            sneedio.MessageBox("ytdlp error", "Sneedio\n\nDownload failed.\n\n"..status.ErrorMessage);
+                        elseif (status.bAreDownloadsOk) then
+                            WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
+                        end
+                        TM.RemoveCallback("download polling");
+                    end, SYSTEM_TICK * 10, "ytdlp_destroy");
+                end
+            end,
+            catch{
+                function (err)
+                    print("Error: "..err);
+                    print(debug.traceback());
+                end
+            }
+        };
+    end, SYSTEM_TICK * 10 * 3, "download polling");
+end
 
 --- private volume method controlled by music system
 -- @param amount real number range [0..1]
@@ -1571,7 +1644,7 @@ sneedio._LoadYtDlpUrlToMusicConfig = function ()
         end,
         catch{
             function (err)
-                PrintWarning("yt-dlp-queue.json is not valid json or not found. Not loading yt-dlp-queue.json.");
+                PrintWarning("yt-dlp-db.json is not valid json or not found. Not loading yt-dlp-db.json.");
                 PrintError(err);
             end
         }
@@ -3053,7 +3126,7 @@ sneedio._MusicPlaylist = {
 };
 
 sneedio._MapUrlToActualFiles = {
-    ["null"] = "",
+    -- ["null"] = "",
 };
 
 sneedio._bAllowModToAddMusic = true;
