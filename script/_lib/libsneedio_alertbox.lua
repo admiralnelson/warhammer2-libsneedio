@@ -51,13 +51,14 @@ local FindEl = function (Parent, ElPath)
 	return find_uicomponent(Parent, unpack(args));
 end
 
-local function createConfirmationBox(id, text, on_accept_callback, on_cancel_callback, libs)
+local function createConfirmationBox(id, text, on_accept_callback, on_cancel_callback, disablePrompts, libs)
     core = libs.core or core;
     is_uicomponent = libs.is_uicomponent or is_uicomponent;
     find_uicomponent = libs.find_uicomponent or find_uicomponent;
     cm = libs.cm or cm;
     bm = libs.bm or bm;
     effect = libs.effect or effect;
+    disablePrompts = disablePrompts or false;
 
 	local confirmation_box = core:get_or_create_component(id, "ui/Common UI/dialogue_box")
 	confirmation_box:SetVisible(true)
@@ -75,7 +76,15 @@ local function createConfirmationBox(id, text, on_accept_callback, on_cancel_cal
         local backButton = FindEl(root, "root > "..id.." > both_group > button_cancel");
         if(backButton) then backButton:Destroy(); end
         local okButton = FindEl(root, "root > "..id.." > both_group > button_tick");
-        if(okButton) then okButton:SetDockOffset(0, -3); end
+        if(okButton) then okButton:SetDockOffset(0, -5); end
+    end
+
+    if(disablePrompts) then
+        local root = core:get_ui_root();
+        local backButton = FindEl(root, "root > "..id.." > both_group > button_cancel");
+        if(backButton) then backButton:Destroy(); end
+        local okButton = FindEl(root, "root > "..id.." > both_group > button_tick");
+        if(okButton) then okButton:Destroy(); end
     end
 
 	local accept_fn = function()

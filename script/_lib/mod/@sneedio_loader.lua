@@ -181,6 +181,7 @@ end
 var_dump(real_timer);
 
 -- timer_manager doesn't work properly in frontend, i have to code myself. thanks to vandy for the hint
+local RandomString = nil;
 
 TM = {
     _ListOfCallbacks = {},
@@ -199,7 +200,7 @@ TM = {
             delay = 0;
             return;
         end
-
+        name = name or RandomString();
         name = name .. "_ONCE";
         TM._ListOfCallbacks[name] = callback;
         real_timer.register_singleshot(name, delay)
@@ -307,9 +308,9 @@ local ForEach = function (array, pred)
     end
 end
 
-local RandomString = nil;
 RandomString = function (length)
     local charset = {}
+    length = length or 8;
     -- qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890
     for i = 48,  57 do table.insert(charset, string.char(i)) end
     for i = 65,  90 do table.insert(charset, string.char(i)) end
@@ -567,10 +568,9 @@ local IsAudioHaveBeenExtracted = function (audioHiveFolder, audio)
     return res;
 end
 
-local MessageBox = function (id, message, callbackOk, callbackCancel)
+local MessageBox = function (id, message, callbackOk, callbackCancel, disablePrompts)
     local msgBox = require("libsneedio_alertbox");
-    DelayedCall(function ()
-        msgBox(id, message, callbackOk, callbackCancel,
+    return msgBox(id, message, callbackOk, callbackCancel, disablePrompts,
         {
             core = core,
             bm = BM,
@@ -579,7 +579,6 @@ local MessageBox = function (id, message, callbackOk, callbackCancel)
             find_uicomponent = find_uicomponent,
             effect = effect,
         });
-    end, 100);
 end
 
 sneedio.CONTROLPANEL = {};
@@ -629,6 +628,13 @@ local SetupControlPanel = function ()
 end
 
 --#endregion helper functions
+
+--- generate random string
+-- @param length length of the string
+sneedio.RandomString = RandomString;
+
+--- checks if values are between interval
+sneedio.IsBetween = IsBetween
 
 --- check if file exists
 -- @param {string} path
@@ -1570,6 +1576,12 @@ sneedio._GetSneedioSystemJson = function()
     return data;
 end
 
+sneedio._YtDlpDownloadProgressTracker = function ()
+    if(libSneedio.GetYtDlpDownloadStatus()) then
+        local title, url, details = libSneedio.GetYtDlpDownloadStatus();
+        return title, url, details;
+    end
+end
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
@@ -2206,15 +2218,6 @@ sneedio._MusicTimeTracker = function ()
         end
         sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
         -- PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
-    end
-end
-
-sneedio._PollDownloadTest = function ()
-    if(libSneedio.GetYtDlpDownloadStatus()) then
-        local title, url, details = libSneedio.GetYtDlpDownloadStatus();
-        var_dump(title);
-        var_dump(url);
-        var_dump(details);
     end
 end
 
