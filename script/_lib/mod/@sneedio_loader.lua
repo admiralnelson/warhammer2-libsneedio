@@ -1492,7 +1492,6 @@ sneedio._GetFileFromYoutubeUrl = function (url)
 end
 
 sneedio._StartDownloadingYoutube = function ()
-    if(not sneedio._IsYtDlpFlagDirty()) then return; end
     print("preparing");
     local urls = {};
     ForEach(sneedio._MapUrlToActualFiles, function (actualFile, url)
@@ -1501,10 +1500,14 @@ sneedio._StartDownloadingYoutube = function ()
         end
     end);
     var_dump(urls);
+    if(#urls == 0) then
+        PrintWarning("no youtube urls to download");
+        return;
+    end
     var_dump(sneedio._MapUrlToActualFiles);
     libSneedio.DownloadYoutubeUrls(urls);
     local progressBox = nil;
-    progressBox = sneedio.MessageBox("ytdlp", "Sneedio\n\nPlease stand by...", nil, nil, true);
+    progressBox = MessageBox("ytdlp", "Sneedio\n\nPlease stand by...", nil, nil, true);
     TM.RepeatCallback(function ()
         try{
             function ()
@@ -1532,7 +1535,7 @@ sneedio._StartDownloadingYoutube = function ()
                         local status = sneedio._YtDlpDownloadCompleteStatusTracker();
                         var_dump(status);
                         if(status.DownloadStatus == DOWNLOAD_STATUS_FAIL) then
-                            sneedio.MessageBox("ytdlp error", "Sneedio\n\nDownload failed.\n\n"..status.ErrorMessage);
+                            MessageBox("ytdlp error", "Sneedio\n\nDownload failed.\n\n"..status.ErrorMessage);
                         elseif (status.bAreDownloadsOk) then
                             sneedio._WriteYtDlpFlagDirty(false);
                             WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
@@ -1587,11 +1590,7 @@ sneedio._LoadUserConfig = function ()
             FactionMusic = {},
         }
         WriteFile(SNEEDIO_USER_CONFIG_JSON, json.encode(userConfig));
-        MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.",
-            function ()
-                sneedio.MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.");
-            end
-        );
+        sneedio._bIsFirstTimeStart = true;
         PrintWarning("created default user-sneedio.json");
     end
 
@@ -1765,7 +1764,21 @@ sneedio._InitFrontEnd = function ()
     end, TRANSITION_TICK, "sneedio_process_music_transition");
 
     SetupControlPanel();
-    sneedio._StartDownloadingYoutube();
+    if(sneedio._bIsFirstTimeStart)then
+        MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.",
+            function ()
+                sneedio.MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.", function ()
+                    if(sneedio._IsYtDlpFlagDirty()) then
+                        sneedio._StartDownloadingYoutube();
+                    end
+                end);
+            end
+        );
+    else
+        if(sneedio._IsYtDlpFlagDirty()) then
+            sneedio._StartDownloadingYoutube();
+        end
+    end
 end
 
 --#endregion frontend procedures
@@ -3208,6 +3221,8 @@ sneedio._StopVoice = false;
 
 -- holds current sneedio config json
 sneedio._CurrentUserConfig = {};
+
+sneedio._bIsFirstTimeStart = false;
 
 sneedio._FrontEndMusic = {
     FileName = "",
