@@ -44,7 +44,7 @@ void SneedioYtDlp::SetupYtDlp(YtDlpDownloadProgressCallback ytDlpProgressCallbac
 
 bool SneedioYtDlp::IsUrlAValidYoutubeLink(Url const& Url)
 {
-    std::regex regVideoId("^(https://)?(www\\.)?(youtube\\.com/watch\\?v=)([A-Za-z0-9\\-_]+)");
+    std::regex regVideoId("^https://www\\.youtube\\.com/watch\\?v=([A-Za-z0-9\\-_]+)");
     std::smatch _;
     if (std::regex_search(Url, _, regVideoId))
     {

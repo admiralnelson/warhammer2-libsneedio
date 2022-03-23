@@ -1156,6 +1156,10 @@ sneedio.LoadCustomAudio = function(identifier, fileName)
         return;
     end
     print("attempt to load: "..fileName);
+    if(sneedio.IsValidYoutubeUrl(fileName)) then
+        fileName = sneedio._GetFileFromYoutubeUrl(fileName);
+        print("youtube url detected, fileName is now: "..fileName);
+    end
     if(libSneedio.LoadVoiceBattle(fileName, identifier)) then
         print(identifier..": audio loaded "..fileName);
         sneedio._ListOfCustomAudio[identifier] = fileName;
@@ -1451,7 +1455,11 @@ sneedio.DownloadYoutubeUrls = function (urls)
             throw("invalid youtube url "..url, 2);
             return;
         end
-        sneedio._MapUrlToActualFiles[url] = sneedio._MapUrlToActualFiles[url] or "";
+        if(not HasKey(sneedio._MapUrlToActualFiles, url)) then
+            PrintWarning("not downloaded yet "..url);
+            sneedio._WriteYtDlpFlagDirty(true);
+            sneedio._MapUrlToActualFiles[url] = "";
+        end
     end);
     WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
 end
@@ -1467,7 +1475,24 @@ end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
+sneedio._GetFileFromYoutubeUrl = function (url)
+    if(not sneedio.IsValidYoutubeUrl(url)) then
+        throw("invalid youtube url "..url, 2);
+    end
+    local file = nil;
+    print("audio file is a youtube url, remapping to local file");
+    if(HasKey(sneedio._MapUrlToActualFiles, url)) then
+        file = sneedio._MapUrlToActualFiles[url];
+    else
+        sneedio._WriteYtDlpFlagDirty(true);
+        PrintError("no local file found for "..url);
+        throw("no local file found for "..url, 2);
+    end
+    return file;
+end
+
 sneedio._StartDownloadingYoutube = function ()
+    if(not sneedio._IsYtDlpFlagDirty()) then return; end
     print("preparing");
     local urls = {};
     ForEach(sneedio._MapUrlToActualFiles, function (actualFile, url)
@@ -1493,13 +1518,11 @@ sneedio._StartDownloadingYoutube = function ()
                         local textToDisplay = "Sneedio\n\nProcessing file "..tostring(details.FileNo).." out of "..tostring(details.FileNoOutOf).."\n";
                         if(details.Status == DOWNLOAD_PROGRESS_PREPARING) then textToDisplay = textToDisplay.."Preparing "; end
                         if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.."Downloading "; end
-                        if(details.Status == DOWNLOAD_PROGRESS_CONVERTING) then
-                            textToDisplay = textToDisplay.."Converting ";
-                            sneedio._MapUrlToActualFiles["https://www.youtube.com/watch?v="..url] = SNEEDIO_YT_DLP_DIRECTORY.."/"..title..".mp3";
-                        end
+                        if(details.Status == DOWNLOAD_PROGRESS_CONVERTING) then textToDisplay = textToDisplay.."Converting "; end
                         textToDisplay = textToDisplay ..  " " .. title .. "\n";
                         if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.." ("..tostring(details.Percentage).."%)\n"; end
                         if(details.Status == DOWNLOAD_PROGRESS_DOWNLOADING) then textToDisplay = textToDisplay.." Speed "..tostring(details.CurrentSpeedInKBpS).." KB/s ".." Size "..tostring(details.SizeInKB).." KB\n"; end
+                        sneedio._MapUrlToActualFiles["https://www.youtube.com/watch?v="..url] = SNEEDIO_YT_DLP_DIRECTORY.."/"..title..".mp3";
                         textToDisplay = textToDisplay.."https://youtu.be/"..url;
                         dy_text:SetStateText(textToDisplay, "whatever");
                     end
@@ -1511,6 +1534,7 @@ sneedio._StartDownloadingYoutube = function ()
                         if(status.DownloadStatus == DOWNLOAD_STATUS_FAIL) then
                             sneedio.MessageBox("ytdlp error", "Sneedio\n\nDownload failed.\n\n"..status.ErrorMessage);
                         elseif (status.bAreDownloadsOk) then
+                            sneedio._WriteYtDlpFlagDirty(false);
                             WriteFile(SNEEDIO_YT_DLP_QUEUE_MOD_JSON, json.encode(sneedio._MapUrlToActualFiles));
                         end
                         TM.RemoveCallback("download polling");
@@ -1524,7 +1548,7 @@ sneedio._StartDownloadingYoutube = function ()
                 end
             }
         };
-    end, SYSTEM_TICK * 10 * 3, "download polling");
+    end, SYSTEM_TICK * 10 * 2, "download polling");
 end
 
 --- private volume method controlled by music system
@@ -1636,6 +1660,7 @@ sneedio._LoadUserConfig = function ()
 end
 
 sneedio._LoadYtDlpUrlToMusicConfig = function ()
+    print("_LoadYtDlpUrlToMusicConfig executed");
     local ytDlpUrlToMusic = nil;
     try {
         function ()
@@ -1649,10 +1674,10 @@ sneedio._LoadYtDlpUrlToMusicConfig = function ()
             end
         }
     }
+    PrintError("sneedio._MapUrlToActualFiles");
     if(ytDlpUrlToMusic == nil) then return; end
-    ForEach(ytDlpUrlToMusic, function(file, url)
-        sneedio._MapUrlToActualFiles[url] = file;
-    end);
+    sneedio._MapUrlToActualFiles = ytDlpUrlToMusic;
+    var_dump(sneedio._MapUrlToActualFiles);
 end
 
 -- called during frontend
@@ -1672,8 +1697,20 @@ sneedio._UpdateSneedioSystemJson = function(data)
     WriteFile(SNEEDIO_SYSTEM_CONFIG_JSON, json.encode(data));
 end
 
+sneedio._IsYtDlpFlagDirty = function()
+    local data = sneedio._GetSneedioSystemJson();
+    return data.IsYtDlpDbDirty or false;
+end
+
+sneedio._WriteYtDlpFlagDirty = function(flag)
+    local data = {
+        IsYtDlpDbDirty = flag,
+    };
+    sneedio._UpdateSneedioSystemJson(data);
+end
+
 sneedio._GetSneedioSystemJson = function()
-    local data;
+    local data = {};
     try {
         function ()
             data = json.decode(ReadFile(SNEEDIO_SYSTEM_CONFIG_JSON));
@@ -1710,7 +1747,6 @@ sneedio._InitFrontEnd = function ()
     end
     sneedio._FirstTimeSetup();
     sneedio._LoadUserConfig();
-    sneedio._LoadYtDlpUrlToMusicConfig();
     sneedio._bNotInFrontEnd = false;
 
     if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
@@ -1729,6 +1765,7 @@ sneedio._InitFrontEnd = function ()
     end, TRANSITION_TICK, "sneedio_process_music_transition");
 
     SetupControlPanel();
+    sneedio._StartDownloadingYoutube();
 end
 
 --#endregion frontend procedures
@@ -1761,7 +1798,6 @@ sneedio._InitCampaign = function ()
 
     sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
-    sneedio._LoadYtDlpUrlToMusicConfig();
 
     core:add_listener(
         "sneedio_on_unit_select_campaign",
@@ -2016,6 +2052,10 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
     if(voices["Select"])then
         ForEach(voices["Select"], function (subvoice)
             local charType = sneedio._CharTypeToSelect(characterKey);
+            if(sneedio.IsValidYoutubeUrl(subvoice)) then
+                subvoice = sneedio._GetFileFromYoutubeUrl(subvoice);
+                print("youtube url detected, fileName is now: "..subvoice);
+            end
             if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
                 print(characterKey..": registered Select voice "..subvoice);
                 if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
@@ -2032,6 +2072,10 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
     if(voices["Affirmative"])then
         ForEach(voices["Affirmative"], function (subvoice)
             local charType = sneedio._CharTypeToAffirmative(characterKey);
+            if(sneedio.IsValidYoutubeUrl(subvoice)) then
+                subvoice = sneedio._GetFileFromYoutubeUrl(subvoice);
+                print("youtube url detected, fileName is now: "..subvoice);
+            end
             if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
                 print(characterKey..": registered Affirmative voice "..subvoice);
                 if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
@@ -2048,6 +2092,10 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
     if(voices["Hostile"])then
         ForEach(voices["Hostile"], function (subvoice)
             local charType = sneedio._CharTypeToHostile(characterKey);
+            if(sneedio.IsValidYoutubeUrl(subvoice)) then
+                subvoice = sneedio._GetFileFromYoutubeUrl(subvoice);
+                print("youtube url detected, fileName is now: "..subvoice);
+            end
             if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
                 print(characterKey..": registered Hostile voice "..subvoice);
                 if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
@@ -2064,6 +2112,10 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
     if(voices["Abilities"])then
         ForEach(voices["Abilities"], function (subvoice)
             local charType = sneedio._CharTypeToAbilities(characterKey);
+            if(sneedio.IsValidYoutubeUrl(subvoice)) then
+                subvoice = sneedio._GetFileFromYoutubeUrl(subvoice);
+                print("youtube url detected, fileName is now: "..subvoice);
+            end
             if(libSneedio.LoadVoiceBattle(subvoice, charType)) then
                 print(characterKey..": registered Abilities voice "..subvoice);
                 if(sneedio._MapCharTypeToAudioFile[charType] == nil) then
@@ -2080,6 +2132,10 @@ sneedio._RegisterCharacterVoiceCampaign = function (characterKey)
     if(voices["Diplomacy"])then
         ForEach(voices["Diplomacy"], function (subvoice, dialogKey)
             local charDialogCode = sneedio._CharDialogToDiplomacy(dialogKey, characterKey);
+            if(sneedio.IsValidYoutubeUrl(subvoice)) then
+                subvoice = sneedio._GetFileFromYoutubeUrl(subvoice);
+                print("youtube url detected, fileName is now: "..subvoice);
+            end
             if(libSneedio.LoadVoiceBattle(subvoice, charDialogCode)) then
                 print(characterKey..": registered Dialog voice "..subvoice);
                 if(sneedio._MapCharTypeToAudioFile[charDialogCode] == nil) then
@@ -2247,7 +2303,12 @@ sneedio._ProcessSmoothMusicTransition = function ()
             print("unknown music data");
             return;
         end
-        if(libSneedio.PlayMusic(musicData.FileName)) then
+        local fileName = musicData.FileName;
+        if(sneedio.IsValidYoutubeUrl(fileName)) then
+            fileName = sneedio._GetFileFromYoutubeUrl(fileName);
+            print("youtube url detected, fileName is now: "..fileName);
+        end
+        if(libSneedio.PlayMusic(fileName)) then
             if(musicData.StartPos and musicData.StartPos < musicData.MaxDuration )then
                 if(libSneedio.SetMusicPosition(musicData.StartPos)) then
                     print("set music position to "..tostring(musicData.StartPos));
@@ -2258,7 +2319,7 @@ sneedio._ProcessSmoothMusicTransition = function ()
                 BM:set_volume(0, 0);
             end
         else
-            print("failed to play music: "..musicData.FileName);
+            print("failed to play music: "..fileName);
             if(BM) then
                 print("fallback to warscape music");
                 BM:set_volume(0, 100);
@@ -2645,14 +2706,23 @@ sneedio._RegisterVoiceOnBattle = function (unit, Voices, VoiceType)
         if(type(filename)=="table")then
             print("================================");
             print("attempt to load ambience audio: "..filename.FileName);
-            if(libSneedio.LoadVoiceBattle(filename.FileName, unitTypeInstanced)) then
+            local fileName = filename.FileName;
+            if(sneedio.IsValidYoutubeUrl(fileName)) then
+                fileName = sneedio._GetFileFromYoutubeUrl(fileName);
+                print("youtube url detected, fileName is now: "..fileName);
+            end
+            if(libSneedio.LoadVoiceBattle(fileName, unitTypeInstanced)) then
                 table.insert(sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced], filename);
-                print(unitTypeInstanced..": audio loaded "..filename.FileName.." for voice type "..VoiceType);
+                print(unitTypeInstanced..": audio loaded "..fileName.." for voice type "..VoiceType);
             else
                 PrintError("warning, failed to load .."..unitTypeInstanced.." filename path: "..filename.FileName.." for voice type "..VoiceType.." maybe file doesn't exist or wrong path");
             end
         else
             print("attempt to load: "..filename);
+            if(sneedio.IsValidYoutubeUrl(filename)) then
+                filename = sneedio._GetFileFromYoutubeUrl(filename);
+                print("youtube url detected, fileName is now: "..filename);
+            end
             if(libSneedio.LoadVoiceBattle(filename, unitTypeInstanced)) then
                 table.insert(sneedio._ListOfRegisteredVoicesOnBattle[unitTypeInstanced], filename);
                 print(unitTypeInstanced..": audio loaded "..filename.." for voice type "..VoiceType);
@@ -2712,7 +2782,6 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
     sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
-    sneedio._LoadYtDlpUrlToMusicConfig();
 
     sneedio._BattleOnTick();
     core:add_listener(
@@ -3264,6 +3333,9 @@ print("off we go....");
 
 if(sneedio.InitSneedio()) then
     print("sneedio init ok");
+    -- load at the beginning
+    sneedio._LoadYtDlpUrlToMusicConfig();
+
     math.huge = libSneedio.GetInfinity();
     PrintError("libsneedio.GetInfinity is "..tostring(libSneedio.GetInfinity()));
     PrintError("math.huge is "..tostring(math.huge));
