@@ -122,8 +122,7 @@ local BATTLE_MORALE_MONITOR_TICK = 5*1000;
 local AMBIENT_TICK = 5*1000;
 local AMBIENT_TRIGGER_CAMERA_DISTANCE = 40;
 -- music padding
-local MUSIC_ENDS_IN_SECONDS = 3;
-local MUSIC_FADE_IN_SECONDS = 1;
+local MUSIC_ENDS_IN_SECONDS = 0;
 
 --#region init stuff soon to be removed into their own libs
 
@@ -300,6 +299,26 @@ end
 
 --#region helper functions
 
+-- a function that convert seconds to mm:ss
+local SecondsToMMSS = function (seconds)
+    local minutes = math.floor(seconds / 60);
+    local seconds = seconds - (minutes * 60);
+    return string.format("%02d:%02d", minutes, seconds);
+end
+
+local ShallowCopy = function (orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
 
 local MMSSToSeconds = function (mmss)
     local mm, ss = mmss:match("(%d+):(%d+)");
@@ -721,7 +740,9 @@ sneedio.print = print;
 
 --- save sneedio user config file
 sneedio.WriteConfigFile = function ()
-    local jsonString = json.encode(sneedio._CurrentUserConfig);
+    local dataToBeSaved = ShallowCopy(sneedio._CurrentUserConfig);
+    local jsonString = json.encode(dataToBeSaved);
+
     WriteFile(SNEEDIO_USER_CONFIG_JSON, jsonString);
 end
 
@@ -992,15 +1013,25 @@ sneedio.AddMusicCampaign = function (factionId, ...)
         return;
     end
     if(sneedio._MusicPlaylist[factionId] == nil) then
-        return;
+        sneedio._MusicPlaylist[factionId] = {};
     end
-    if(sneedio._MusicPlaylist[factionId]["CampaignMap"]) then
+    if(sneedio._MusicPlaylist[factionId]["CampaignMap"] == nil) then
         sneedio._MusicPlaylist[factionId]["CampaignMap"] = {};
     end
+    -- PrintWarning("called from");
+    -- print(debug.traceback());
+    -- print("music table");
+    -- var_dump(sneedio._MusicPlaylist);
+    -- print("fileNamesArr");
+    -- var_dump(fileNamesArr);
+
     local fileNamesArr = {...};
     ForEach(fileNamesArr, function (filename)
+        filename.CurrentDuration = 0;
+        filename.bAddedFromMod = true;
         table.insert(sneedio._MusicPlaylist[factionId]["CampaignMap"], filename);
     end);
+    var_dump(sneedio._MusicPlaylist);
 end
 
 --- add battle music for faction
@@ -1539,6 +1570,7 @@ sneedio._GetFileFromYoutubeUrl = function (url)
     end
     local file = nil;
     print("audio file is a youtube url, remapping to local file");
+    PrintWarning(debug.traceback());
     if(HasKey(sneedio._MapUrlToActualFiles, url)) then
         file = sneedio._MapUrlToActualFiles[url];
     else
@@ -1705,7 +1737,9 @@ sneedio._LoadUserConfig = function ()
         if(sneedio._MusicPlaylist[faction] == nil) then
             sneedio._MusicPlaylist[faction] = {};
         end
-        sneedio._MusicPlaylist[faction]["CampaignMap"] = {};
+        if(sneedio._MusicPlaylist[faction]["CampaignMap"] == nil) then
+            sneedio._MusicPlaylist[faction]["CampaignMap"] = {};
+        end
         ForEach(campaignMusicArr, function (m)
             m.CurrentDuration = 0;
             table.insert(sneedio._MusicPlaylist[faction]["CampaignMap"], m);
@@ -2403,6 +2437,7 @@ sneedio._ProcessSmoothMusicTransition = function ()
                     print("set music position to "..tostring(musicData.StartPos));
                 end
             end
+            var_dump(musicData);
             print("music played...");
             if(BM) then
                 BM:set_volume(0, 0);
@@ -2498,7 +2533,7 @@ sneedio._MusicTimeTracker = function ()
             sneedio._CurrentPlayedMusic.CurrentDuration = 0;
         end
         sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
-        -- PrintWarning(tostring(sneedio._CurrentPlayedMusic.CurrentDuration).." track "..sneedio._CurrentPlayedMusic.FileName);
+        PrintWarning(SecondsToMMSS(sneedio._CurrentPlayedMusic.CurrentDuration).." - "..SecondsToMMSS(sneedio._CurrentPlayedMusic.MaxDuration).." track "  ..sneedio._CurrentPlayedMusic.FileName);
     end
 end
 
