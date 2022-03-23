@@ -605,6 +605,9 @@ sneedio.CONTROLPANEL.SliderMusicVolumeControlId =  "MusicVolume";
 sneedio.CONTROLPANEL.SliderSoundVolumeControlId =  "SoundVolume";
 sneedio.CONTROLPANEL.SECTION_NAME = "General";
 sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundForFactionControlId = "NoticeNoMusicFoundForFaction";
+sneedio.CONTROLPANEL.AllowModToModifyMenuMusicId = "AllowModToModifyMenuMusic";
+sneedio.CONTROLPANEL.AllowModToModifyFactionMusicId = "AllowModToModifyFactionMusic";
+sneedio.CONTROLPANEL.AllowModToDownloadAudioId = "AllowModToDownloadAudio";
 
 local SetupControlPanel = function ()
     core:add_listener(
@@ -637,6 +640,15 @@ local SetupControlPanel = function ()
             local noticeNoMusicFoundForFaction = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundForFactionControlId):get_finalized_setting();
             sneedio._CurrentUserConfig.NoticeNoMusicFoundForFaction = noticeNoMusicFoundForFaction;
             PrintWarning("notice no music found for faction is set to"..tostring(noticeNoMusicFoundForFaction));
+            local allowModToModifyMenuMusic = mod:get_option_by_key(sneedio.CONTROLPANEL.AllowModToModifyMenuMusicId):get_finalized_setting();
+            sneedio._CurrentUserConfig.AllowModToModifyMenuMusic = allowModToModifyMenuMusic;
+            PrintWarning("allow mod to modify menu music is set to"..tostring(allowModToModifyMenuMusic));
+            local allowModToModifyFactionMusic = mod:get_option_by_key(sneedio.CONTROLPANEL.AllowModToModifyFactionMusicId):get_finalized_setting();
+            sneedio._CurrentUserConfig.AllowModToModifyFactionMusic = allowModToModifyFactionMusic;
+            PrintWarning("allow mod to modify faction music is set to"..tostring(allowModToModifyFactionMusic));
+            local allowModToDownloadAudio = mod:get_option_by_key(sneedio.CONTROLPANEL.AllowModToDownloadAudioId):get_finalized_setting();
+            sneedio._CurrentUserConfig.AllowModToDownloadAudio = allowModToDownloadAudio;
+            PrintWarning("allow mod to download audio is set to"..tostring(allowModToDownloadAudio));
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -918,6 +930,10 @@ end
 -- @param factionid: string, faction key in faction tables
 -- @param MusicPlaylist: lua table, see note above
 sneedio.LoadMusic = function (factionId, MusicPlaylist)
+    if(not sneedio._CurrentUserConfig.AllowModToModifyFactionMusic)then
+        PrintError("sneedio:LoadMusic: not allowed to modify faction music");
+        return;
+    end
     sneedio._MusicPlaylist[factionId] = MusicPlaylist;
 end
 
@@ -933,6 +949,10 @@ end
 -- @param factionid: string, faction key in faction tables
 -- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicCampaign = function (factionId, ...)
+    if(not sneedio._CurrentUserConfig.AllowModToModifyFactionMusic)then
+        PrintError("sneedio:AddMusicCampaign: not allowed to modify faction music");
+        return;
+    end
     if(sneedio._MusicPlaylist[factionId] == nil) then
         return;
     end
@@ -960,8 +980,8 @@ end
 -- @param Situation: string, situation must be either: Deployment, FirstEngagement, Balanced, Losing, Winning, LastStand
 -- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
-    if(not sneedio._bAllowModToAddMusic) then
-        PrintWarning("AddMusicBattle: sneedio._bAllowModToAddMusic was set to false. Mod music is not allowed");
+    if(not sneedio._CurrentUserConfig.AllowModToModifyFactionMusic)then
+        PrintError("sneedio:AddMusicBattle: not allowed to modify faction music");
         return;
     end
     local fileNamesArr = {...};
@@ -1504,6 +1524,10 @@ sneedio._StartDownloadingYoutube = function ()
         PrintWarning("no youtube urls to download");
         return;
     end
+    if(not sneedio._CurrentUserConfig.AllowModToDownloadAudio) then
+        PrintWarning("user config does not allow downloading audio");
+        return;
+    end
     var_dump(sneedio._MapUrlToActualFiles);
     libSneedio.DownloadYoutubeUrls(urls);
     local progressBox = nil;
@@ -1588,6 +1612,9 @@ sneedio._LoadUserConfig = function ()
             FrontEndMusic = {},
             BattleMusic = {},
             FactionMusic = {},
+            AllowModToModifyMenuMusic = true,
+            AllowModToDownloadAudio = true,
+            AllowModToModifyFactionMusic = true,
         }
         WriteFile(SNEEDIO_USER_CONFIG_JSON, json.encode(userConfig));
         sneedio._bIsFirstTimeStart = true;
@@ -1614,10 +1641,24 @@ sneedio._LoadUserConfig = function ()
     else
         sneedio._CurrentUserConfig.NoticeNoMusicFoundForFaction = true;
     end
+    if(userConfig.AllowModToModifyMenuMusic ~= nil and type(userConfig.AllowModToModifyMenuMusic) == "boolean") then
+        sneedio._CurrentUserConfig.AllowModToModifyMenuMusic = userConfig.AllowModToModifyMenuMusic;
+    else
+        sneedio._CurrentUserConfig.AllowModToModifyMenuMusic = true;
+    end
+    if(userConfig.AllowModToModifyFactionMusic ~= nil and type(userConfig.AllowModToModifyFactionMusic) == "boolean") then
+        sneedio._CurrentUserConfig.AllowModToModifyFactionMusic = userConfig.AllowModToModifyFactionMusic;
+    else
+        sneedio._CurrentUserConfig.AllowModToModifyFactionMusic = true;
+    end
+    if(userConfig.AllowModToDownloadAudio ~= nil and type(userConfig.AllowModToDownloadAudio) == "boolean") then
+        sneedio._CurrentUserConfig.AllowModToDownloadAudio = userConfig.AllowModToDownloadAudio;
+    else
+        sneedio._CurrentUserConfig.AllowModToDownloadAudio = true;
+    end
 
     --var_dump(userConfig);
     sneedio._FrontEndMusic = userConfig["FrontEndMusic"] or {};
-    sneedio._bAllowModToAddMusic = userConfig["OverrideAllModMusic"] or false;
     local BatteMusic = userConfig["BattleMusic"];
     local CampaignMusic = userConfig["FactionMusic"];
 
@@ -1744,8 +1785,6 @@ sneedio._InitFrontEnd = function ()
         PrintError("current game is not frontend, operation failed");
         return;
     end
-    sneedio._FirstTimeSetup();
-    sneedio._LoadUserConfig();
     sneedio._bNotInFrontEnd = false;
 
     if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
@@ -1767,7 +1806,7 @@ sneedio._InitFrontEnd = function ()
     if(sneedio._bIsFirstTimeStart)then
         MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.",
             function ()
-                sneedio.MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.", function ()
+                MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.", function ()
                     if(sneedio._IsYtDlpFlagDirty()) then
                         sneedio._StartDownloadingYoutube();
                     end
@@ -1809,7 +1848,6 @@ sneedio._InitCampaign = function ()
     if(CM == nil) then return false; end
     TM.Init();
 
-    sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
 
     core:add_listener(
@@ -2793,7 +2831,6 @@ sneedio._RegisterSneedioTickBattleFuns = function()
     end
     print("battle mode");
 
-    sneedio._LoadUserConfig();
     sneedio._ValidateMusicData();
 
     sneedio._BattleOnTick();
@@ -3211,8 +3248,6 @@ sneedio._MapUrlToActualFiles = {
     -- ["null"] = "",
 };
 
-sneedio._bAllowModToAddMusic = true;
-
 sneedio._bPaused = false;
 
 sneedio._StopVoice = false;
@@ -3349,6 +3384,8 @@ print("off we go....");
 if(sneedio.InitSneedio()) then
     print("sneedio init ok");
     -- load at the beginning
+    sneedio._FirstTimeSetup();
+    sneedio._LoadUserConfig();
     sneedio._LoadYtDlpUrlToMusicConfig();
 
     math.huge = libSneedio.GetInfinity();

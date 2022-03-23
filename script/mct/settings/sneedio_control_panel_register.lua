@@ -5,6 +5,9 @@ local CheckSoundMuteControlId = "SoundMute";
 local SliderMusicVolumeControlId = "MusicVolume";
 local SliderSoundVolumeControlId = "SoundVolume";
 local CheckNoticeNoMusicFoundForFactionControlId = "NoticeNoMusicFoundForFaction";
+local AllowModToModifyMenuMusicId = "AllowModToModifyMenuMusic";
+local AllowModToModifyFactionMusicId = "AllowModToModifyFactionMusic";
+local AllowModToDownloadAudioId = "AllowModToDownloadAudio";
 
 local M = mct:register_mod(SNEEDIO_MCT_CONTROL_PANEL_ID);
 M:set_title("Sneedio");
@@ -24,9 +27,24 @@ CheckSoundMute:set_tooltip_text("Mute all sound effects from sneedio");
 CheckSoundMute:set_default_value(false);
 
 local CheckNoticeNoMusicFoundForFaction = M:add_new_option(CheckNoticeNoMusicFoundForFactionControlId, "checkbox");
-CheckNoticeNoMusicFoundForFaction:set_text("Notice No Music Found For Faction");
-CheckNoticeNoMusicFoundForFaction:set_tooltip_text("Shows a message box when no music is found for the current faction");
+CheckNoticeNoMusicFoundForFaction:set_text("Notify when no music was found for current faction");
+CheckNoticeNoMusicFoundForFaction:set_tooltip_text("Shows a message box when no music was found for the current faction");
 CheckNoticeNoMusicFoundForFaction:set_default_value(true);
+
+local CheckAllowModToModifyMenuMusic = M:add_new_option(AllowModToModifyMenuMusicId, "checkbox");
+CheckAllowModToModifyMenuMusic:set_text("Allow mod to override menu music");
+CheckAllowModToModifyMenuMusic:set_tooltip_text("Allows mods to override the menu music");
+CheckAllowModToModifyMenuMusic:set_default_value(true);
+
+local CheckAllowModToModifyFactionMusicId = M:add_new_option(AllowModToModifyFactionMusicId, "checkbox");
+CheckAllowModToModifyFactionMusicId:set_text("Allow mod to add new music for factions");
+CheckAllowModToModifyFactionMusicId:set_tooltip_text("Disabling this will prevent mods from adding new music for factions");
+CheckAllowModToModifyFactionMusicId:set_default_value(true);
+
+local CheckAllowModToDownloadAudioId = M:add_new_option(AllowModToDownloadAudioId, "checkbox");
+CheckAllowModToDownloadAudioId:set_text("Allow mod to use yt-dlp to download audio");
+CheckAllowModToDownloadAudioId:set_tooltip_text("Disabling this will prevent mods from using yt-dlp to download music or additional audio");
+CheckAllowModToDownloadAudioId:set_default_value(true);
 
 local SliderMusicVolume = M:add_new_option(SliderMusicVolumeControlId, "slider");
 SliderMusicVolume:set_text("Music Volume");
