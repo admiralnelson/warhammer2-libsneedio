@@ -183,6 +183,8 @@ try {
 if(libSneedio) then
     print("lib loaded ok");
     var_dump(libSneedio);
+    -- fix math.huge null value
+    math.huge = libSneedio.GetInfinity();
     -- libSneedio = libSneedio();
     --var_dump(libSneedio);
     --StartDebugger();
@@ -297,6 +299,20 @@ if(TM == nil or TM == false)then
 end
 
 --#region helper functions
+
+
+local MMSSToSeconds = function (mmss)
+    local mm, ss = mmss:match("(%d+):(%d+)");
+    if(mm == nil) then
+        throw("invalid mmss format");
+    end
+    mm = tonumber(mm);
+    ss = tonumber(ss);
+    if(ss > 59) then
+        throw("invalid mmss format, ss is above 59");
+    end
+    return  mm * 60 + ss;
+end
 
 local ReadFile = function (file)
     local f = assert(io.open(file, "rb"));
@@ -709,6 +725,11 @@ sneedio.WriteConfigFile = function ()
     WriteFile(SNEEDIO_USER_CONFIG_JSON, jsonString);
 end
 
+--- converts mm:ss string to seconds
+-- @param {string} mmss formatted in mm:ss, ss must be within range [0..59]
+-- @return {number} seconds
+sneedio.MinutesSecondsToSeconds = MMSSToSeconds;
+
 --- extract audio from base64 table
 -- the is a key value map like this
 -- {
@@ -750,6 +771,21 @@ sneedio.ExtractAudio = function (hiveFolder, audios, force)
         PrintWarning("wrote "..path.."\n");
     end);
     return true;
+end
+
+
+--- replace frontend music
+-- {
+-- 	FileName = "medieval.mp3",
+-- 	MaxDuration = 30,
+--  StartPos = 10,
+-- }
+-- StartPos attribute is optional.
+-- @param musicData: table above
+sneedio.ReplaceMenuMusic = function(musicData)
+    if(musicData.FileName and musicData.MaxDuration) then
+        sneedio._FrontEndMusic = musicData;
+    end
 end
 
 --- create directory recursively
@@ -945,6 +981,8 @@ end
 -- 	MaxDuration = 30,
 --  StartPos = 10,
 -- },
+-- since version 0.3 FileName supports youtube url. Keep in mind the music linked from the url must be downloaded
+-- by yt-dlp on frontend menu (use sneedio.DownloadYoutubeUrls(url))
 -- StartPos attribute is optional. If not specified, the music will start from the beginning.
 -- @param factionid: string, faction key in faction tables
 -- @param ...: music to be added (variadic arguments)
@@ -2408,9 +2446,22 @@ sneedio._PlayMusic = function (musicData)
         return;
     end
     print("playing music ".. musicData.FileName);
-    if(not libSneedio.IsMusicValid(musicData.FileName))then
-        print("unable to load file "..musicData.FileName.. " this will not change the situation!");
-        return;
+    if(not sneedio.IsValidYoutubeUrl(musicData.FileName)) then
+        if(not libSneedio.IsMusicValid(musicData.FileName))then
+            print("unable to load file "..musicData.FileName.. " this will not change the situation!");
+            return;
+        end
+    else
+        if(sneedio._GetFileFromYoutubeUrl(musicData.FileName) == "") then
+            print("URL "..musicData.FileName.. " has no cached music file. this will not change the situation!");
+            return;
+        else
+            if(not libSneedio.IsMusicValid(sneedio._GetFileFromYoutubeUrl(musicData.FileName)))then
+                local fil = sneedio._GetFileFromYoutubeUrl(musicData.FileName);
+                print("unable to load file "..fil.. " pointed by this URL "..musicData.FileName.." this will not change the situation!");
+                return;
+            end
+        end
     end
     -- don't replay the music if the filename is the same with the current played one
     -- but change the situation
@@ -3388,7 +3439,6 @@ if(sneedio.InitSneedio()) then
     sneedio._LoadUserConfig();
     sneedio._LoadYtDlpUrlToMusicConfig();
 
-    math.huge = libSneedio.GetInfinity();
     PrintError("libsneedio.GetInfinity is "..tostring(libSneedio.GetInfinity()));
     PrintError("math.huge is "..tostring(math.huge));
     PrintError("math.pi is "..tostring(math.pi));
