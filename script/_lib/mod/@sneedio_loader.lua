@@ -980,7 +980,6 @@ end
 -- 		["Balanced"] = {},
 -- 		["Losing"] = {},
 -- 		["Winning"] = {},
--- 		["LastStand"] = {},
 -- 	},
 -- }
 -- StartPos attribute is optional. If not specified, the music will start from the beginning.
@@ -1046,7 +1045,7 @@ end
 ]]
 -- StartPos attribute is optional. If not specified, the music will start from the beginning.
 -- @param factionid: string, faction key in faction tables
--- @param Situation: string, situation must be either: Deployment, FirstEngagement, Balanced, Losing, Winning, LastStand
+-- @param Situation: string, situation must be either: Deployment, FirstEngagement, Balanced, Losing, Winning
 -- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
     if(not sneedio._CurrentUserConfig.AllowModToModifyFactionMusic)then
@@ -1169,9 +1168,9 @@ sneedio.GetPlayerFactionPlaylistForBattle = function (Situation)
         PrintError("situation was null!");
         return;
     end
-    local availableSituations = {"Deployment", "Complete", "Balanced", "FirstEngagement", "Losing", "Winning", "LastStand"};
+    local availableSituations = {"Deployment", "Complete", "Balanced", "FirstEngagement", "Losing", "Winning"};
     if(not InArray(availableSituations, Situation))then
-        PrintError("invalid Situation. Situation are {'Deployment', 'Complete', 'FirstEngagement', 'Losing', 'Winning', 'LastStand'} yours was "..Situation);
+        PrintError("invalid Situation. Situation are {'Deployment', 'Complete', 'FirstEngagement', 'Losing', 'Winning'} yours was "..Situation);
         return;
     end
     local factionKey = sneedio.GetPlayerFaction();
@@ -1203,7 +1202,7 @@ sneedio.GetPlayerFaction = function ()
 end
 
 --- get music situation in battle
--- @return a string either Deployment, FirstEngagement, Balanced, Losing, Winning, or LastStand
+-- @return a string either Deployment, FirstEngagement, Balanced, Losing, Winning
 sneedio.GetBattleSituation = function ()
     if(BM == nil)then return; end
     return sneedio._CurrentSituation;
@@ -2549,12 +2548,9 @@ sneedio._UpdateMusicSituation = function ()
     if (IsBetween(0, 0.25, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts))then
         print("changed to balanced");
         sneedio._CurrentSituation = "Balanced";
-    elseif (IsBetween(0.28, 0.69, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
+    elseif (IsBetween(0.28, 1, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
         print("changed to losing");
         sneedio._CurrentSituation = "Losing";
-    elseif (IsBetween(0.7, 1, PlayerRouts) and IsBetween(0, 0.7, EnemyRouts)) then
-        print("changed to last stand");
-        sneedio._CurrentSituation = "LastStand";
     elseif (IsBetween(0, 0.3, PlayerRouts) and IsBetween(0.8, 1, EnemyRouts)) then
         print("changed to winning");
         sneedio._CurrentSituation = "Winning";
@@ -2563,7 +2559,7 @@ end
 
 -- called only when transitioning:
 -- Deployment -> FirstEngagement.
--- FirstEngagement Balanced Losing LastStand Winning -> Complete.
+-- FirstEngagement Balanced Losing Winning -> Complete.
 -- FirstEngagement Balanced -> Losing (when general wounded).
 sneedio._ProcessMusicPhaseChangesBattle = function ()
     print("important phase changes!");
@@ -3079,9 +3075,9 @@ sneedio._RegisterSneedioTickBattleFuns = function()
 
     BM:setup_victory_callback(function ()
         print("battle Deployment");
-        sneedio._BattlePhaseStatus = "VictoryCountdown";
-        sneedio._CurrentSituation = "Winning";
-        sneedio._ProcessMusicPhaseChangesBattle();
+        -- sneedio._BattlePhaseStatus = "VictoryCountdown";
+        -- sneedio._CurrentSituation = "Winning";
+        -- sneedio._ProcessMusicPhaseChangesBattle();
     end);
 
     BM:register_phase_change_callback("Complete", function ()
@@ -3325,7 +3321,6 @@ sneedio._MusicPlaylist = {
             ["Balanced"] = {},
             ["Losing"] = {},
             ["Winning"] = {},
-            ["LastStand"] = {},
         },
     },
 };

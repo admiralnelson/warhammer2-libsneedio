@@ -15,8 +15,7 @@ local mmss = sneedio.MinutesSecondsToSeconds;
 -- * Balanced - when you engage against enemy unit after first engagement and current battle is balanced
 -- * Losing - when you are losing the battle
 -- * Winning - when you are winning the battle
--- * LastStand - absolute losing.
--- The situation states looks like this: Deployment -> FirstEngagement -> Balanced -> Losing | Winning | LastStand
+-- The situation states looks like this: Deployment -> FirstEngagement -> Balanced -> Losing | Winning
 -- You should at least put 2 music in each situation for the best result.
 
 sneedio.AddMusicBattle("wh_main_brt_bretonnia", "Deployment",
