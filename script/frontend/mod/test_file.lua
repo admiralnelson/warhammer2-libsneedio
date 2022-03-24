@@ -23,7 +23,14 @@ local urls = {
     "https://www.youtube.com/watch?v=nRjNcbDuxrs",
     "https://www.youtube.com/watch?v=EowWuNkj638",
     "https://www.youtube.com/watch?v=aYM36JhkG4w",
-    "https://www.youtube.com/watch?v=aFLU69oiQOc"
+    "https://www.youtube.com/watch?v=aFLU69oiQOc",
+
+    "https://www.youtube.com/watch?v=JlxuUG1EtDs",
+    "https://www.youtube.com/watch?v=napwDHgukdg",
+    "https://www.youtube.com/watch?v=Z3-rYbhWmpw",
+    "https://www.youtube.com/watch?v=Upx-mbiT8QQ",
+    "https://www.youtube.com/watch?v=0_Y3i2ct-ls",
+    "https://www.youtube.com/watch?v=yRAn8_VGM28",
 };
 -- queue the urls
 sneedio.DownloadYoutubeUrls(urls);
@@ -46,4 +53,4 @@ sneedio.ReplaceMenuMusic(
     MaxDuration = mmss("3:36")
 });
 
--- ...and let the sneedio do the rest.
+-- ...and let sneedio do the rest.
