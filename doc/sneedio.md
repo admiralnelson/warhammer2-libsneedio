@@ -14,9 +14,9 @@ It's recommended to use mp3 for all your audio files. Because there are some aud
 
 ## Pack structures
 Generally you want your music/audio packs to be organized in the following structure:
-# <img src="../extras/screen1.png" width="25%" />
+<img src="../extras/screen1.png" width="25%" />
 or  
-# <img src="../extras/screen2.png" width="25%" />
+<img src="../extras/screen2.png" width="25%" />
 
 ## Frontend methods
 
@@ -161,7 +161,9 @@ sneedio.AddMusicCampaign = function (factionId, ...)
 
 **`unittype` is your main unit key** defined in database.
 
-`Cooldown` control how spammy the voices will be.
+`Cooldown` control how spammy the voices will be.  
+`FileName` supports Youtube URL, as long you have downloaded it into your local cache during [Frontend: `sneedio.DownloadYoutubeUrls`](#Frontend-methods)
+
 ```lua
 --- register voices to associated unit
 -- with format like this
