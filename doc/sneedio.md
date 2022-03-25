@@ -3,14 +3,20 @@
 
 To see full implementation of `sneedio`, please check [@sneedio_loader.lua](..\script\_lib\mod\@sneedio_loader.lua)  
 You can also check examples in:
-- Frontend music setup script: [test_file.lua](..\script\frontend\mod\test_file.lua) 
-- Campaign music script: [test_file.lua](..\script\campaign\mod\test_file.lua) 
-- Battle music script: [test_file.lua](..\script\battle\mod\test_file.lua)
+- Frontend music setup script: [test_file.lua](../script/frontend/mod/test_file.lua) 
+- Campaign music script: [test_file.lua](../script/campaign/mod/test_file.lua) 
+- Battle music script: [test_file.lua](../script/battle/mod/test_file.lua)
 
 These examples help you to setup your own custom music playlist.
 
 ## Audio format
 It's recommended to use mp3 for all your audio files. Because there are some audio format that doesn't support position seeking. Youtube links is automatically cached as mp3 file. Check [troubleshooting.md](troubleshooting.md) if you encounter any playback issues. Feel free to create new issues if you find any bugs.
+
+## Pack structures
+Generally you want your music/audio packs to be organized in the following structure:
+![screenshot 1](../extras/screen1.png)  
+or  
+![screenshot 2](../extras/screen2.png)  
 
 ## Frontend methods
 
