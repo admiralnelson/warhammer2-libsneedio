@@ -27,6 +27,6 @@ copy  "%CD%\x64\Release\libsneedio.pdb" "%WARHAMMER2_PATH%"
 copy  "%CD%\x64\Release\SDL2_mixer.pdb" "%WARHAMMER2_PATH%"
 copy  "%CD%\x64\Release\SDL2.pdb" "%WARHAMMER2_PATH%"
 copy  "%CD%\x64\Release\uninstall-libsneedio.bat" "%WARHAMMER2_PATH%"
-copy  "%CD%\out\sneedio.pack"  "%WARHAMMER2_PATH%\data\libsneedio.pack"
+copy  "%CD%\out\libsneedio.pack"  "%WARHAMMER2_PATH%\data\libsneedio.pack"
 rem copy user-sneedio.json "%WARHAMMER2_PATH%\user-sneedio.json"
 echo done
