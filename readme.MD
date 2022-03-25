@@ -34,3 +34,4 @@ YES PLEASE! I suck at programming and I really appreaciate your help.
 twg™  
 /g/  
 
+logo is courtesy of anonymous.
