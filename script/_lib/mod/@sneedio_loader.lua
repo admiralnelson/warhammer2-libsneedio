@@ -1,4 +1,4 @@
-local VERSION = "a0.3.0";
+local VERSION = "a0.4.0";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -643,6 +643,8 @@ sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundForFactionControlId = "NoticeNoMusic
 sneedio.CONTROLPANEL.AllowModToModifyMenuMusicId = "AllowModToModifyMenuMusic";
 sneedio.CONTROLPANEL.AllowModToModifyFactionMusicId = "AllowModToModifyFactionMusic";
 sneedio.CONTROLPANEL.AllowModToDownloadAudioId = "AllowModToDownloadAudio";
+sneedio.CONTROLPANEL.DisplayTrackTimeToConsoleId = "DisplayTrackTimeToConsole";
+sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattleId = "NoticeNoMusicFoundOrIncompleteMusicForFactionBattle";
 
 local SetupControlPanel = function ()
     core:add_listener(
@@ -684,6 +686,12 @@ local SetupControlPanel = function ()
             local allowModToDownloadAudio = mod:get_option_by_key(sneedio.CONTROLPANEL.AllowModToDownloadAudioId):get_finalized_setting();
             sneedio._CurrentUserConfig.AllowModToDownloadAudio = allowModToDownloadAudio;
             PrintWarning("allow mod to download audio is set to"..tostring(allowModToDownloadAudio));
+            local displayTrackTimeToConsole = mod:get_option_by_key(sneedio.CONTROLPANEL.DisplayTrackTimeToConsoleId):get_finalized_setting();
+            sneedio._CurrentUserConfig.DisplayTrackTimeToConsole = displayTrackTimeToConsole;
+            PrintWarning("display track time to console is set to"..tostring(displayTrackTimeToConsole));
+            local noticeNoMusicFoundOrIncompleteMusicForFactionBattle = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattleId):get_finalized_setting();
+            sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = noticeNoMusicFoundOrIncompleteMusicForFactionBattle;
+            PrintWarning("notice no music found or incomplete music for faction battle is set to"..tostring(noticeNoMusicFoundOrIncompleteMusicForFactionBattle));
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -1684,6 +1692,8 @@ sneedio._LoadUserConfig = function ()
             AllowModToModifyMenuMusic = true,
             AllowModToDownloadAudio = true,
             AllowModToModifyFactionMusic = true,
+            DisplayTrackTimeToConsole = false,
+            NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = false
         }
         WriteFile(SNEEDIO_USER_CONFIG_JSON, json.encode(userConfig));
         sneedio._bIsFirstTimeStart = true;
@@ -1724,6 +1734,16 @@ sneedio._LoadUserConfig = function ()
         sneedio._CurrentUserConfig.AllowModToDownloadAudio = userConfig.AllowModToDownloadAudio;
     else
         sneedio._CurrentUserConfig.AllowModToDownloadAudio = true;
+    end
+    if(userConfig.DisplayTrackTimeToConsole ~= nil and type(userConfig.DisplayTrackTimeToConsole) == "boolean") then
+        sneedio._CurrentUserConfig.DisplayTrackTimeToConsole = userConfig.DisplayTrackTimeToConsole;
+    else
+        sneedio._CurrentUserConfig.DisplayTrackTimeToConsole = false;
+    end
+    if(userConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle ~= nil and type(userConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle) == "boolean") then
+        sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = userConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle;
+    else
+        sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = true;
     end
 
     --var_dump(userConfig);
@@ -2520,9 +2540,6 @@ sneedio._PlayMusic = function (musicData)
     table.insert(sneedio._TransitionMusicQueue, musicData);
 end
 
--- BIG BUG!
--- if game was fast forward, the timer will get FASTER!
-
 sneedio._MusicTimeTracker = function ()
     if(sneedio.IsPaused()) then
         return;
@@ -2532,7 +2549,9 @@ sneedio._MusicTimeTracker = function ()
             sneedio._CurrentPlayedMusic.CurrentDuration = 0;
         end
         sneedio._CurrentPlayedMusic.CurrentDuration = libSneedio.GetMusicPosition();
-        PrintWarning(SecondsToMMSS(sneedio._CurrentPlayedMusic.CurrentDuration).." - "..SecondsToMMSS(sneedio._CurrentPlayedMusic.MaxDuration).." track "  ..sneedio._CurrentPlayedMusic.FileName);
+        if(sneedio._CurrentUserConfig.DisplayTrackTimeToConsole)then
+            PrintWarning(SecondsToMMSS(sneedio._CurrentPlayedMusic.CurrentDuration).." - "..SecondsToMMSS(sneedio._CurrentPlayedMusic.MaxDuration).." track "  ..sneedio._CurrentPlayedMusic.FileName);
+        end
     end
 end
 
@@ -2560,7 +2579,6 @@ end
 -- called only when transitioning:
 -- Deployment -> FirstEngagement.
 -- FirstEngagement Balanced Losing Winning -> Complete.
--- FirstEngagement Balanced -> Losing (when general wounded).
 sneedio._ProcessMusicPhaseChangesBattle = function ()
     print("important phase changes!");
     print(debug.traceback())

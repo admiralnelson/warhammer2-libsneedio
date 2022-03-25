@@ -35,9 +35,4 @@ pause > NUL
 
 devenv.exe "%CD%\Libsneedio.sln" /Build Release
 
-SET RPFM_CLI_EXE=F:\rpfm-2.0.2-windows\rpfm_cli.exe
-mkdir out
-%RPFM_CLI_EXE% -n "%CD%\out\sneedio.pack" 
-if not exist "%CD%\out\sneedio.pack" (
-	echo if it's errored out, pos probably broken. pack it up  yourself
-)
+call pack.bat
