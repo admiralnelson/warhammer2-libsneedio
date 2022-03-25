@@ -15,6 +15,6 @@ set /p input="do you wish to include example files for testing? y/n:"
 
 if "%input%"=="n" (
 	%RPFM_CLI_EXE% --game warhammer_2 --packfile "%CD%\out\libsneedio.pack"  packfile --delete-files "script/battle/mod/test_file.lua"
-	%RPFM_CLI_EXE% --game warhammer_2 --packfile "%CD%\out\libsneedio.pack"  packfile --delete-files "script/frontend/mod/test_file.lua
-	%RPFM_CLI_EXE% --game warhammer_2 --packfile "%CD%\out\libsneedio.pack"  packfile --delete-files "script/campaign/mod/test_file.lua
+	%RPFM_CLI_EXE% --game warhammer_2 --packfile "%CD%\out\libsneedio.pack"  packfile --delete-files "script/frontend/mod/test_file.lua"
+	%RPFM_CLI_EXE% --game warhammer_2 --packfile "%CD%\out\libsneedio.pack"  packfile --delete-files "script/campaign/mod/test_file.lua"
 )
