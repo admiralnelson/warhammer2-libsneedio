@@ -1357,32 +1357,32 @@ end
 --- register voices to associated unit
 -- with format like this
 -- {
--- 	["Select"] = {},
--- 	["Affirmative"] = {},
--- 	["Hostile"] = {},
--- 	["Abilities"] = {},
+-- 	["Select"] = {...},
+-- 	["Affirmative"] = {...},
+-- 	["Hostile"] = {...},
+-- 	["Abilities"] = {...},
 -- 	["Diplomacy"] = {
 -- 		["Diplomacy_str_x"] = "",
 -- 		["Diplomacy_str_y"] = "",
 -- 	},
 -- 	["Ambiences"] = {
 -- 		["CampaignMap"] = {
--- 			["Any"] = { {Cooldown = 0, FileName = ""} },
--- 			["Desert"] = {Cooldown = 0, FileName = ""},
--- 			["OldWorld"] = {Cooldown = 0, FileName = ""},
--- 			["HighElves"] = {Cooldown = 0, FileName = ""},
--- 			["Lustria"] = {Cooldown = 0, FileName = ""},
--- 			["Snow"] = {Cooldown = 0, FileName = ""},
--- 			["Chaos"] = {Cooldown = 0, FileName = ""}
+-- 			["Any"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["Desert"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["OldWorld"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["HighElves"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["Lustria"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["Snow"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 			["Chaos"] = {{Cooldown = 0, FileName = ""}, ...}
 -- 		},
--- 		["Idle"] = {Cooldown = 0, FileName = ""},
--- 		["Attack"] = {Cooldown = 0, FileName = ""},
--- 		["Wavering"] = {Cooldown = 0, FileName = ""},
--- 		["Winning"] = {Cooldown = 0, FileName = ""},
--- 		["Rampage"] = {Cooldown = 0, FileName = ""},
--- 		["EnslaveOption"] = {Cooldown = 0, FileName = ""},
--- 		["KillOption"] = {Cooldown = 0, FileName = ""},
--- 		["RansomOption"] = {Cooldown = 0, FileName = ""},
+-- 		["Idle"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["Attack"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["Wavering"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["Winning"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["Rampage"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["EnslaveOption"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["KillOption"] = {{Cooldown = 0, FileName = ""}, ...},
+-- 		["RansomOption"] = {{Cooldown = 0, FileName = ""}, ...},
 -- 	},
 -- },
 -- note: Cooldown is in second!
@@ -1544,6 +1544,8 @@ sneedio.GetCurrentConfig = function ()
     return sneedio._CurrentUserConfig;
 end
 
+--- enqueue urls to be downloaded
+-- @param urls: table of urls to be downloaded
 sneedio.DownloadYoutubeUrls = function (urls)
     ForEach(urls, function (url)
         print("queued youtube url "..url);
@@ -3265,22 +3267,22 @@ sneedio._ListOfRegisteredVoices = {
         },
         ["Ambiences"] = {
             ["CampaignMap"] = {
-                ["Any"] = { {Cooldown = 0, FileName = ""} },
-                ["Desert"] = {Cooldown = 0, FileName = ""},
-                ["OldWorld"] = {Cooldown = 0, FileName = ""},
-                ["HighElves"] = {Cooldown = 0, FileName = ""},
-                ["Lustria"] = {Cooldown = 0, FileName = ""},
-                ["Snow"] = {Cooldown = 0, FileName = ""},
-                ["Chaos"] = {Cooldown = 0, FileName = ""}
+                ["Any"] = { {{Cooldown = 0, FileName = ""}, ...} },
+                ["Desert"] = {{Cooldown = 0, FileName = ""}, ...},
+                ["OldWorld"] = {{Cooldown = 0, FileName = ""}, ...},
+                ["HighElves"] = {{Cooldown = 0, FileName = ""}, ...},
+                ["Lustria"] = {{Cooldown = 0, FileName = ""}, ...},
+                ["Snow"] = {{Cooldown = 0, FileName = ""}, ...},
+                ["Chaos"] = {{Cooldown = 0, FileName = ""}, ...}
             },
-            ["Idle"] = {Cooldown = 0, FileName = ""},
-            ["Attack"] = {Cooldown = 0, FileName = ""},
-            ["Wavering"] = {Cooldown = 0, FileName = ""},
-            ["Winning"] = {Cooldown = 0, FileName = ""},
-            ["Rampage"] = {Cooldown = 0, FileName = ""},
-            ["EnslaveOption"] = {Cooldown = 0, FileName = ""},
-            ["KillOption"] = {Cooldown = 0, FileName = ""},
-            ["RansomOption"] = {Cooldown = 0, FileName = ""},
+            ["Idle"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["Attack"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["Wavering"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["Winning"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["Rampage"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["EnslaveOption"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["KillOption"] = {{Cooldown = 0, FileName = ""}, ...},
+            ["RansomOption"] = {{Cooldown = 0, FileName = ""}, ...},
         },
     },
 };
