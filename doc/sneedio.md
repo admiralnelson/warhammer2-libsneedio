@@ -13,9 +13,12 @@ These examples help you to setup your own custom music playlist.
 It's recommended to use mp3 for all your audio files. Because there are some audio format that doesn't support position seeking. Youtube links is automatically cached as mp3 file. Check [troubleshooting.md](troubleshooting.md) if you encounter any playback issues. Feel free to create new issues if you find any bugs.
 
 ## Pack structures
-Generally you want your music/audio packs to be organized in the following structure:
-<img src="../extras/screen1.png" width="25%" />
+Generally you want your music/audio packs to be organized in the following structure:  
+
+<img src="../extras/screen1.png" width="25%" />  
+
 or  
+
 <img src="../extras/screen2.png" width="25%" />
 
 ## Frontend methods

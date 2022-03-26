@@ -1,7 +1,10 @@
 # <img src="extras/logosmall.png" width="64" /> Libsneedio
 
 ## Version
-Version a0.4.1 seems stable enough for me.
+Version a0.4.1 seems stable enough for me.  
+
+## Steam Workshop
+https://steamcommunity.com/sharedfiles/filedetails/?id=2784691287
 
 ## What is it? 
 it's a music and audio library to enable custom music and audio for your dudes.  
