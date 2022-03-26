@@ -138,7 +138,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
         NULL,                           // Process handle not inheritable
         NULL,                           // Thread handle not inheritable
         TRUE,                           // Set handle inheritance
-        0,                              // No creation flags
+        CREATE_NO_WINDOW,                              // No creation flags
         NULL,                           // Use parent's environment block
         NULL,                           // Use parent's starting directory 
         &si,                            // Pointer to STARTUPINFO structure

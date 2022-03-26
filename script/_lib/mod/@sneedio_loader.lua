@@ -1,4 +1,4 @@
-local VERSION = "a0.4.0";
+local VERSION = "a0.4.1";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -1654,7 +1654,7 @@ sneedio._StartDownloadingYoutube = function ()
                 end
             }
         };
-    end, SYSTEM_TICK * 10 * 2, "download polling");
+    end, math.floor(SYSTEM_TICK * 10 * 1.5), "download polling");
 end
 
 --- private volume method controlled by music system

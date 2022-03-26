@@ -34,4 +34,5 @@ YES PLEASE! I suck at programming and I really appreaciate your help.
 twg™  
 /g/  
 
-logo is courtesy of anonymous.
+logo is courtesy of anonymous.  
+paper icon is courtesy of https://iconarchive.com/show/hyperion-icons-by-icondesigner.net/Sidebar-Documents-icon.html
