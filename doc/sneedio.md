@@ -12,6 +12,9 @@ These examples help you to setup your own custom music playlist.
 ## Audio format
 It's recommended to use mp3 for all your audio files. Because there are some audio format that doesn't support position seeking. Youtube links is automatically cached as mp3 file. Check [troubleshooting.md](troubleshooting.md) if you encounter any playback issues. Feel free to create new issues if you find any bugs.
 
+## Youtube URL Format
+**Youtube URL format is: `https://www.youtube.com/watch?v=<video_id>`**, not using this format will prevent your music from playing and enqueued.
+
 ## Pack structures
 Generally you want your music/audio packs to be organized in the following structure:  
 
