@@ -13,8 +13,12 @@ extern "C" {
 #include <iostream>
 #include <ShlObj_core.h>
 #include "ytdlp_interface.h"
+#include "base64.h"
+#include <fstream>
 #pragma comment( lib, "lua" ) 
 
+/*  VERSION IS: */
+#define VERSIONSTRING "a0.5.0"
 
 /*
 ** ===============================================================
@@ -680,6 +684,34 @@ int L_IsValidYoutubeLink(lua_State* L)
 	return 1;
 }
 
+int L_DecodeBase64AndWriteToFile(lua_State* L)
+{
+	std::string path = luaL_checkstring(L, 1);
+	std::string b64 = luaL_checkstring(L, 2);
+	std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
+	if (file.is_open())
+	{
+		std::string s = base64_decode(b64);
+		file.write(s.c_str(), s.length());
+		lua_pushboolean(L, true);
+		return 1;
+	}
+	lua_pushboolean(L, false);
+	return 1;
+}
+
+int L_InitLibsneedio(lua_State* L)
+{
+	lua_pushboolean(L, InitSneedio());
+	return 1;
+}
+
+int L_GetVersion(lua_State* L)
+{
+	lua_pushstring(L, VERSIONSTRING);
+	return 1;
+}
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -716,6 +748,9 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetYtDlpDownloadStatus", L_GetYtDlpDownloadStatus},
 	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
 	{"IsValidYoutubeLink", L_IsValidYoutubeLink},
+	{"DecodeBase64AndWriteToFile", L_DecodeBase64AndWriteToFile},
+	{"InitLibsneedio", L_InitLibsneedio},
+	{"GetVersion", L_GetVersion},
 	{NULL,NULL}  // last entry; list terminator
 };
 
@@ -727,19 +762,6 @@ static int L_openLib(lua_State* L) {
 	// TODO: add startup/initialization code
 	lua_getglobal(L, "print");
 	lua_pushstring(L, "Now initializing module 'required' as:");
-	lua_pushvalue(L, 1); // pos 1 on the stack contains the module name
-	lua_call(L, 2, 0);
-	
-	lua_getglobal(L, "print");
-	InitSneedio();
-	if (bIsSneedioReady)
-	{
-		lua_pushstring(L, "Libsneedio is ready");
-	}
-	else
-	{
-		lua_pushstring(L, "Libsneedio failed to init. No external sound/music for (you).");
-	}
 	lua_pushvalue(L, 1); // pos 1 on the stack contains the module name
 	lua_call(L, 2, 0);
 

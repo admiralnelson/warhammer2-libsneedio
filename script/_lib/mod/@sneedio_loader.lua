@@ -1,5 +1,6 @@
-local VERSION = "a0.4.1";
+local VERSION = "a0.5.0";
 require("libsneedio_trycatch");
+require("libsneedio_extract_libsneedio_dll");
 ------
 -- Main sneedio module
 local var_dump = require("var_dump");
@@ -136,27 +137,13 @@ if(base64)then
     print("base64 has loaded");
 end
 
-local DLL_FILENAMES = {
-    "libsneedio",
-    "SDL2_mixer",
-    "SDL2",
-    "libvorbisfile-3",
-    "libvorbis-0",
-    "libopusfile-0",
-    "libopus-0",
-    "libogg-0",
-    "libmpg123-0",
-    "libmodplug-1",
-    "libFLAC-8"
-};
-
 _G.sneedio = {};
 
 local libSneedio =  nil;
 
 try {
     function()
-        libSneedio = require(DLL_FILENAMES[1]);
+        libSneedio = require("libsneedio");
     end,
 
     catch {
@@ -178,8 +165,11 @@ try {
     }
 }
 
+-- extracts all the baggages from this .pack file if neccesary using native code
+require("libsneedio_extract_dlls")(libSneedio);
+require("libsneedio_extract_ytdlp")(libSneedio);
 
-if(libSneedio) then
+if(libSneedio and libSneedio.InitLibsneedio()) then
     print("lib loaded ok");
     var_dump(libSneedio);
     -- fix math.huge null value
@@ -1869,6 +1859,10 @@ sneedio._YtDlpDownloadCompleteStatusTracker = function ()
     return libSneedio.GetYtDlpDownloadCompleteStatus();
 end
 
+sneedio._GetMajorMinorPatch = function(ver)
+    local type, major, minor, patch = string.match(ver, "(%a)(%d+)%.(%d+)%.(%d+)");
+    return type, major, minor, patch
+end
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
@@ -1896,8 +1890,14 @@ sneedio._InitFrontEnd = function ()
     end, TRANSITION_TICK, "sneedio_process_music_transition");
 
     SetupControlPanel();
+
+    if(libSneedio.GetVersion() ~= VERSION) then
+        MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().." uninstall your libsneedio library and resubscribe to the mod.");
+        return;
+    end
+
     if(sneedio._bIsFirstTimeStart)then
-        MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.",
+        MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.\n\nThis mod contains native code (DLL) and it runs like a normal program.",
             function ()
                 MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.", function ()
                     if(sneedio._IsYtDlpFlagDirty()) then
@@ -3492,6 +3492,9 @@ if(sneedio.InitSneedio()) then
     PrintError("libsneedio.GetInfinity is "..tostring(libSneedio.GetInfinity()));
     PrintError("math.huge is "..tostring(math.huge));
     PrintError("math.pi is "..tostring(math.pi));
+    if(libSneedio.GetVersion() ~= VERSION) then
+        PrintWarning("sneedio version mismatch, current version is "..libSneedio.GetVersion()..", expected version is "..VERSION);
+    end
 end
 
 return _G.sneedio;

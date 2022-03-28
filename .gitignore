@@ -386,3 +386,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+/script/_lib/_libsneedio_compiled_ytdlp_.lua
+/script/_lib/_libsneedio_compiled_dlls_.lua
+/script/_lib/_libsneedio_compiled_main_dll_.lua
