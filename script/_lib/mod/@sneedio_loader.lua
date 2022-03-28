@@ -1,6 +1,5 @@
-local VERSION = "a0.5.0";
+local VERSION = "a0.6.0";
 require("libsneedio_trycatch");
-require("libsneedio_extract_libsneedio_dll");
 ------
 -- Main sneedio module
 local var_dump = require("var_dump");
@@ -137,13 +136,27 @@ if(base64)then
     print("base64 has loaded");
 end
 
+local DLL_FILENAMES = {
+    "libsneedio",
+    "SDL2_mixer",
+    "SDL2",
+    "libvorbisfile-3",
+    "libvorbis-0",
+    "libopusfile-0",
+    "libopus-0",
+    "libogg-0",
+    "libmpg123-0",
+    "libmodplug-1",
+    "libFLAC-8"
+};
+
 _G.sneedio = {};
 
 local libSneedio =  nil;
 
 try {
     function()
-        libSneedio = require("libsneedio");
+        libSneedio = require(DLL_FILENAMES[1]);
     end,
 
     catch {
@@ -165,11 +178,8 @@ try {
     }
 }
 
--- extracts all the baggages from this .pack file if neccesary using native code
-require("libsneedio_extract_dlls")(libSneedio);
-require("libsneedio_extract_ytdlp")(libSneedio);
 
-if(libSneedio and libSneedio.InitLibsneedio()) then
+if(libSneedio) then
     print("lib loaded ok");
     var_dump(libSneedio);
     -- fix math.huge null value
@@ -1859,19 +1869,32 @@ sneedio._YtDlpDownloadCompleteStatusTracker = function ()
     return libSneedio.GetYtDlpDownloadCompleteStatus();
 end
 
-sneedio._GetMajorMinorPatch = function(ver)
-    local type, major, minor, patch = string.match(ver, "(%a)(%d+)%.(%d+)%.(%d+)");
-    return type, major, minor, patch
-end
 --#region frontend procedures
 
 sneedio._InitFrontEnd = function ()
     TM.Init();
 
     if(TM == nil) then
-        PrintError("current game is not frontend, operation failed");
+        MessageBox("sneedio_msgbox", "Sneedio\n\nCatastrophic failure, Timer Manager was null");
         return;
     end
+
+    if(libSneedio == nil) then
+        MessageBox("sneedio_msgbox", "Sneedio\n\nFailed to load libsneedio, please check your mod installation. Make sure you extracted the 7zip archive into Warhammer2.exe folder");
+        return;
+    end
+
+    if(libSneedio.GetVersion == nil) then
+        MessageBox("sneedioversion2" ,"Sneedio\n\nCannot check native code version, download the new native libraries here: \n\nhttps://github.com/admiralnelson/warhammer2-libsneedio/releases\n\nI refuse to work with unknown DLL version", "OK");
+        return;
+    end
+
+    if(libSneedio.GetVersion() ~= VERSION) then
+        MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().."\n Uninstall your libsneedio library and resubscribe and install the latest dependencies here: https://github.com/admiralnelson/warhammer2-libsneedio/releases.");
+        return;
+    end
+
+
     sneedio._bNotInFrontEnd = false;
 
     if(sneedio._FrontEndMusic.FileName ~= nil or sneedio._FrontEndMusic.FileName ~= "") then
@@ -1890,12 +1913,6 @@ sneedio._InitFrontEnd = function ()
     end, TRANSITION_TICK, "sneedio_process_music_transition");
 
     SetupControlPanel();
-
-    if(libSneedio.GetVersion() ~= VERSION) then
-        MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().." uninstall your libsneedio library and resubscribe to the mod.");
-        return;
-    end
-
     if(sneedio._bIsFirstTimeStart)then
         MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.\n\nThis mod contains native code (DLL) and it runs like a normal program.",
             function ()
@@ -1940,6 +1957,26 @@ end
 sneedio._InitCampaign = function ()
     if(CM == nil) then return false; end
     TM.Init();
+
+    if(TM == nil) then
+        MessageBox("sneedio_msgbox", "Sneedio\n\nCatastrophic failure, Timer Manager was null");
+        return;
+    end
+
+    if(libSneedio == nil) then
+        MessageBox("sneedio_msgbox", "Sneedio\n\nFailed to load libsneedio, please check your mod installation. Make sure you extracted the 7zip archive into Warhammer2.exe folder");
+        return;
+    end
+
+    if(libSneedio.GetVersion == nil) then
+        MessageBox("sneedioversion2" ,"Sneedio\n\nCannot check native code version, download the new native libraries here: \n\nhttps://github.com/admiralnelson/warhammer2-libsneedio/releases\n\nI refuse to work with unknown DLL version", "OK");
+        return;
+    end
+
+    if(libSneedio.GetVersion() ~= VERSION) then
+        MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().."\n Uninstall your libsneedio library and resubscribe and install the latest dependencies here: https://github.com/admiralnelson/warhammer2-libsneedio/releases.");
+        return;
+    end
 
     sneedio._ValidateMusicData();
 
@@ -3380,7 +3417,6 @@ sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 -- if libsneedio is not loaded, then call MessageBox with a message "failed to load libsneedio"
 if not libSneedio then
     MessageBox("sneedio_msgbox", "failed to load libsneedio, please check your mod installation");
-    return;
 else
     print("all ok");
 end
@@ -3403,6 +3439,27 @@ sneedio._SneedioBattleMain = function()
         PrintError(debug.traceback());
         return;
     end
+
+    if(TM == nil) then
+        MessageBox("sneedio_msgbox", "Sneedio\n\nCatastrophic failure, Timer Manager was null");
+        return;
+    end
+
+    if(libSneedio == nil) then
+        MessageBox("sneedio_msgbox", "Sneedio\n\nFailed to load libsneedio, please check your mod installation. Make sure you extracted the 7zip archive into Warhammer2.exe folder");
+        return;
+    end
+
+    if(libSneedio.GetVersion == nil) then
+        MessageBox("sneedioversion2" ,"Sneedio\n\nCannot check native code version, download the new native libraries here: \n\nhttps://github.com/admiralnelson/warhammer2-libsneedio/releases\n\nI refuse to work with unknown DLL version", "OK");
+        return;
+    end
+
+    if(libSneedio.GetVersion() ~= VERSION) then
+        MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().."\n Uninstall your libsneedio library and resubscribe and install the latest dependencies here: https://github.com/admiralnelson/warhammer2-libsneedio/releases.");
+        return;
+    end
+
     -- fill bm variable!
     BM = get_bm();
 
@@ -3492,8 +3549,11 @@ if(sneedio.InitSneedio()) then
     PrintError("libsneedio.GetInfinity is "..tostring(libSneedio.GetInfinity()));
     PrintError("math.huge is "..tostring(math.huge));
     PrintError("math.pi is "..tostring(math.pi));
+    if(libSneedio.GetVersion == nil) then
+        PrintError("libsneedio.GetVersion is nil");
+    end
     if(libSneedio.GetVersion() ~= VERSION) then
-        PrintWarning("sneedio version mismatch, current version is "..libSneedio.GetVersion()..", expected version is "..VERSION);
+        PrintError("sneedio version mismatch, current version is "..libSneedio.GetVersion()..", expected version is "..VERSION);
     end
 end
 
