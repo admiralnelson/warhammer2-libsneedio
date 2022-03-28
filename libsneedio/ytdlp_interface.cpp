@@ -353,6 +353,13 @@ const YtDlpDownloadCompleteParams& SneedioYtDlp::GetDownloadCompleteStatus()
 
 SneedioYtDlp::~SneedioYtDlp()
 {
-    ThrMonitorYtDlp.join();
-    ThrYtDlpHeartbeat.join();
+    if (ThrMonitorYtDlp.joinable()) 
+    {
+        ThrMonitorYtDlp.join();
+    }
+    if (ThrYtDlpHeartbeat.joinable())
+    {
+        ThrYtDlpHeartbeat.join();
+    }
+
 }

@@ -14,7 +14,8 @@ extern "C" {
 #include <ShlObj_core.h>
 #include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
-
+/*  VERSION IS: */
+#define VERSIONSTRING "a0.6.0"
 
 /*
 ** ===============================================================
@@ -680,6 +681,14 @@ int L_IsValidYoutubeLink(lua_State* L)
 	return 1;
 }
 
+int L_GetVersion(lua_State * L)
+{
+	lua_pushstring(L, VERSIONSTRING);
+	return 1;
+}
+
+
+
 /*
 ** ===============================================================
 ** Library initialization and shutdown
@@ -716,6 +725,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetYtDlpDownloadStatus", L_GetYtDlpDownloadStatus},
 	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
 	{"IsValidYoutubeLink", L_IsValidYoutubeLink},
+	{"GetVersion", L_GetVersion},
 	{NULL,NULL}  // last entry; list terminator
 };
 

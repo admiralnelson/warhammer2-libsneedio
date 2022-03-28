@@ -114,6 +114,9 @@ SneedioMusic::SneedioMusic() :
 SneedioMusic::~SneedioMusic()
 {
 	bKeepThreadAlive = false;
-	TimerThread.join();
+	if (TimerThread.joinable())
+	{
+		TimerThread.join();
+	}
 	audeo::quit();
 }
