@@ -158,5 +158,76 @@ sneedio.AddMusicBattle("wh_main_emp_empire_mp_custom_battles_only", "Losing",
 });
 
 
+-- for bretonnia custom battle
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Deployment",
+{
+    FileName = "https://www.youtube.com/watch?v=Upx-mbiT8QQ",
+    MaxDuration = mmss("2:12")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=0_Y3i2ct-ls",
+    MaxDuration = mmss("1:00")
+});
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "FirstEngagement",
+{
+    FileName = "https://www.youtube.com/watch?v=0_Y3i2ct-ls",
+    MaxDuration = mmss("3:28"),
+    StartPos = mmss("1:45")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=EowWuNkj638",
+    MaxDuration = mmss("3:17")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=JlxuUG1EtDs",
+    MaxDuration = mmss("3:13")
+});
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Balanced",
+{
+    FileName = "https://www.youtube.com/watch?v=yRAn8_VGM28",
+    MaxDuration = mmss("7:32"),
+},
+{
+    FileName = "https://www.youtube.com/watch?v=QTRYte36nx8",
+    MaxDuration = mmss("2:00")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=n6u4EsjBlb8",
+    MaxDuration = mmss("4:42")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=URmrY_5g8II",
+    MaxDuration = mmss("2:28")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=ogxCLi4CG9U",
+    MaxDuration = mmss("4:16")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=napwDHgukdg",
+    MaxDuration = mmss("5:22")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=Z3-rYbhWmpw",
+    MaxDuration = mmss("9:59")
+});
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Winning",
+{
+    FileName = "https://www.youtube.com/watch?v=3MHZCYVqIPw",
+    MaxDuration = mmss("2:47")
+});
+
+
+sneedio.AddMusicBattle("wh_main_brt_bretonnia_mp_custom_battles_only", "Losing",
+{
+    FileName = "https://www.youtube.com/watch?v=kUwHsJNkQ3E",
+    MaxDuration = mmss("2:24")
+});
+
+
 
 -- ...and let sneedio do the rest.
