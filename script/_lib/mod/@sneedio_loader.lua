@@ -38,6 +38,10 @@ local SNEEDIO_YT_DLP_DIRECTORY = "yt-dlp-audio";
 local SNEEDIO_YT_DLP_QUEUE_MOD_JSON = "yt-dlp-db.json";
 -- sneedio system config file
 local SNEEDIO_SYSTEM_CONFIG_JSON = ".sneedio-system.json";
+-- yt-dlp.exe
+local SNEEDIO_YT_DLP_EXE = "yt-dlpbin/yt-dlp.exe";
+-- ffmpeg.exe
+local SNEEDIO_FFMPEG_EXE = "yt-dlpbin/ffmpeg.exe";
 
 -- sneedio mod identifier
 local SNEEDIO_MCT_CONTROL_PANEL_ID = "Sneedio";
@@ -1573,6 +1577,23 @@ end
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
+sneedio._IsYtDlpAndFfmpegExist = function()
+    local result = false;
+    try{
+        function ()
+            local ytDlp = ReadFile(SNEEDIO_YT_DLP_EXE);
+            local ffmpeg = ReadFile(SNEEDIO_FFMPEG_EXE);
+        end,
+        catch{
+            function (err)
+                PrintError("error checking for ytdlp and ffmpeg: "..err);
+                result = false;
+            end
+        }
+    }
+    return result;
+end
+
 sneedio._GetFileFromYoutubeUrl = function (url)
     if(not sneedio.IsValidYoutubeUrl(url)) then
         throw("invalid youtube url "..url, 2);
@@ -1591,6 +1612,11 @@ sneedio._GetFileFromYoutubeUrl = function (url)
 end
 
 sneedio._StartDownloadingYoutube = function ()
+    if(not sneedio._IsYtDlpAndFfmpegExist())then
+        PrintError("ytdlp and ffmpeg not found, cannot download youtube audio");
+        MessageBox("ytdlp_not_found", "Sneedio\n\nyt-dlp.exe or/and ffmpeg.exe not found, check your yt-dlpbin folder\n\nSneedio will not be able to download youtube audio");
+        return;
+    end
     print("preparing");
     local urls = {};
     ForEach(sneedio._MapUrlToActualFiles, function (actualFile, url)
