@@ -3416,7 +3416,8 @@ sneedio.SNEEDIO_DEBUG = SNEEDIO_DEBUG;
 
 -- if libsneedio is not loaded, then call MessageBox with a message "failed to load libsneedio"
 if not libSneedio then
-    MessageBox("sneedio_msgbox", "failed to load libsneedio, please check your mod installation");
+    -- MessageBox("sneedio_msgbox", "failed to load libsneedio, please check your mod installation");
+    PrintError("failed to load libsneedio, please check your mod installation");
 else
     print("all ok");
 end
