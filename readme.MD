@@ -9,22 +9,23 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=2784691287
 ## What is it? 
 it's a music and audio library to enable custom music and audio for your dudes.  
 
-## how to build?
-run make.bat+install.bat  
-or apply patches to external folder, then open the solution to build the binaries  
-don't forget to pack the script and install them in your game.  
-
 ## for average normal user  
-1. Enable this mod in your launcher
-2. download music packs from workshop :^), or create your own: [Documentation](doc/sneedio.md)
+Go to this page for installation instructions: [install.md](doc/install.md)  
+This mod doesn't come with music packs, you have to make your own or download them from the workshop or somewhere else.
+
+## modders? 
+Please check out the [Documentation](doc/sneedio.md) for API usage and examples.  
+You can also follow getting started guide [here](doc/modder-getting-started.md).
 
 ## how does it work?  
 when sneedio.lua loaded, it tries to execute `require` (or `require2`) function to load the entry point dll `(libsneedio.dll)`  
 after that sneedio.lua will control what music and audio should be played.  
 other dlls such as SDL.dll are used as codecs, removing one of these may cause incompatibilty with certain audio file (such as .ogg)  
 
-## modders? 
-Please check out the [Documentation](doc/sneedio.md) for API usage and examples.
+## how to build?
+run make.bat+install.bat  
+or apply patches to external folder, then open the solution to build the binaries  
+don't forget to pack the script and install them in your game.  
 
 ## bug report?   
 You can report it by creating new issue with the log file (and with video if possible). If you want full debug output, you can edit the debug  
