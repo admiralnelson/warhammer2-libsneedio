@@ -10,3 +10,4 @@ if not status then
 end
 	return result
 end
+throw = error

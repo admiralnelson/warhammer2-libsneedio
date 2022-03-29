@@ -1583,6 +1583,7 @@ sneedio._IsYtDlpAndFfmpegExist = function()
         function ()
             local ytDlp = ReadFile(SNEEDIO_YT_DLP_EXE);
             local ffmpeg = ReadFile(SNEEDIO_FFMPEG_EXE);
+            result = true;
         end,
         catch{
             function (err)
