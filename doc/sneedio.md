@@ -250,5 +250,5 @@ This function uses variadic arguments, so you can pass in multiple music files.
 -- @param ...: music to be added (variadic arguments)
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
 ```
-
+---
 Go back to [Readme.md](..\readme.MD).
