@@ -11,6 +11,7 @@ del SDL2.dll
 del SDL2_mixer.dll
 del libsneedio.dll
 del *.pdb
+del data\libsneedio.pack
 rd /s /q yt-dlp-audio
 rd /s /q yt-dlpbin
 del yt-dlp-db.json
