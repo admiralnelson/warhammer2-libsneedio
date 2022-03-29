@@ -251,4 +251,4 @@ This function uses variadic arguments, so you can pass in multiple music files.
 sneedio.AddMusicBattle = function (factionId, Situation, ...)
 ```
 ---
-Go back to [Readme.md](..\readme.MD).
+Go back to [Readme.md](../readme.MD).

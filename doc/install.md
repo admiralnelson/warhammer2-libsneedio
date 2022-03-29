@@ -30,4 +30,4 @@ follow this page for build instructions: [build.md](build.md)
 2. and unsubscribe from the workshop (steam version)
 
 ---
-Go back to [Readme.md](..\readme.MD).
+Go back to [Readme.md](../readme.MD).
