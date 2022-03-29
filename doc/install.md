@@ -9,7 +9,7 @@
 4. If there's a prompt to replace files, click Yes to All.  
    <img src="../extras/step4.png" width="25%" />  
 5. Check libsneedio and other music related packs in the launcher.
-6. Accept first time prompts. If there is a audio pack that uses this mod, you may greeted with this prompt, let it finish its job.  
+6. Accept first time prompts. If there is an audio pack that uses this mod, you may greeted with this prompt, let it finish its job.  
    <img src="../extras/step5.png" width="25%" />  
 ## non steam version
 1. Download the latest binaries from github page [Releases](https://github.com/admiralnelson/warhammer2-libsneedio/releases)  
@@ -19,7 +19,7 @@
 3. If there's a prompt to replace files, click Yes to All.  
    <img src="../extras/step4.png" width="25%" />  
 4. Check libsneedio and other music related packs in the launcher.
-5. Accept first time prompts. If there is a audio pack that uses this mod, you may greeted with this prompt, let it finish its job.  
+5. Accept first time prompts. If there is an audio pack that uses this mod, you may greeted with this prompt, let it finish its job.  
    <img src="../extras/step5.png" width="25%" />  
 ## development version
 follow this page for build instructions: [build.md](build.md)  
