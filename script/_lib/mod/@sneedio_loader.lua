@@ -3490,7 +3490,7 @@ sneedio._SneedioBattleMain = function()
     end
 
     if(libSneedio.GetVersion == nil) then
-        MessageBox("sneedioversion2" ,"Sneedio\n\nCannot check native code version, download the new native libraries here: \n\nhttps://github.com/admiralnelson/warhammer2-libsneedio/releases\n\nI refuse to work with unknown DLL version", "OK");
+        MessageBox("sneedioversion2" ,"Sneedio\n\nCannot check native code version, download the new native libraries here: \n\nhttps://github.com/admiralnelson/warhammer2-libsneedio/releases\n\nI refuse to work with unknown DLL version");
         return;
     end
 
