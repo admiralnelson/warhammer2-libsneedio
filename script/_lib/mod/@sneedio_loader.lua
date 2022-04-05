@@ -1,4 +1,4 @@
-local VERSION = "a0.6.0";
+local VERSION = "a0.6.1";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -1038,6 +1038,9 @@ sneedio.AddMusicCampaign = function (factionId, ...)
 
     local fileNamesArr = {...};
     ForEach(fileNamesArr, function (filename)
+        if(filename.FileName == nil) then
+            return;
+        end
         filename.CurrentDuration = 0;
         filename.bAddedFromMod = true;
         table.insert(sneedio._MusicPlaylist[factionId]["CampaignMap"], filename);
@@ -1574,6 +1577,14 @@ sneedio.IsValidYoutubeUrl = function (url)
     return libSneedio.IsValidYoutubeLink(url);
 end
 
+--- check if playlist is totally empty
+-- @return boolean true if playlist is empty
+sneedio.IsPlaylistEmpty = function ()
+    local isEmpty = #sneedio._MusicPlaylist == 1 or -- faction_none
+                    #sneedio._MusicPlaylist == 0;   -- completely empty
+    if(isEmpty) then return true; end
+end
+
 --#endregion battle helper
 ---------------------------------PRIVATE methods----------------------------------
 
@@ -1943,7 +1954,7 @@ sneedio._InitFrontEnd = function ()
     if(sneedio._bIsFirstTimeStart)then
         MessageBox("sneedio-defaultconf", "Sneedio\n\nA new user-sneedio.json has been created.\nEdit the file, put your music in the game folder, and restart the game.\nVisit https://tinyurl.com/sneedio to see config examples.\n\nThis mod contains native code (DLL) and it runs like a normal program.",
             function ()
-                MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio.\n\nYou can change this setting in the options menu.", function ()
+                MessageBox("Sneedio1", "It is recommended to mute in game music when using sneedio, if you use music packs.\n\nYou can change this setting in the options menu.", function ()
                     if(sneedio._IsYtDlpFlagDirty()) then
                         sneedio._StartDownloadingYoutube();
                     end

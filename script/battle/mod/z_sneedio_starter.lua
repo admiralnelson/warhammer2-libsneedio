@@ -10,7 +10,8 @@ if BM ~= nil then sneedio.TM.OnceCallback(
     function ()
         sneedio._SneedioBattleMain();
 
-        if(not sneedio.GetCurrentConfig().NoticeNoMusicFoundOrIncompleteMusicForFactionBattle) then return; end
+        if(not sneedio.GetCurrentConfig().NoticeNoMusicFoundOrIncompleteMusicForFactionBattle and 
+           not sneedio.IsPlaylistEmpty()) then return; end
         local availableSituations = {"Deployment", "Balanced", "FirstEngagement", "Losing", "Winning"};
         local unavailableSituations = {};
         ForEach(availableSituations, function (situation)

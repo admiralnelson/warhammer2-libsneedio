@@ -31,6 +31,17 @@ local urls = {
     "https://www.youtube.com/watch?v=Upx-mbiT8QQ",
     "https://www.youtube.com/watch?v=0_Y3i2ct-ls",
     "https://www.youtube.com/watch?v=yRAn8_VGM28",
+
+    "https://www.youtube.com/watch?v=UNPUNQUrYkw",
+    "https://www.youtube.com/watch?v=gRT_vCS7NGU",
+    "https://www.youtube.com/watch?v=kvtvva8jJw4",
+    "https://www.youtube.com/watch?v=MUJgeDHl3Yw",
+    "https://www.youtube.com/watch?v=f_We8aXKFKE",
+    "https://www.youtube.com/watch?v=7p8VLT3craE",
+    "https://www.youtube.com/watch?v=Lbq9x__K18M",
+    "https://www.youtube.com/watch?v=Uqv0pjkX-oo",
+    "https://www.youtube.com/watch?v=tn_lFSQ9GdM",
+    "https://www.youtube.com/watch?v=9WlLKjy9K58"
 };
 -- queue the urls
 sneedio.DownloadYoutubeUrls(urls);

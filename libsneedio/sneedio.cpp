@@ -15,7 +15,7 @@ extern "C" {
 #include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
 /*  VERSION IS: */
-#define VERSIONSTRING "a0.6.0"
+#define VERSIONSTRING "a0.6.1"
 
 /*
 ** ===============================================================
@@ -71,6 +71,7 @@ bool SetupCursorDetector()
 		return false;
 	}
 	cursor_mode = (GET_CURSOR_MODE)get_mode_empire;
+	return true;
 }
 
 template< typename T >

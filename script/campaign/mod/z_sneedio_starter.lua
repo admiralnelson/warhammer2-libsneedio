@@ -7,8 +7,9 @@ CM:add_first_tick_callback(function(ctx)
 	if CM ~= nil then
 		sneedio.TM.OnceCallback(function ()
 			sneedio._SneedioCampaignMain();
-			if(sneedio.GetPlayerFactionPlaylistForCampaign() == nil and
-			    sneedio.GetCurrentConfig().NoticeNoMusicFoundForFaction)then
+			if( sneedio.GetPlayerFactionPlaylistForCampaign() == nil and
+			    sneedio.GetCurrentConfig().NoticeNoMusicFoundForFaction and
+			    not sneedio.IsPlaylistEmpty()) then
 				sneedio.MessageBox("sneediowarn", "Sneedio\n\n No faction playlist found for this faction: "
 									..sneedio.GetPlayerFaction()..
 									".\n\nPlease check your user-sneedio.json or contact mod author for custom faction.\n"
