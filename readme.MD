@@ -1,7 +1,7 @@
 # <img src="extras/logosmall.png" width="64" /> Libsneedio
 
 ## Version
-Version a0.4.1 seems stable enough for me.  
+Version a0.6.1 seems stable enough for me.  
 
 ## Steam Workshop
 https://steamcommunity.com/sharedfiles/filedetails/?id=2784691287
