@@ -58,3 +58,7 @@ if switching to campaign, check for played faction playlist. if it's contain amb
 
 if all battle playlist are empty, unmute game music.
 if one of the battle playlists contain empty element, just play them all together, doesn't matter if it's matches context of the battle (i.e losing/winning)
+
+
+warhammer 3 spell miscast detection: 
+https://boards.4channel.org/vg/thread/379067365#p379103360
