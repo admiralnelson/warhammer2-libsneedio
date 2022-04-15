@@ -1,4 +1,4 @@
-local VERSION = "a0.6.1";
+local VERSION = "a0.6.2";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -3166,13 +3166,6 @@ sneedio._RegisterSneedioTickBattleFuns = function()
         sneedio._BattlePhaseStatus = "Deployed";
         sneedio._CurrentSituation = "FirstEngagement";
         sneedio._ProcessMusicPhaseChangesBattle();
-    end);
-
-    BM:setup_victory_callback(function ()
-        print("battle Deployment");
-        -- sneedio._BattlePhaseStatus = "VictoryCountdown";
-        -- sneedio._CurrentSituation = "Winning";
-        -- sneedio._ProcessMusicPhaseChangesBattle();
     end);
 
     BM:register_phase_change_callback("Complete", function ()
