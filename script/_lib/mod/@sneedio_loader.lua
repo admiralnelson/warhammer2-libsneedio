@@ -1889,6 +1889,7 @@ sneedio._FirstTimeSetup = function ()
 end
 
 sneedio._UpdateSneedioSystemJson = function(data)
+    data = data or {};
     data.version = sneedio.VERSION;
     WriteFile(SNEEDIO_SYSTEM_CONFIG_JSON, json.encode(data));
 end
@@ -1959,12 +1960,12 @@ sneedio._InitFrontEnd = function ()
 
     local sneedioSystemJson = sneedio._GetSneedioSystemJson();
     if(sneedioSystemJson.version) then
-        if(VersionCompare(sneedioSystemJson.version, sneedio.VERSION)) then
+        if(not VersionCompare(sneedioSystemJson.version, sneedio.VERSION)) then
             MessageBox("sneedioversion3" ,"Sneedio\n\nSneedio has been updated from version "..sneedioSystemJson.version.." to version "..sneedio.VERSION.."\n Read the changelog here: https://github.com/admiralnelson/warhammer2-libsneedio/releases");
         end
     end
     -- this triggers to update sneedio-system.json
-    local _ = sneedio._IsYtDlpFlagDirty() and sneedio._WriteYtDlpFlagDirty(true);
+    local _ = sneedio._IsYtDlpFlagDirty() and sneedio._WriteYtDlpFlagDirty(true) or sneedio._UpdateSneedioSystemJson();
 
     sneedio._bNotInFrontEnd = false;
 
