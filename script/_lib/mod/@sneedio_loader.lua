@@ -515,6 +515,22 @@ local CampaignCameraToTargetPos = function (cameraPos, bearing)
     };
 end
 
+--- functions to compare MAJOR.MINOR version strings
+local VersionCompare = function (v1, v2)
+    local v1parts = Split(v1, "%.");
+    local v2parts = Split(v2, "%.");
+
+    for i = 1, math.max(#v1parts, #v2parts) do
+        local v1part = tonumber(v1parts[i]) or 0;
+        local v2part = tonumber(v2parts[i]) or 0;
+        if (v1part ~= v2part) then
+            return v1part > v2part;
+        end
+    end
+    return true;
+end
+
+
 local CAVectorToSneedVector = function(CAVector)
     --yeah I have to convert them to string, my DLL can't accept number for some reason.
     if(is_vector(CAVector)) then
@@ -649,7 +665,7 @@ sneedio.CONTROLPANEL.AllowModToModifyFactionMusicId = "AllowModToModifyFactionMu
 sneedio.CONTROLPANEL.AllowModToDownloadAudioId = "AllowModToDownloadAudio";
 sneedio.CONTROLPANEL.DisplayTrackTimeToConsoleId = "DisplayTrackTimeToConsole";
 sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattleId = "NoticeNoMusicFoundOrIncompleteMusicForFactionBattle";
-
+sneedio.CONTROLPANEL.RepeatMusicId = "RepeatMusic";
 local SetupControlPanel = function ()
     core:add_listener(
         "sneedio_mct_open",
@@ -696,6 +712,9 @@ local SetupControlPanel = function ()
             local noticeNoMusicFoundOrIncompleteMusicForFactionBattle = mod:get_option_by_key(sneedio.CONTROLPANEL.CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattleId):get_finalized_setting();
             sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = noticeNoMusicFoundOrIncompleteMusicForFactionBattle;
             PrintWarning("notice no music found or incomplete music for faction battle is set to"..tostring(noticeNoMusicFoundOrIncompleteMusicForFactionBattle));
+            local repeatMusic = mod:get_option_by_key(sneedio.CONTROLPANEL.RepeatMusicId):get_finalized_setting();
+            sneedio._CurrentUserConfig.RepeatMusic = repeatMusic;
+            PrintWarning("repeat music is set to"..tostring(repeatMusic));
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -1733,7 +1752,8 @@ sneedio._LoadUserConfig = function ()
             AllowModToDownloadAudio = true,
             AllowModToModifyFactionMusic = true,
             DisplayTrackTimeToConsole = false,
-            NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = false
+            NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = false,
+            RepeatMusic = true
         }
         WriteFile(SNEEDIO_USER_CONFIG_JSON, json.encode(userConfig));
         sneedio._bIsFirstTimeStart = true;
@@ -1784,6 +1804,11 @@ sneedio._LoadUserConfig = function ()
         sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = userConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle;
     else
         sneedio._CurrentUserConfig.NoticeNoMusicFoundOrIncompleteMusicForFactionBattle = true;
+    end
+    if(userConfig.RepeatMusic ~= nil and type(userConfig.RepeatMusic) == "boolean") then
+        sneedio._CurrentUserConfig.RepeatMusic = userConfig.RepeatMusic;
+    else
+        sneedio._CurrentUserConfig.RepeatMusic = true;
     end
 
     --var_dump(userConfig);
@@ -1930,6 +1955,19 @@ sneedio._InitFrontEnd = function ()
     if(libSneedio.GetVersion() ~= VERSION) then
         MessageBox("sneedioversion" ,"Sneedio\n\nlibsneedio.dll version mismatch against sneedio, current version is "..VERSION..", expected version is "..libSneedio.GetVersion().."\n Uninstall your libsneedio library and resubscribe and install the latest dependencies here: https://github.com/admiralnelson/warhammer2-libsneedio/releases.");
         return;
+    end
+
+    local sneedioSystemJson = sneedio._GetSneedioSystemJson();
+    if(sneedioSystemJson.version) then
+        if(VersionCompare(sneedioSystemJson.version, sneedio.VERSION)) then
+            MessageBox("sneedioversion3" ,"Sneedio\n\nSneedio has been updated from version "..sneedioSystemJson.version.." to version "..sneedio.VERSION.."\n Read the changelog here: https://github.com/admiralnelson/warhammer2-libsneedio/releases",
+                function ()
+                    sneedio._UpdateSneedioSystemJson({});
+                end
+            );
+        end
+    else
+        sneedio._UpdateSneedioSystemJson({});
     end
 
 

@@ -80,6 +80,18 @@ sneedio.AddMusicCampaign("wh_main_brt_bretonnia",
 {
     FileName = "https://www.youtube.com/watch?v=9WlLKjy9K58",
     MaxDuration = mmss("2:28")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=PU3hy6PtOYY",
+    MaxDuration = mmss("3:52")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=j7ix2XJTbn0",
+    MaxDuration = mmss("2:28")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=U25Xg_xlhtM",
+    MaxDuration = mmss("3:25")
 });
 
 -- add new music to Morgiana faction during campaign

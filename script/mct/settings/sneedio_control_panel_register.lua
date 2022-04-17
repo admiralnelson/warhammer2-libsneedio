@@ -11,6 +11,7 @@ local AllowModToModifyFactionMusicId = "AllowModToModifyFactionMusic";
 local AllowModToDownloadAudioId = "AllowModToDownloadAudio";
 local DisplayTrackTimeToConsoleId = "DisplayTrackTimeToConsole";
 local CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattleId = "NoticeNoMusicFoundOrIncompleteMusicForFactionBattle";
+local CheckRepeatMusicId = "RepeatMusic";
 
 local M = mct:register_mod(SNEEDIO_MCT_CONTROL_PANEL_ID);
 M:set_title("Sneedio");
@@ -76,7 +77,22 @@ SliderSoundVolume:slider_set_min_max(0, 100);
 SliderSoundVolume:slider_set_step_size(1);
 SliderSoundVolume:set_default_value(70);
 
-local debugControls = {CheckNoticeNoMusicFoundForFaction, CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattle, CheckAllowModToModifyMenuMusic, CheckAllowModToModifyFactionMusicId, CheckAllowModToDownloadAudioId, CheckDisplayTrackTimeToConsoleId};
+local CheckRepeatMusic = M:add_new_option(CheckRepeatMusicId, "checkbox");
+CheckRepeatMusic:set_text("Repeat Music");
+CheckRepeatMusic:set_tooltip_text("Repeat music from sneedio");
+CheckRepeatMusic:set_default_value(true);
+
+
+local debugControls = {
+    CheckNoticeNoMusicFoundForFaction,
+    CheckNoticeNoMusicFoundOrIncompleteMusicForFactionBattle,
+    CheckAllowModToModifyMenuMusic,
+    CheckAllowModToModifyFactionMusicId,
+    CheckAllowModToDownloadAudioId,
+    CheckDisplayTrackTimeToConsoleId,
+    CheckRepeatMusic
+};
+
 for index, value in ipairs(debugControls) do
     value:set_assigned_section(SECTION_DEBUG_NAME);
 end

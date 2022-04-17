@@ -15,7 +15,7 @@ extern "C" {
 #include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
 /*  VERSION IS: */
-#define VERSIONSTRING "a0.6.1"
+#define VERSIONSTRING "a0.6.2"
 
 /*
 ** ===============================================================
@@ -688,7 +688,16 @@ int L_GetVersion(lua_State * L)
 	return 1;
 }
 
-
+int L_SetMusicRepeat(lua_State* L)
+{
+	if (!lua_isboolean(L, 1))
+	{
+		luaL_typerror(L, 1, "boolean must be supplied");
+		return 0;
+	}
+	SneedioMusic::Get().EnableRepeat(lua_toboolean(L, 1));
+	return 0;
+}
 
 /*
 ** ===============================================================
@@ -727,6 +736,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
 	{"IsValidYoutubeLink", L_IsValidYoutubeLink},
 	{"GetVersion", L_GetVersion},
+	{"SetMusicRepat", L_SetMusicRepeat},
 	{NULL,NULL}  // last entry; list terminator
 };
 
