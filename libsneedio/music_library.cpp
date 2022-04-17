@@ -7,18 +7,18 @@ SneedioMusic& SneedioMusic::Get()
     return instance;
 }
 
-bool SneedioMusic::PlayMusic(const std::string& FileName, int Repeats, float FadesInMs)
+bool SneedioMusic::PlayMusic(const std::string& FileName,  float FadesInMs)
 {	
 	try
 	{
 		SoundSource = audeo::load_source(FileName, audeo::AudioType::Music);
-		if (Repeats >= 0)
+		if (bRepeat)
 		{
-			CurrentMusic = audeo::play_sound(SoundSource, Repeats, FadesInMs);
+			CurrentMusic = audeo::play_sound(SoundSource, audeo::loop_forever, FadesInMs);
 		}
 		else
 		{
-			CurrentMusic = audeo::play_sound(SoundSource, audeo::loop_forever, FadesInMs);
+			CurrentMusic = audeo::play_sound(SoundSource, 1, FadesInMs);
 		}
 	}
 	catch (const audeo::exception& exception)
@@ -92,11 +92,17 @@ void SneedioMusic::Mute(bool mute)
 	SetVolume(MusicVolume);
 }
 
+void SneedioMusic::EnableRepeat(bool bEnable)
+{
+	bRepeat = bEnable;
+}
+
 SneedioMusic::SneedioMusic() : 
 	bMute(false), 
 	bKeepThreadAlive(true), 
 	bSyncThread(false), 
-	bPaused(false)
+	bPaused(false),
+	bRepeat(false)
 {
 	TimerThread = std::thread([this] {
 		while (bKeepThreadAlive) {

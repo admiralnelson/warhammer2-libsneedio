@@ -10,7 +10,7 @@ class SneedioMusic
 public:
 	static SneedioMusic& Get();
 
-	bool PlayMusic(const std::string& FileName, int Repeats = -1, float FadesInMs = 2000 );
+	bool PlayMusic(const std::string& FileName, float FadesInMs = 2000 );
 
 	bool IsFileValid(const std::string& FileName);
 
@@ -25,6 +25,8 @@ public:
 	int GetPosition();
 
 	void Mute(bool bMute = true);
+
+	void EnableRepeat(bool bEnable = true);
 private:
 	audeo::Sound CurrentMusic;
 	audeo::SoundSource SoundSource;
@@ -36,6 +38,7 @@ private:
 	bool bPaused;
 	bool bKeepThreadAlive;
 	bool bSyncThread;
+	bool bRepeat;
 	SneedioMusic();
 
 public:
