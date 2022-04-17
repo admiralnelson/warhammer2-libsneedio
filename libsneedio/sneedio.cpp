@@ -15,7 +15,7 @@ extern "C" {
 #include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
 /*  VERSION IS: */
-#define VERSIONSTRING "a0.6.2"
+#define VERSIONSTRING "a0.6.3"
 
 /*
 ** ===============================================================
@@ -736,7 +736,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"GetYtDlpDownloadCompleteStatus", L_GetYtDlpDownloadCompleteStatus},
 	{"IsValidYoutubeLink", L_IsValidYoutubeLink},
 	{"GetVersion", L_GetVersion},
-	{"SetMusicRepat", L_SetMusicRepeat},
+	{"SetMusicRepeat", L_SetMusicRepeat},
 	{NULL,NULL}  // last entry; list terminator
 };
 

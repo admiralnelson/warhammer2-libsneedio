@@ -1,4 +1,4 @@
-local VERSION = "a0.6.2";
+local VERSION = "a0.6.3";
 require("libsneedio_trycatch");
 ------
 -- Main sneedio module
@@ -715,6 +715,7 @@ local SetupControlPanel = function ()
             local repeatMusic = mod:get_option_by_key(sneedio.CONTROLPANEL.RepeatMusicId):get_finalized_setting();
             sneedio._CurrentUserConfig.RepeatMusic = repeatMusic;
             PrintWarning("repeat music is set to"..tostring(repeatMusic));
+            libSneedio.SetMusicRepeat(repeatMusic);
             sneedio.WriteConfigFile();
             MessageBox("sneedio_save", "Saved to user-sneedio.json");
         end,
@@ -1810,6 +1811,8 @@ sneedio._LoadUserConfig = function ()
     else
         sneedio._CurrentUserConfig.RepeatMusic = true;
     end
+
+    libSneedio.SetMusicRepeat(sneedio._CurrentUserConfig.RepeatMusic)
 
     --var_dump(userConfig);
     sneedio._FrontEndMusic = userConfig["FrontEndMusic"] or {};
