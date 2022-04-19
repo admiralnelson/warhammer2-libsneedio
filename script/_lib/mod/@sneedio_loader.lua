@@ -1580,7 +1580,8 @@ sneedio.DownloadYoutubeUrls = function (urls)
             throw("invalid youtube url "..url, 2);
             return;
         end
-        if(not HasKey(sneedio._MapUrlToActualFiles, url)) then
+        if(not HasKey(sneedio._MapUrlToActualFiles, url) or
+           sneedio._MapUrlToActualFiles[url] == "") then
             PrintWarning("not downloaded yet "..url);
             sneedio._WriteYtDlpFlagDirty(true);
             sneedio._MapUrlToActualFiles[url] = "";
@@ -1903,6 +1904,7 @@ sneedio._IsYtDlpFlagDirty = function()
 end
 
 sneedio._WriteYtDlpFlagDirty = function(flag)
+    print("_WriteYtDlpFlagDirty: "..tostring(flag));
     local data = {
         IsYtDlpDbDirty = flag,
     };
@@ -1968,7 +1970,7 @@ sneedio._InitFrontEnd = function ()
         end
     end
     -- this triggers to update sneedio-system.json
-    local _ = sneedio._IsYtDlpFlagDirty() and sneedio._WriteYtDlpFlagDirty(true) or sneedio._UpdateSneedioSystemJson();
+    if(sneedio._IsYtDlpFlagDirty()) then sneedio._WriteYtDlpFlagDirty(true); else sneedio._UpdateSneedioSystemJson(); end
 
     sneedio._bNotInFrontEnd = false;
 
@@ -1999,6 +2001,7 @@ sneedio._InitFrontEnd = function ()
             end
         );
     else
+        PrintError("sneedio is not first time start");
         if(sneedio._IsYtDlpFlagDirty()) then
             sneedio._StartDownloadingYoutube();
         end
