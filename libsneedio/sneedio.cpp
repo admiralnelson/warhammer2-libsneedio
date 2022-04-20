@@ -15,7 +15,7 @@ extern "C" {
 #include "ytdlp_interface.h"
 #pragma comment( lib, "lua" ) 
 /*  VERSION IS: */
-#define VERSIONSTRING "a0.6.3"
+#define VERSIONSTRING "a0.6.4"
 
 /*
 ** ===============================================================

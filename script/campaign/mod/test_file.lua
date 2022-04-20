@@ -127,5 +127,9 @@ sneedio.AddMusicCampaign("wh_main_brt_carcassonne",
 {
     FileName = "https://www.youtube.com/watch?v=aFLU69oiQOc",
     MaxDuration = mmss("2:57")
+},
+{
+    FileName = "https://www.youtube.com/watch?v=BaiFF1mGzT8",
+    MaxDuration = mmss("6:09")
 });
 -- ...and let sneedio do the rest.

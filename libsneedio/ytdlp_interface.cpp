@@ -130,7 +130,7 @@ bool SneedioYtDlp::StartYtDlp(std::vector<Url> const& queues)
 
     ZeroMemory(&pi, sizeof(pi));
 
-    std::string commandLine = ytDlpBin + " --newline --abort-on-error --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"yt-dlp-audio/%(title)s.%(ext)s\" --yes-playlist " + UrlQueuesToString(queues);
+    std::string commandLine = ytDlpBin + "--newline --abort-on-error --format bestaudio --extract-audio --audio-format mp3 --audio-quality 160K --output \"yt-dlp-audio/%(title)s.%(ext)s\" --yes-playlist --restrict-filenames" + UrlQueuesToString(queues);
     std::cout << "SneedioYtDlp: starting yt-dlp using following command line " << commandLine << std::endl;
     // Start the child process. 
     if (!CreateProcessA(NULL,           // No module name (use command line)

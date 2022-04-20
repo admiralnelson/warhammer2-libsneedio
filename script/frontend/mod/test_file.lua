@@ -45,7 +45,8 @@ local urls = {
 
     "https://www.youtube.com/watch?v=PU3hy6PtOYY", --3 53
     "https://www.youtube.com/watch?v=j7ix2XJTbn0", --2 29
-    "https://www.youtube.com/watch?v=U25Xg_xlhtM"  --3 26
+    "https://www.youtube.com/watch?v=U25Xg_xlhtM",  --3 26
+    "https://www.youtube.com/watch?v=BaiFF1mGzT8" -- 6 09
 
 };
 -- queue the urls
